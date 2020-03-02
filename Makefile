@@ -5,9 +5,9 @@ CC = cc
 # For a well-optimised version compiled with gcc on a Sun use:
 # CFLAGS = -O2 -DSUN -finline -finline-functions -fexpensive-optimizations
 # For a reasonably optimised version for NetBSD.
-CFLAGS = -O2 
+CFLAGS = -O2 -Wall
 # For a reasonably optimised version for SunOS 4.1.4.
-# CFLAGS = -O2 -DSUN 
+# CFLAGS = -O2 -Wall -DSUN
 
 # Put any additional libraries here.
 LFLAGS	= -lm

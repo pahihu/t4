@@ -42,6 +42,7 @@
 #include "processor.h"
 #include "arithmetic.h"
 #include "server.h"
+#include "opcodes.h"
 #ifdef __MWERKS__
 #include "mac_input.h"
 #endif
@@ -52,6 +53,9 @@
 
 #define ltZero(x)       ((x)&MostNeg)
 #define geZero(x)       (0==((x)&MostNeg))
+
+#define SAVE_IPTR       writeword (index (WPtr, -1), IPtr)
+#define DESCHEDULE      deschedule ()
 
 /* Memory space. */
 #define MEM_SIZE (2*1024*1024)
@@ -84,7 +88,6 @@ uint32_t LoTimer;
 uint32_t TPtrLoc0 = NotProcess_p;
 uint32_t TPtrLoc1 = NotProcess_p;
 uint32_t ErrorFlag = false_t;
-uint32_t ErrorFlagInt;
 uint32_t Interrupt = FALSE;
 uint32_t HaltOnErrorFlag;
 
@@ -140,6 +143,20 @@ struct prof *profile_head = NULL;
 /* Signal handler. */
 void handler (int);
 
+char *mnemonic(unsigned char icode, uint32_t oreg)
+{
+        static char bad[16];
+
+        if (icode > 239)
+        {
+                if (oreg < 0xFA)
+                        return Secondaries[oreg];
+                sprintf(bad, "--%X--", oreg);
+                return bad;
+        }
+        return Primaries[icode >> 4];
+}
+
 void mainloop (void)
 {
 	count1 = 0;
@@ -162,8 +179,10 @@ void mainloop (void)
         if (emudebug)
         {
 	        /* General debugging messages. */
-	        printf ("IPtr=%8X, Instruction=%2X, OReg=%8X, AReg=%8X, BReg=%8X, CReg=%8X, WPtr=%8X. WPtr[0]=%8X\n", 
-                                IPtr, Instruction, OReg, AReg, BReg, CReg, WPtr,word(WPtr));
+	        printf ("IPtr=%8X, Instr=%2X [%6s], OReg=%8X, AReg=%8X, BReg=%8X, CReg=%8X, WPtr=%8X. WPtr[0]=%8X\n", 
+                                IPtr, Instruction, 
+                                mnemonic (Icode, OReg),
+                                OReg, AReg, BReg, CReg, WPtr, word(WPtr));
         }
 
 #ifdef PROFILE
@@ -308,6 +327,9 @@ void mainloop (void)
 			   temp = word (index (AReg, 1));
 			   if (temp == 1)
 			   {
+                                if (emudebug)
+                                        printf("endp: do successor process\n");
+
 				/* Do successor process. */
 				WPtr = AReg;
 				IPtr = word (index (AReg, 0));
@@ -315,10 +337,13 @@ void mainloop (void)
 			   else
 			   {
 				/* Have not finished all parallel branches. */
+                                if (emudebug)
+                                        printf("endp: waiting for parallel branches (%d)\n", temp);
+
 				start_process ();
 			   }
-			   temp--;
-			   writeword (index (AReg, 1), temp);
+                           temp--;
+                           writeword (index (AReg, 1), temp);
 			   break;
 		case 0x04: /* diff        */
 			   AReg = BReg - AReg;
@@ -353,7 +378,7 @@ void mainloop (void)
 					/* Not ready. */
 					writeword (BReg, (WPtr | CurPriority));
 					writeword (index (WPtr, -3), CReg);
-					writeword (index (WPtr, -1), IPtr);
+                                        DESCHEDULE;
 					start_process ();
 				}
 				else
@@ -377,7 +402,7 @@ void mainloop (void)
  				Link0InWdesc  = (WPtr | CurPriority);
 				Link0InDest   = CReg;
 				Link0InLength = AReg;
-				writeword (index (WPtr, -1), IPtr);
+                                SAVE_IPTR;
 				start_process ();
 			   }
 			   break;
@@ -411,29 +436,43 @@ void mainloop (void)
 			   {
 				/* Internal communication. */
 				temp = word (BReg);
+                                if (emudebug)
+                                        printf ("out(1): internal communication. CHAN contents=%8X\n", temp);
 				if (temp == NotProcess_p)
 				{
 					/* Not ready. */
+                                        if (emudebug)
+                                                printf ("out(2): not ready.\n");
 					writeword (BReg, (WPtr | CurPriority));
 					writeword (index (WPtr, -3), CReg);
-					writeword (index (WPtr, -1), IPtr);
+                                        DESCHEDULE;
 					start_process ();
 				}
 				else
 				{
 					/* Ready. */
 					temp2 = word (index ((temp & 0xfffffffe), -3));
+                                        if (emudebug)
+                                                printf ("out(2): Memory address/ALT state=%8X\n", temp2);
 					if ((temp2 & 0xfffffffc) == MostNeg)
 					{
 						/* ALT guard test - not ready to communicate. */
+                                                if (emudebug)
+                                                        printf ("out(3): ALT guard test - not ready to communicate. ALT state=%8X\n", temp2);
 						writeword (BReg, (WPtr | CurPriority));
 						writeword (index (WPtr, -3), CReg);
-						writeword (index (WPtr, -1), IPtr);
+                                                DESCHEDULE;
 
 						/* The alt is waiting. Rechedule it? */
 						if (word (index ((temp & 0xfffffffe), -3)) != Ready_p)
 						{
 							/* The alt has not already been rescheduled. */
+                                                        if (emudebug)
+                                                        {
+                                                                printf ("out(4): reschedule ALT proc. ALT state=Ready_p\n");
+                                                                printf ("        Wptr=%8X, IPtr=%8X\n",
+                                                                        temp & 0xfffffffe, word (index ((temp & 0xfffffffe), -1)));
+                                                        }
 							writeword (index ((temp & 0xfffffffe), -3), Ready_p);
 							schedule ((temp & 0xfffffffe), (temp & 0x00000001));
 						}
@@ -443,6 +482,8 @@ void mainloop (void)
 					else
 					{
 						/* Ready. */
+                                                if (emudebug)
+                                                        printf ("out(3): ready, communicate.\n");
 						for (loop=0;loop<AReg;loop++)
 						{
 							writebyte ((temp2 + loop), byte (CReg + loop));
@@ -459,7 +500,7 @@ void mainloop (void)
 				Link0OutWdesc  = (WPtr | CurPriority);
 				Link0OutSource = CReg;
 				Link0OutLength = AReg;
-				writeword (index (WPtr, -1), IPtr);
+                                SAVE_IPTR;
 				start_process ();
 			   }
 			   break;
@@ -477,6 +518,7 @@ void mainloop (void)
 			   IPtr++;
 			   writeword (index (temp, -1), (IPtr + BReg));
 			   schedule (temp, CurPriority);
+                           D_check();
 			   break;
 		case 0x0e: /* outbyte     */
                            if (emudebug)
@@ -492,7 +534,7 @@ void mainloop (void)
 					writeword (BReg, (WPtr | CurPriority));
 					writeword (WPtr, AReg);
 					writeword (index (WPtr, -3), WPtr);
-					writeword (index (WPtr, -1), IPtr);
+                                        DESCHEDULE;
 					start_process ();
 				}
 				else
@@ -505,7 +547,7 @@ void mainloop (void)
 						writeword (BReg, (WPtr | CurPriority));
 						writeword (WPtr, AReg);
 						writeword (index (WPtr, -3), WPtr);
-						writeword (index (WPtr, -1), IPtr);
+                                                DESCHEDULE;
 
 						/* The alt is waiting. Rechedule it? */
 						if (word (index ((temp & 0xfffffffe), -3)) != Ready_p)
@@ -534,7 +576,7 @@ void mainloop (void)
 				Link0OutWdesc  = (WPtr | CurPriority);
 				Link0OutSource = WPtr;
 				Link0OutLength = 1;
-				writeword (index (WPtr, -1), IPtr);
+                                SAVE_IPTR;
 				start_process ();
 			   }
 			   break;
@@ -552,7 +594,7 @@ void mainloop (void)
 					writeword (BReg, (WPtr | CurPriority));
 					writeword (WPtr, AReg);
 					writeword (index (WPtr, -3), WPtr);
-					writeword (index (WPtr, -1), IPtr);
+                                        DESCHEDULE;
 					start_process ();
 				}
 				else
@@ -565,7 +607,7 @@ void mainloop (void)
 						writeword (BReg, (WPtr | CurPriority));
 						writeword (WPtr, AReg);
 						writeword (index (WPtr, -3), WPtr);
-						writeword (index (WPtr, -1), IPtr);
+                                                DESCHEDULE;
 
 						/* The alt is waiting. Rechedule it? */
 						if (word (index ((temp & 0xfffffffe), -3)) != Ready_p)
@@ -594,7 +636,7 @@ void mainloop (void)
 				Link0OutWdesc  = (WPtr | CurPriority);
 				Link0OutSource = WPtr;
 				Link0OutLength = 4;
-				writeword (index (WPtr, -1), IPtr);
+                                SAVE_IPTR;
 				start_process ();
 			   }
 			   break;
@@ -627,8 +669,7 @@ void mainloop (void)
 			   break;
 		case 0x15: /* stopp       */
 			   IPtr++;
-			   writeword (index (WPtr, -1), IPtr);
-			   CurPriority = NotProcess_p;
+                           SAVE_IPTR;
 			   start_process ();
 			   break;
 		case 0x16: /* ladd        */
@@ -774,7 +815,7 @@ void mainloop (void)
 				else
 				{
 					insert (AReg);
-					writeword (index (WPtr, -1), IPtr);
+                                        DESCHEDULE;
 					start_process ();
 				}
 			   }
@@ -785,7 +826,7 @@ void mainloop (void)
 				else
 				{
 					insert (AReg);
-					writeword (index (WPtr, -1), IPtr);
+                                        DESCHEDULE;
 					start_process ();
 				}
 			   }
@@ -1020,7 +1061,7 @@ void mainloop (void)
                                 if (emudebug)
 				        printf ("altwt(3): (W-3)=Waiting_p\n");
 				writeword (index (WPtr, -3), Waiting_p);
-				writeword (index (WPtr, -1), IPtr);
+                                DESCHEDULE;
 				start_process ();
 			   }
 			   break;
@@ -1182,7 +1223,7 @@ void mainloop (void)
 				        printf ("taltwt(3): Waiting until %8X\n", word (index (WPtr, -5)));
                                 }
 				writeword (index (WPtr, -3), Waiting_p);
-				writeword (index (WPtr, -1), IPtr);
+                                DESCHEDULE;
 
 				/* Put time into timer queue. */
 				temp = word (index (WPtr, -5));
@@ -1217,7 +1258,8 @@ void mainloop (void)
 			   IPtr++;
 			   if (ErrorFlag == true_t)
 			   {
-				start_process ();
+                                DESCHEDULE;
+                                start_process ();
 			   }
 			   break;
 		case 0x56: /* cword       */
@@ -1328,12 +1370,20 @@ void mainloop (void)
 			   IPtr++;
 			   break;
 		default  : printf ("\nBad Icode!.\n");
+	                   printf ("IPtr=%8X, Instr=%2X [%6s], OReg=%8X, AReg=%8X, BReg=%8X, CReg=%8X, WPtr=%8X. WPtr[0]=%8X\n", 
+                                        IPtr, Instruction, 
+                                        mnemonic (Icode, OReg),
+                                        OReg, AReg, BReg, CReg, WPtr,word(WPtr));
 			   handler (-1);
 			   break;
 	}
 			   OReg = 0;
 			   break;
 		default  : printf ("\nBad Icode!.\n");
+	                   printf ("IPtr=%8X, Instr=%2X [%6s], OReg=%8X, AReg=%8X, BReg=%8X, CReg=%8X, WPtr=%8X. WPtr[0]=%8X\n", 
+                                        IPtr, Instruction, 
+                                        mnemonic (Icode, OReg),
+                                        OReg, AReg, BReg, CReg, WPtr,word(WPtr));
 			   handler (-1);
 			   break;
 	}
@@ -1362,6 +1412,9 @@ void schedule (uint32_t wptr, uint32_t pri)
 	uint32_t ptr;
 	uint32_t temp;
 
+        if (emudebug)
+                printf("\nschedule: process=%8X pri=%d\n", wptr, pri);
+
 	/* Remove from timer queue if a ready alt. */
 	temp = word (index (wptr, -3));
 	if (temp == Ready_p)
@@ -1371,6 +1424,9 @@ void schedule (uint32_t wptr, uint32_t pri)
 	/* while a low priority process runs, interrupt! */
 	if ((pri == HiPriority) && (CurPriority == LoPriority))
 	{
+                if (emudebug)
+                        printf("schedule: interrupt LoPri process\n");
+
 		interrupt ();
 
 		CurPriority = HiPriority;
@@ -1391,6 +1447,9 @@ void schedule (uint32_t wptr, uint32_t pri)
 
 		if (ptr == NotProcess_p)
 		{
+                        if (emudebug)
+                                printf("schedule: empty process list, create\n");
+
 			/* Empty process list. Create. */
 			if (pri == HiPriority)
 			{
@@ -1406,6 +1465,8 @@ void schedule (uint32_t wptr, uint32_t pri)
 		else
 		{
 			/* Process list already exists. Update. */
+                        if (emudebug)
+                                printf("schedule: update process list\n");
 
 			/* Get workspace pointer of last process in list. */
 			if (pri == HiPriority)
@@ -1431,6 +1492,8 @@ void schedule (uint32_t wptr, uint32_t pri)
 			}
 		}
 	}
+        if (emudebug)
+                printf("\n");
 }
 
 /* Run a process, HiPriority if available. */
@@ -1474,9 +1537,8 @@ int run_process (void)
 		AReg = word (index (MostNeg, 13));
 		BReg = word (index (MostNeg, 14));
 		CReg = word (index (MostNeg, 15));
-		/*Status = word (index (MostNeg, 16));
-		EReg = word (index (MostNeg, 17));*/
-		ErrorFlag = ErrorFlagInt;
+		ErrorFlag = word (index (MostNeg, 16));
+		/*EReg = word (index (MostNeg, 17));*/
 		Interrupt = FALSE;
 	}  
 	else if (ptr == NotProcess_p)
@@ -1606,12 +1668,10 @@ void interrupt (void)
 	writeword (index (MostNeg, 13), AReg);
 	writeword (index (MostNeg, 14), BReg);
 	writeword (index (MostNeg, 15), CReg);
-	/*writeword (index (MostNeg, 16), Status);
-	writeword (index (MostNeg, 17), EReg);*/
-	ErrorFlagInt = ErrorFlag;
+	writeword (index (MostNeg, 16), ErrorFlag);
+	/*writeword (index (MostNeg, 17), EReg);*/
 
-	/* Stop the low priority process. */
-	/*deschedule ();*/
+        /* Note: that an interrupted process is not placed onto the scheduling lists. */
 
 	Interrupt = TRUE;
 }
@@ -1785,6 +1845,8 @@ uint32_t word (uint32_t ptr)
 
 	result = (val[0]) | (val[1]<<8) | (val[2]<<16) | (val[3]<<24);
 
+        if (emudebug)
+                printf ("\t MemRead: %8X => %8X\n", ptr, result);
 	return (result);
 }
 
@@ -1792,6 +1854,9 @@ uint32_t word (uint32_t ptr)
 void writeword (uint32_t ptr, uint32_t value)
 {
 	unsigned char val[4];
+
+        if (emudebug)
+                printf ("\tMemWrite: %8X => %8X\n", ptr, value);
 
 	val[0] = (value & 0x000000ff);
 	val[1] = ((value & 0x0000ff00)>>8);
@@ -1931,15 +1996,15 @@ void print_profile (void)
 		while (current->next != NULL)
 		{
 			if (current->instruction < 0)
-				fprintf(ProfileFile, "Instruction %2X, exectued %6d times.\n", (current->instruction + 0x100), current->count);
+				fprintf(ProfileFile, "Instruction %2X, executed %6d times.\n", (current->instruction + 0x100), current->count);
 			else
-				fprintf(ProfileFile, "Extended Instruction %4X, exectued %6d times.\n", current->instruction, current->count);
+				fprintf(ProfileFile, "Extended Instruction %4X, executed %6d times.\n", current->instruction, current->count);
 			old = current;
 			current = current->next;
 			free (old);
 		}
 		if (current->instruction < 0)
-			fprintf(ProfileFile, "Instruction %2X, exectued %6d times.\n", (current->instruction + 0x100), current->count);
+			fprintf(ProfileFile, "Instruction %2X, executed %6d times.\n", (current->instruction + 0x100), current->count);
 		else
 			fprintf(ProfileFile, "Extended Instruction %4X, executed %6d times.\n", current->instruction, current->count);
 		free (current);

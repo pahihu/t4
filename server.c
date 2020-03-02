@@ -210,15 +210,15 @@ void server(void)
           			length = ToServerBuffer[0] + (256 * ToServerBuffer[1]);
           			if (length<6)
           			{
-          				printf("\nBad message packet to server - too short!\n");
+          				printf("\nBad message packet to server - too short! (%d)\n", length);
           			}
                     		else if (length>510)
                     		{
-                    			printf("\nBad message packet to server - too long!\n");
+                    			printf("\nBad message packet to server - too long! (%d)\n", length);
                     		}
                     		else if ((length&0x01)!=0)
                     		{
-                    			printf("\nBad message packet to server - odd length!\n");
+                    			printf("\nBad message packet to server - odd length! (%d)\n", length);
                     		}
 				else if ((length+2)==ToServerLen)
 				{

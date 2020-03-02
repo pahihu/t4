@@ -452,7 +452,7 @@ void handler (int signal)
 		if ((ioctl (0, TCSETS, &t_init)) != 0)
 		{
 			printf("\nBad ioctl while resetting terminal.\n");
-			handler (-1);
+			/* handler (-1); */
 		}
 	}
 

@@ -67,6 +67,7 @@ int analyse     = FALSE;
 int copy        = FALSE;
 int exitonerror = true;
 int peeksize    = 8;
+int emudebug    = FALSE;
 
 extern int32_t quit;
 extern int32_t quitstatus;
@@ -113,7 +114,6 @@ int main (int argc, char **argv)
 #endif
 {
 	static char CopyFileName[256];
-	unsigned char core[16 * 1024];
 	int verbose     = FALSE;
 	int reset       = FALSE;
 	int serve       = FALSE;
@@ -142,6 +142,7 @@ int main (int argc, char **argv)
 		printf("    -sa                  Analyse transputer.\n");
 		printf("    -sb filename         Boot program \"filename\".\n");
 		printf("    -sc filename         Copy file \"filename\" to transputer.\n");
+                printf("    -sd                  Debug emulator.\n");
 		printf("    -se                  Terminate on transputer error.\n");
 		printf("    -si                  Output progress messages.\n");
 		printf("    -sr                  Reset transputer.\n");
@@ -161,9 +162,8 @@ int main (int argc, char **argv)
 		strcat(CommandLineAll, argv[arg]);
 	}
 	strcat(CommandLineAll, "\n");
-#ifdef DEBUG
-	printf("\nFull command line is : %s", CommandLineAll);
-#endif
+        if (emudebug)
+	  printf("\nFull command line is : %s", CommandLineAll);
 
 	for (arg=1;arg<argc;arg++)
 	{
@@ -214,6 +214,13 @@ int main (int argc, char **argv)
 						strcpy (CopyFileName, argv[arg]);
 						copy=TRUE;
 					  }
+					  break;
+				case 'd': if (argv[arg][3]!='\0')
+					  {
+						strcat (CommandLineMost, argv[arg]);
+						strcat (CommandLineMost, " ");
+					  }
+					  else emudebug=true;
 					  break;
 				case 'e': if (argv[arg][3]!='\0')
 					  {
@@ -281,10 +288,11 @@ int main (int argc, char **argv)
 	}
 	CommandLineMost[strlen(CommandLineMost)-1] = '\n';
 
-#ifdef DEBUG
-	printf("Most command line is : %s", CommandLineMost);
-	printf("analyse %d; copy %d; exit %d; verbose %d; reset %d; peek %d; serve %d\n", analyse,copy,exitonerror,verbose,reset,peeksize,serve);
-#endif
+        if (emudebug)
+        {
+	        printf("Most command line is : %s", CommandLineMost);
+	        printf("analyse %d; copy %d; exit %d; verbose %d; reset %d; peek %d; serve %d\n", analyse,copy,exitonerror,verbose,reset,peeksize,serve);
+        }
 
 	/* Open boot file. */
 	if ((CopyIn = fopen(CopyFileName, "rb"))==NULL)

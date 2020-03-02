@@ -299,7 +299,6 @@ uint32_t t4_mul32 (uint32_t A, uint32_t B)
 	uint32_t CHi1;
 	uint32_t CHi2;
 	uint32_t CHi3;
-	uint32_t CHi4;
 	uint32_t CLo1;
 	uint32_t CLo2;
 	uint32_t CLo3;

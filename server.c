@@ -84,6 +84,7 @@ FILE *Files[MAX_FD];
 
 extern int  copy;
 extern FILE *CopyIn;
+extern int  emudebug;
 
 extern uint32_t Link0OutWdesc;
 extern uint32_t Link0OutSource;
@@ -159,14 +160,13 @@ void server(void)
 	{
 		/* Still copying boot file to link. */
 		boottemp = (16*1024) - FromServerLen;
-#ifdef DEBUG
-		printf ("boottemp = %d",boottemp);
-#endif
+
+                if (emudebug)
+		        printf ("boottemp = %d",boottemp);
 		bootlen  = fread ((char *) &(FromServerBuffer[FromServerLen]), 1, boottemp, CopyIn);
 		FromServerLen = FromServerLen + bootlen;
-#ifdef DEBUG
-		printf ("\nLoaded %d bytes.\n", bootlen);
-#endif
+                if (emudebug)
+		        printf ("\nLoaded %d bytes.\n", bootlen);
 		if ((bootlen < boottemp))
 		{
 			/* Met end of file. */
@@ -174,9 +174,8 @@ void server(void)
 		}
 	}
 
-#ifdef DEBUG
-	printf("\nComms server: To server buffer %d; From server buffer %d.\n", ToServerLen, FromServerLen);
-#endif
+        if (emudebug)
+	        printf("\nComms server: To server buffer %d; From server buffer %d.\n", ToServerLen, FromServerLen);
 
 	if (FromServerLen==0)
 	{
@@ -195,9 +194,8 @@ void server(void)
 					printf("\nHelp - Overflowing ToServerBuffer!\n");
 			}
 
-#ifdef DEBUG
-			printf ("\nSatisifed comms request. Rescheduling process %8X.\n", Link0OutWdesc);
-#endif
+                        if (emudebug)
+			        printf ("\nSatisifed comms request. Rescheduling process %8X.\n", Link0OutWdesc);
 
 			/* Reschedule outputting process. */
 			schedule ((Link0OutWdesc & 0xfffffffe), (Link0OutWdesc & 0x00000001));
@@ -244,9 +242,8 @@ void server(void)
 		{
 			/* Move the requested amount of message. */
 			loop1 = 0;
-#ifdef DEBUG
-printf ("\nFromServerLen = %8X", FromServerLen);
-#endif
+                        if (emudebug)
+                                printf ("\nFromServerLen = %8X", FromServerLen);
 			while ((loop1 < Link0InLength) && (FromServerLen > 0))
 			{
 				writebyte (Link0InDest, FromServerBuffer[loop1]);
@@ -259,16 +256,16 @@ printf ("\nFromServerLen = %8X", FromServerLen);
 			for (loop2=0; loop2<FromServerLen; loop2++)
 				FromServerBuffer[loop2] = FromServerBuffer[loop2+loop1];
 
-#ifdef DEBUG
-printf ("\nLink0InLength = %8X, loop = %8X.\n", Link0InLength, loop1);
-#endif
+                        if (emudebug)
+                                printf ("\nLink0InLength = %8X, loop = %8X.\n", Link0InLength, loop1);
+
 			/* If message request was fully satisfied, reset channel. */
 			Link0InLength = Link0InLength - loop1;
 			if (Link0InLength == 0)
 			{
-#ifdef DEBUG
-				printf ("Comms request satisfied. Reschedule process %8X.\n", Link0InWdesc);
-#endif
+                                if (emudebug)
+				        printf ("Comms request satisfied. Reschedule process %8X.\n", Link0InWdesc);
+
 				/* Reschedule outputting process. */
 				schedule ((Link0InWdesc & 0xfffffffe), (Link0InWdesc & 0x00000001));
 
@@ -292,9 +289,9 @@ void message(void)
 	check_input();
 #endif
 
-#ifdef DEBUG
-	printf ("\nHandling server command. Buffer = %d. Tag = %2X\n", ToServerLen, tag);
-#endif
+        if (emudebug)
+	        printf ("\nHandling server command. Buffer = %d. Tag = %2X\n", ToServerLen, tag);
+
 	switch (tag)
 	{
 		case SP_OPEN:   sp_open();
@@ -681,7 +678,6 @@ void sp_puts (void)
 void sp_flush (void)
 {
 	FILE *fd;
-	int  length;
 
 	fd = ToFile(ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
 
@@ -1026,7 +1022,6 @@ void sp_getenv (void)
 	char name[256];
 	char *string;
 	int  namelen;
-	FILE *fd;
 
 	namelen = ToServerBuffer[3]+(256*ToServerBuffer[4]);
         if (ToServerLen<(namelen+5))
@@ -1045,17 +1040,17 @@ void sp_getenv (void)
 	strncpy (name, (char *) (ToServerBuffer+5), namelen);
 	name[namelen] = '\0';
 
-	if (strcmp("IBOARDSIZE",name)==0)
+#if defined(__MWERKS__)
+	string = NULL;
+#else
+	string = getenv (name);
+#endif
+	if ((0 == strcmp("IBOARDSIZE",name)) && (NULL == string))
 	{
 		strcpy (name, "#200000");
 		string = name;
 	}
-	else
-#if defined(__MWERKS__)
-		string = NULL;
-#else
-	  string = getenv (name);
-#endif
+
 	
 	if (string == NULL)
 	{
@@ -1065,9 +1060,8 @@ void sp_getenv (void)
 
 	namelen = strlen (string);
 	strncpy ((char *) &FromServerBuffer[5], string, namelen);
-#ifdef DEBUG
-printf ("%s\n", string);
-#endif
+        if (emudebug)
+                printf ("%s\n", string);
 
 	FromServerBuffer[2] = SP_OK;
 

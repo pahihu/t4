@@ -50,6 +50,9 @@
 #define TRUE  0x0001
 #define FALSE 0x0000
 
+#define ltZero(x)       ((x)&MostNeg)
+#define geZero(x)       (0==((x)&MostNeg))
+
 /* Memory space. */
 #define MEM_SIZE (2*1024*1024)
 #define MEM_WORD_MASK ((uint32_t)0x001ffffc)
@@ -110,6 +113,7 @@ extern int exitonerror;
 extern int FromServerLen;
 extern int profiling;
 extern int32_t profile[10];
+extern int emudebug;
 
 /* Link 0 registers. */
 uint32_t Link0OutWdesc = NotProcess_p;
@@ -155,11 +159,12 @@ void mainloop (void)
 	Idata = Instruction & 0x0f;
 	OReg  = OReg | Idata;
 
-#ifdef DEBUG
-	/* General debugging messages. */
-	printf ("IPtr=%8X, Instruction=%2X, OReg=%8X, AReg=%8X, BReg=%8X, CReg=%8X, WPtr=%8X. WPtr[0]=%8X\n", IPtr, Instruction, OReg, AReg, BReg, CReg,
-WPtr,word(WPtr));
-#endif
+        if (emudebug)
+        {
+	        /* General debugging messages. */
+	        printf ("IPtr=%8X, Instruction=%2X, OReg=%8X, AReg=%8X, BReg=%8X, CReg=%8X, WPtr=%8X. WPtr[0]=%8X\n", 
+                                IPtr, Instruction, OReg, AReg, BReg, CReg, WPtr,word(WPtr));
+        }
 
 #ifdef PROFILE
 	if (profiling)
@@ -336,9 +341,8 @@ WPtr,word(WPtr));
 			   IPtr = temp;
 			   break;
 		case 0x07: /* in          */
-#ifdef DEBUG
-			   printf("\nIn. Channel %8X, to memory at %8X, length %8X.\n", BReg, CReg, AReg);
-#endif
+                           if (emudebug)
+			        printf("\nIn. Channel %8X, to memory at %8X, length %8X.\n", BReg, CReg, AReg);
 			   IPtr++;
 			   if (BReg != Link0In)
 			   {
@@ -356,9 +360,8 @@ WPtr,word(WPtr));
 				{
 					/* Ready. */
 					temp2 = word (index ((temp & 0xfffffffe), -3));
-#ifdef DEBUG
-					printf ("In(2): Transferring message from %8X.\n", temp2);
-#endif
+                                        if (emudebug)
+					        printf ("In(2): Transferring message from %8X.\n", temp2);
 					for (loop=0;loop<AReg;loop++)
 					{
 						writebyte ((CReg + loop), byte (temp2 + loop));
@@ -401,9 +404,8 @@ WPtr,word(WPtr));
 			   IPtr++;
 			   break;
 		case 0x0b: /* out         */
-#ifdef DEBUG
-			   printf ("\nOut. Channel %8X, length %8X, from memory at %8X\n", BReg, AReg, CReg);
-#endif
+                           if (emudebug)
+			        printf ("\nOut. Channel %8X, length %8X, from memory at %8X\n", BReg, AReg, CReg);
 			   IPtr++;
 			   if (BReg != Link0Out)
 			   {
@@ -477,9 +479,8 @@ WPtr,word(WPtr));
 			   schedule (temp, CurPriority);
 			   break;
 		case 0x0e: /* outbyte     */
-#ifdef DEBUG
-			   printf ("\nOutbyte. Channel %8X.\n", BReg);
-#endif
+                           if (emudebug)
+			        printf ("\nOutbyte. Channel %8X.\n", BReg);
 			   IPtr++;
 			   if (BReg != Link0Out)
 			   {
@@ -538,9 +539,8 @@ WPtr,word(WPtr));
 			   }
 			   break;
 		case 0x0f: /* outword     */
-#ifdef DEBUG
-			   printf ("\nOutword. Channel %8X.\n", BReg);
-#endif
+                           if (emudebug)
+			        printf ("\nOutword. Channel %8X.\n", BReg);
 			   IPtr++;
 			   if (BReg != Link0Out)
 			   {
@@ -689,7 +689,7 @@ WPtr,word(WPtr));
 			   break;
 		case 0x1d: /* xdble       */
 			   CReg = BReg;
-			   if (AReg < 0)
+			   if (ltZero(AReg) /* AReg < 0 */)
 			   {
 				BReg = -1;
 			   }
@@ -799,39 +799,34 @@ WPtr,word(WPtr));
 			   IPtr++;
 			   break;
 		case 0x2e: /* dist        */
-#ifdef DEBUG
-			   printf ("dist(1): Time %8X\n", CReg);
-#endif
+                           if (emudebug)
+			        printf ("dist(1): Time %8X\n", CReg);
 			   if (CurPriority == HiPriority)
 				temp = HiTimer;
 			   else
 				temp = LoTimer;
 			   if ((BReg==true_t) && (((int32_t)(temp-CReg))>=0) && (word(index(WPtr,0))==NoneSelected_o))
 			   {
-#ifdef DEBUG
-				printf ("dist(2): Taking branch %8X\n", AReg);
-#endif
+                                if (emudebug)
+				        printf ("dist(2): Taking branch %8X\n", AReg);
 				writeword (index (WPtr, 0), AReg);
 				AReg = true_t;
 			   }
 			   else
 			   {
-#ifdef DEBUG
-				printf ("dist(2): Not taking this branch.\n");
-#endif
+                                if (emudebug)
+				        printf ("dist(2): Not taking this branch.\n");
 				AReg = false_t;
 			   }
 			   IPtr++;
 			   break;
 		case 0x2f: /* disc        */
-#ifdef DEBUG
-			   printf ("disc(1): Channel %8X\n", CReg);
-#endif
+                           if (emudebug)
+			        printf ("disc(1): Channel %8X\n", CReg);
           		   if (CReg == Link0In)
           		   {
-#ifdef DEBUG
-				printf ("disc(2): Link.\n");
-#endif
+                                if (emudebug)
+				        printf ("disc(2): Link.\n");
 				/* External link. */
           			if (FromServerLen > 0)
           				temp = TRUE;
@@ -840,9 +835,8 @@ WPtr,word(WPtr));
           		   }
           		   else
           		   {
-#ifdef DEBUG
-				printf ("disc(2): Channel: Channel word is %8X.\n", word(CReg));
-#endif
+                                if (emudebug)
+				        printf ("disc(2): Channel: Channel word is %8X.\n", word(CReg));
 				/* Internal channel. */
           			if (word(CReg) == NotProcess_p)
 				{
@@ -865,17 +859,15 @@ WPtr,word(WPtr));
           		   }
 			   if ((BReg==true_t) && (temp==TRUE) && (word(index(WPtr,0))==NoneSelected_o))
 			   {
-#ifdef DEBUG
-				printf ("disc(3): Taking branch %8X\n", AReg);
-#endif
+                                if (emudebug)
+				        printf ("disc(3): Taking branch %8X\n", AReg);
 				writeword (index (WPtr, 0), AReg);
 				AReg = true_t;
 			   }
 			   else
 			   {
-#ifdef DEBUG
-				printf ("disc(3): Not taking this branch.\n");
-#endif
+                                if (emudebug)
+				        printf ("disc(3): Not taking this branch.\n");
 				AReg = false_t;
 			   }
 			   IPtr++;
@@ -943,7 +935,8 @@ WPtr,word(WPtr));
 			   schedule ((AReg & 0xfffffffe), (AReg & 0x00000001));
 			   break;
 		case 0x3a: /* xword       */
-			   if ((AReg>BReg) && (BReg>=0))
+			   if ((AReg>BReg) &&
+                               (geZero(BReg)) /* BReg >= 0 */)
 			   {
 				AReg = BReg;
 			   }
@@ -1008,34 +1001,32 @@ WPtr,word(WPtr));
 			   IPtr++;
 			   break;
 		case 0x43: /* alt         */
-#ifdef DEBUG
-			   printf ("alt: (W-3)=Enabling_p\n");
-#endif
+                           if (emudebug)
+			        printf ("alt: (W-3)=Enabling_p\n");
 			   writeword (index (WPtr, -3), Enabling_p);
 			   IPtr++;
 			   break;
 		case 0x44: /* altwt       */
-#ifdef DEBUG
-			   printf ("altwt(1): (W)=NoneSelected_o\n");
-			   printf ("altwt(2): (W-3) is %8X\n", word(index(WPtr,-3)));
-#endif
+                           if (emudebug)
+                           {
+			        printf ("altwt(1): (W)=NoneSelected_o\n");
+			        printf ("altwt(2): (W-3) is %8X\n", word(index(WPtr,-3)));
+                           }
 			   writeword (index (WPtr, 0), NoneSelected_o);
 			   IPtr++;
 			   if ((word (index (WPtr, -3))) != Ready_p)
 			   {
 				/* No guards are ready, so deschedule process. */
-#ifdef DEBUG
-				printf ("altwt(3): (W-3)=Waiting_p\n");
-#endif
+                                if (emudebug)
+				        printf ("altwt(3): (W-3)=Waiting_p\n");
 				writeword (index (WPtr, -3), Waiting_p);
 				writeword (index (WPtr, -1), IPtr);
 				start_process ();
 			   }
 			   break;
 		case 0x45: /* altend      */
-#ifdef DEBUG
-			   printf ("altend: IPtr+%8X\n", word(index(WPtr,0)));
-#endif
+                           if (emudebug)
+			        printf ("altend: IPtr+%8X\n", word(index(WPtr,0)));
 			   IPtr++;
 			   IPtr = IPtr + word (index (WPtr, 0));
 			   break;
@@ -1045,30 +1036,26 @@ WPtr,word(WPtr));
 			   IPtr++;
 			   break;
 		case 0x47: /* enbt        */
-#ifdef DEBUG
-			   printf ("enbt(1): Channel %8X\n", BReg);
-#endif
+                           if (emudebug)
+			        printf ("enbt(1): Channel %8X\n", BReg);
 			   if ((AReg == true_t) && (word (index (WPtr, -4)) == TimeNotSet_p))
 			   {
-#ifdef DEBUG
-				printf ("enbt(2): Time not yet set.\n");
-#endif
+                                if (emudebug)
+				        printf ("enbt(2): Time not yet set.\n");
 				/* Set ALT time to this guard's time. */
 				writeword (index (WPtr, -4), TimeSet_p);
 				writeword (index (WPtr, -5), BReg);
 			   }
 			   else if ((AReg==true_t) && (word(index(WPtr,-4))==TimeSet_p) && ((int32_t)(BReg-word(index(WPtr,-5))) >= 0))
 			   {
-#ifdef DEBUG
-				printf ("enbt(2): Time already set earlier than or equal to this one.\n");
-#endif
+                                if (emudebug)
+				        printf ("enbt(2): Time already set earlier than or equal to this one.\n");
 				/* ALT time is before this guard's time. Ignore. */
 			   }
 			   else if ((AReg==true_t) && (word(index(WPtr,-4))==TimeSet_p))
 			   {
-#ifdef DEBUG
-				printf ("enbt(2): Time already set, but later than this one.\n");
-#endif
+                                if (emudebug)
+				        printf ("enbt(2): Time already set, but later than this one.\n");
 				/* ALT time is after this guard's time. Replace ALT time. */
 				writeword (index (WPtr, -5), BReg);
 			   }
@@ -1076,33 +1063,28 @@ WPtr,word(WPtr));
 			   IPtr++;
 			   break;
 		case 0x48: /* enbc        */
-#ifdef DEBUG
-			   printf ("enbc(1): Channel %8X\n", BReg);
-#endif
+                           if (emudebug)
+			        printf ("enbc(1): Channel %8X\n", BReg);
 			   if ((AReg == true_t) && (word(BReg) == NotProcess_p))
 			   {
-#ifdef DEBUG
-				printf ("enbc(2): Link or non-waiting channel.\n");
-#endif
+                                if (emudebug)
+				        printf ("enbc(2): Link or non-waiting channel.\n");
 				/* Link or unwaiting channel. */
 				if (BReg == Link0In)
 				{
-#ifdef DEBUG
-					printf ("enbc(3): Link.\n");
-#endif
+                                        if (emudebug)
+					        printf ("enbc(3): Link.\n");
 					/* Link. */
 					if (FromServerLen > 0)
 					{
-#ifdef DEBUG
-						printf ("enbc(4): Ready link: (W-3)=Ready_p\n");
-#endif
+                                                if (emudebug)
+						        printf ("enbc(4): Ready link: (W-3)=Ready_p\n");
 						writeword (index (WPtr, -3), Ready_p);
 					}
 					else
 					{
-#ifdef DEBUG
-						printf ("enbc(4): Empty link: Initialise link.\n");
-#endif
+                                                if (emudebug)
+						        printf ("enbc(4): Empty link: Initialise link.\n");
 						writeword (BReg, WPtr | CurPriority);
 						Link0InWdesc = WPtr | CurPriority;
 					}
@@ -1112,17 +1094,15 @@ WPtr,word(WPtr));
 			   }
 			   else if ((AReg == true_t) && (word(BReg) == (WPtr | CurPriority)))
 			   {
-#ifdef DEBUG
-				printf ("enbc(2): This process enabled the channel.\n");
-#endif
+                                if (emudebug) 
+				        printf ("enbc(2): This process enabled the channel.\n");
 				/* This process initialised the channel. Do nothing. */
 				;
 			   }
 			   else if (AReg == true_t)
 			   {
-#ifdef DEBUG
-				printf ("enbc(2): Waiting internal channel: (W-3)=Ready_p\n");
-#endif
+                                if (emudebug)
+				        printf ("enbc(2): Waiting internal channel: (W-3)=Ready_p\n");
 				/* Waiting internal channel. */
 				writeword (index (WPtr, -3), Ready_p);
 			   }
@@ -1146,7 +1126,8 @@ WPtr,word(WPtr));
 			   IPtr++;
 			   break;
 		case 0x4c: /* csngl       */
-			   if (((AReg<0)&&(BReg!=-1)) || ((AReg>=0)&&(BReg!=0)))
+			   if ((ltZero(AReg) /*(AReg< 0)*/ && (BReg!=-1)) ||
+                               (geZero(AReg) /*(AReg>=0)*/ && (BReg!=0)))
 			   {
 				ErrorFlag = true_t;
 			   }
@@ -1185,19 +1166,21 @@ WPtr,word(WPtr));
 			   IPtr++;
 			   break;
 		case 0x51: /* taltwt      */
-#ifdef DEBUG
-			   printf ("taltwt(1): (W)=NoneSelected_o\n");
-			   printf ("taltwt(2): (W-3) is %8X\n", word(index(WPtr,-3)));
-#endif
+                           if (emudebug)
+                           {
+			        printf ("taltwt(1): (W)=NoneSelected_o\n");
+			        printf ("taltwt(2): (W-3) is %8X\n", word(index(WPtr,-3)));
+                           }
 			   writeword (index (WPtr, 0), NoneSelected_o);
 			   IPtr++;
 			   if ((word (index (WPtr, -3))) != Ready_p)
 			   {
 				/* No guards are ready, so deschedule process, after putting time in timer queue. */
-#ifdef DEBUG
-				printf ("taltwt(3): (W-3)=Waiting_p\n");
-				printf ("taltwt(3): Waiting until %8X\n", word (index (WPtr, -5)));
-#endif
+                                if (emudebug)
+                                {
+				        printf ("taltwt(3): (W-3)=Waiting_p\n");
+				        printf ("taltwt(3): Waiting until %8X\n", word (index (WPtr, -5)));
+                                }
 				writeword (index (WPtr, -3), Waiting_p);
 				writeword (index (WPtr, -1), IPtr);
 
@@ -1480,9 +1463,9 @@ int run_process (void)
 		lastptr = BPtrReg1;
 	}
 
-#ifdef DEBUG
-	printf("ptr = %8X. FPtrReg0 (Hi) = %8X, FPtrReg1 (Lo) = %8X.\n", ptr, FPtrReg0, FPtrReg1);
-#endif
+        if (emudebug)
+	        printf("ptr = %8X. FPtrReg0 (Hi) = %8X, FPtrReg1 (Lo) = %8X.\n", ptr, FPtrReg0, FPtrReg1);
+
 	if ((CurPriority == LoPriority) && (Interrupt == TRUE))
 	{
 		/* Return to interrupted LoPriority process. */
@@ -1550,9 +1533,9 @@ void start_process (void)
 	/* First, handle any host link communication. */
 	while (run_process() != 0)
 	{
-#ifdef DEBUG
-		printf ("\nEmpty process list. Update comms.\n");
-#endif
+                if (emudebug)
+		        printf ("\nEmpty process list. Update comms.\n");
+
 		server ();
 
 		/* Update timers, check timer queues. */
@@ -1608,8 +1591,6 @@ void D_check (void)
 /* Can only occur due to comms or timer becoming ready. */
 void interrupt (void)
 {
-	uint32_t ptr;
-
 	/* A high priority process has become ready, interrupting a low priority one. */
 
 	/* Sanity check. */

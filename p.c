@@ -87,6 +87,7 @@ uint32_t TPtrLoc0;
 uint32_t TPtrLoc1;
 uint32_t STATUS;                /* Error and HaltOnError flags */
 uint32_t Interrupt;
+uint32_t InterruptPending;
 
 #define ErrorFlag               0x00000001
 #define HaltOnErrorFlag         0x00000002
@@ -183,6 +184,8 @@ void init_processor (void)
         TPtrLoc0 = NotProcess_p;
         TPtrLoc1 = NotProcess_p;
         Interrupt = FALSE;
+        InterruptPending = NotProcess_p;
+
         /* ErrorFlag is in an indeterminate state on power up */
 }
 
@@ -390,7 +393,7 @@ void mainloop (void)
 			   if (temp == 1)
 			   {
                                 if (emudebug)
-                                        printf ("-I-EMUDBG: endp: do successor process\n");
+                                        printf ("-I-EMUDBG: endp: Do successor process.\n");
 
 				/* Do successor process. */
 				WPtr = AReg;
@@ -400,7 +403,7 @@ void mainloop (void)
 			   {
 				/* Have not finished all parallel branches. */
                                 if (emudebug)
-                                        printf ("-I-EMUDBG: endp: waiting for parallel branches (%d)\n", temp);
+                                        printf ("-I-EMUDBG: endp: Waiting for parallel branches (%d).\n", temp);
 
 				start_process ();
 			   }
@@ -453,7 +456,7 @@ void mainloop (void)
 						writebyte ((CReg + loop), byte (temp2 + loop));
 					}
 					writeword (BReg, NotProcess_p);
-					schedule ((temp & 0xfffffffe), (temp & 0x00000001));
+					schedule ((temp & 0xfffffffe), (temp & 0x00000001)); /* OK */
 				}
 			   }
 			   else
@@ -490,14 +493,14 @@ void mainloop (void)
 			   break;
 		case 0x0b: /* out         */
                            if (emudebug)
-			        printf ("-I-EMUDBG: out(1): Channel=#%8X, length #%X, from memory at #%8X\n", BReg, AReg, CReg);
+			        printf ("-I-EMUDBG: out(1): Channel=#%8X, length #%X, from memory at #%8X.\n", BReg, AReg, CReg);
 			   IPtr++;
 			   if (BReg != Link0Out)
 			   {
 				/* Internal communication. */
 				temp = word (BReg);
                                 if (emudebug)
-                                        printf ("-I-EMUDBG: out(2): Internal communication. CHAN contents=#%8X\n", temp);
+                                        printf ("-I-EMUDBG: out(2): Internal communication. Channel word=#%8X.\n", temp);
 				if (temp == NotProcess_p)
 				{
 					/* Not ready. */
@@ -514,41 +517,47 @@ void mainloop (void)
                                         otherWPtr  = otherWdesc & 0xfffffffe;
 					altState = word (index (otherWPtr, -3));
                                         if (emudebug)
-                                                printf ("-I-EMUDBG: out(3): Memory address/ALT state=#%8X\n", temp2);
+                                                printf ("-I-EMUDBG: out(3): Memory address/ALT state=#%8X.\n", altState);
 					if ((altState & 0xfffffffc) == MostNeg)
 					{
 						/* ALT guard test - not ready to communicate. */
                                                 if (emudebug)
-                                                        printf ("-I-EMUDBG: out(4): ALT guard test - not ready to communicate. ALT state=#%8X\n", temp2);
+                                                        printf ("-I-EMUDBG: out(4): ALT guard test - not ready to communicate.\n");
+
+						writeword (BReg, Wdesc);
+						writeword (index (WPtr, -3), CReg);
+						writeword (index (WPtr, -1), IPtr);
+
 						/* The alt is waiting. Rechedule it? */
 						if (altState != Ready_p)
 						{
 							/* The alt has not already been rescheduled. */
                                                         if (emudebug)
                                                         {
-                                                                printf ("-I-EMUDBG: out(5): Reschedule ALT proc. ALT state=Ready_p\n");
-                                                                printf ("-I-EMUDBG:         Wdesc=#%8X, IPtr=#%8X\n",
+                                                                printf ("-I-EMUDBG: out(5): ALT state=Ready_p.\n");
+                                                                printf ("-I-EMUDBG: out(6): Reschedule ALT process (Wdesc=#%8X, IPtr=#%8X).\n",
                                                                                                 otherWdesc, word (index (otherWPtr, -1)));
                                                         }
 							writeword (index (otherWPtr, -3), Ready_p);
 							schedule (otherWPtr, (otherWdesc & 0x00000001));
 						}
 
-						writeword (BReg, Wdesc);
-						writeword (index (WPtr, -3), CReg);
-                                                deschedule ();
+                                                start_process ();
           				}
 					else
 					{
 						/* Ready. */
                                                 if (emudebug)
-                                                        printf ("-I-EMUDBG: out(4): ready, communicate.\n");
+                                                        printf ("-I-EMUDBG: out(4): Ready, communicate.\n");
 						for (loop = 0;loop < AReg; loop++)
 						{
 							writebyte ((temp2 + loop), byte (CReg + loop));
 						}
 						writeword (BReg, NotProcess_p);
 						schedule (otherWPtr, (otherWdesc & 0x00000001));
+
+                                                if (InterruptPending != NotProcess_p)
+                                                        start_process ();
 					}
 				}
 			   }
@@ -580,7 +589,7 @@ void mainloop (void)
 			   break;
 		case 0x0e: /* outbyte     */
                            if (emudebug)
-			        printf ("-I-EMUDBG: outbyte: Channel %8X.\n", BReg);
+			        printf ("-I-EMUDBG: outbyte: Channel=#%8X.\n", BReg);
 			   IPtr++;
 			   if (BReg != Link0Out)
 			   {
@@ -602,6 +611,11 @@ void mainloop (void)
 					{
 						/* ALT guard test - not ready to communicate. */
 
+						writeword (BReg, Wdesc);
+						writeword (WPtr, AReg);
+						writeword (index (WPtr, -3), WPtr);
+						writeword (index (WPtr, -1), IPtr);
+
 						/* The alt is waiting. Rechedule it? */
 						if (word (index ((temp & 0xfffffffe), -3)) != Ready_p)
 						{
@@ -610,10 +624,7 @@ void mainloop (void)
 							schedule ((temp & 0xfffffffe), (temp & 0x00000001));
 						}
 
-						writeword (BReg, Wdesc);
-						writeword (WPtr, AReg);
-						writeword (index (WPtr, -3), WPtr);
-                                                deschedule ();
+                                                start_process ();
           				}
 					else
 					{
@@ -621,6 +632,8 @@ void mainloop (void)
 						writebyte (temp2, AReg);
 						writeword (BReg, NotProcess_p);
 						schedule ((temp & 0xfffffffe), (temp & 0x00000001));
+                                                if (InterruptPending != NotProcess_p)
+                                                        start_process ();
 					}
 				}
 			   }
@@ -637,7 +650,7 @@ void mainloop (void)
 			   break;
 		case 0x0f: /* outword     */
                            if (emudebug)
-			        printf ("-I-EMUDBG: outword: Channel=%8X.\n", BReg);
+			        printf ("-I-EMUDBG: outword: Channel=#%8X.\n", BReg);
 			   IPtr++;
 			   if (BReg != Link0Out)
 			   {
@@ -657,6 +670,13 @@ void mainloop (void)
 					temp2 = word (index ((temp & 0xfffffffe), -3));
 					if ((temp2 & 0xfffffffc) == MostNeg)
 					{
+						/* ALT guard test - not ready to communicate. */
+
+						writeword (BReg, Wdesc);
+						writeword (WPtr, AReg);
+						writeword (index (WPtr, -3), WPtr);
+						writeword (index (WPtr, -1), IPtr);
+
 						/* The alt is waiting. Rechedule it? */
 						if (word (index ((temp & 0xfffffffe), -3)) != Ready_p)
 						{
@@ -665,12 +685,7 @@ void mainloop (void)
 							schedule ((temp & 0xfffffffe), (temp & 0x00000001));
 						}
 
-						/* ALT guard test - not ready to communicate. */
-
-						writeword (BReg, Wdesc);
-						writeword (WPtr, AReg);
-						writeword (index (WPtr, -3), WPtr);
-                                                deschedule ();;
+                                                start_process ();
           				}
 					else
 					{
@@ -678,6 +693,8 @@ void mainloop (void)
 						writeword (temp2, AReg);
 						writeword (BReg, NotProcess_p);
 						schedule ((temp & 0xfffffffe), (temp & 0x00000001));
+                                                if (InterruptPending != NotProcess_p)
+                                                        start_process ();
 					}
 				}
 			   }
@@ -890,7 +907,7 @@ void mainloop (void)
 			   break;
 		case 0x2e: /* dist        */
                            if (emudebug)
-			        printf ("-I-EMUDBG: dist(1): Time=%8X\n", CReg);
+			        printf ("-I-EMUDBG: dist(1): Time=%8X.\n", CReg);
 			   if (CurPriority == HiPriority)
 				temp = HiTimer;
 			   else
@@ -898,7 +915,7 @@ void mainloop (void)
 			   if ((BReg==true_t) && (((int32_t)(temp-CReg))>=0) && (word(index(WPtr,0))==NoneSelected_o))
 			   {
                                 if (emudebug)
-				        printf ("-I-EMUDBG: dist(2): Taking branch %8X\n", AReg);
+				        printf ("-I-EMUDBG: dist(2): Taking branch #%8X.\n", AReg);
 				writeword (index (WPtr, 0), AReg);
 				AReg = true_t;
 			   }
@@ -912,11 +929,12 @@ void mainloop (void)
 			   break;
 		case 0x2f: /* disc        */
                            if (emudebug)
-			        printf ("-I-EMUDBG: disc(1): Channel=%8X\n", CReg);
+			        printf ("-I-EMUDBG: disc(1): Channel=#%8X.\n", CReg);
           		   if (CReg == Link0In)
           		   {
                                 if (emudebug)
 				        printf ("-I-EMUDBG: disc(2): Link.\n");
+
 				/* External link. */
           			if (FromServerLen > 0)
           				temp = TRUE;
@@ -925,16 +943,23 @@ void mainloop (void)
           		   }
           		   else
           		   {
+                                otherWdesc = word (CReg);
                                 if (emudebug)
-				        printf ("-I-EMUDBG: disc(2): Channel: Channel word=%8X.\n", word (CReg));
+				        printf ("-I-EMUDBG: disc(2): Internal channel. Channel word=#%8X.\n", otherWdesc);
 				/* Internal channel. */
-          			if (word(CReg) == NotProcess_p)
+          			if (otherWdesc == NotProcess_p)
 				{
+                                        if (emudebug)
+                                                printf ("-I-EMUDBG: disc(3): Channel not ready.\n");
+
 					/* Channel not ready. */
 					temp = FALSE;
 				}
-				else if (word(CReg) == Wdesc)
+				else if (otherWdesc == Wdesc)
 				{
+                                        if (emudebug)
+                                                printf ("-I-EMUDBG: disc(3): Channel not ready, but this process enabled it.\n");
+
 					/* Channel not ready, but was initialised by this process's enbc. */
           				temp = FALSE;
 
@@ -943,14 +968,17 @@ void mainloop (void)
 				}
           			else
 				{
+                                        if (emudebug)
+                                                printf ("-I-EMUDBG: disc(3): Channel ready.\n");
+
 					/* Channel ready. */
           				temp = TRUE;
 				}
           		   }
-			   if ((BReg==true_t) && (temp==TRUE) && (word(index(WPtr,0))==NoneSelected_o))
+			   if ((BReg == true_t) && (temp == TRUE) && (word (index (WPtr, 0)) == NoneSelected_o))
 			   {
                                 if (emudebug)
-				        printf ("-I-EMUDBG: disc(3): Taking branch %8X\n", AReg);
+				        printf ("-I-EMUDBG: disc(4): Taking branch #%8X.\n", AReg);
 				writeword (index (WPtr, 0), AReg);
 				AReg = true_t;
 			   }
@@ -1023,6 +1051,8 @@ void mainloop (void)
 		case 0x39: /* runp        */
 			   IPtr++;
 			   schedule ((AReg & 0xfffffffe), (AReg & 0x00000001));
+                           if (InterruptPending != NotProcess_p)
+                                start_process ();
 			   break;
 		case 0x3a: /* xword       */
 			   if ((AReg>BReg) &&
@@ -1100,7 +1130,7 @@ void mainloop (void)
                            if (emudebug)
                            {
 			        printf ("-I-EMUDBG: altwt(1): (W  )=NoneSelected_o\n");
-			        printf ("-I-EMUDBG: altwt(2): (W-3)=%8X\n", word (index (WPtr,-3)));
+			        printf ("-I-EMUDBG: altwt(2): (W-3)=#%8X\n", word (index (WPtr,-3)));
                            }
 			   writeword (index (WPtr, 0), NoneSelected_o);
 			   IPtr++;
@@ -1115,7 +1145,7 @@ void mainloop (void)
 			   break;
 		case 0x45: /* altend      */
                            if (emudebug)
-			        printf ("-I-EMUDBG: altend: IPtr+%8X\n", word (index (WPtr,0)));
+			        printf ("-I-EMUDBG: altend: IPtr+#%8X.\n", word (index (WPtr,0)));
 			   IPtr++;
 			   IPtr = IPtr + word (index (WPtr, 0));
 			   break;
@@ -1126,7 +1156,7 @@ void mainloop (void)
 			   break;
 		case 0x47: /* enbt        */
                            if (emudebug)
-			        printf ("-I-EMUDBG: enbt(1): Channel=%8X\n", BReg);
+			        printf ("-I-EMUDBG: enbt(1): Channel=%8X.\n", BReg);
 			   if ((AReg == true_t) && (word (index (WPtr, -4)) == TimeNotSet_p))
 			   {
                                 if (emudebug)
@@ -1153,7 +1183,7 @@ void mainloop (void)
 			   break;
 		case 0x48: /* enbc        */
                            if (emudebug)
-			        printf ("-I-EMUDBG: enbc(1): Channel=%8X\n", BReg);
+			        printf ("-I-EMUDBG: enbc(1): Channel=#%8X.\n", BReg);
 			   if ((AReg == true_t) && (word(BReg) == NotProcess_p))
 			   {
                                 if (emudebug)
@@ -1258,7 +1288,7 @@ void mainloop (void)
                            if (emudebug)
                            {
 			        printf ("-I-EMUDBG: taltwt(1): (W  )=NoneSelected_o\n");
-			        printf ("-I-EMUDBG: taltwt(2): (W-3)=%8X\n", word(index(WPtr,-3)));
+			        printf ("-I-EMUDBG: taltwt(2): (W-3)=#%8X\n", word(index(WPtr,-3)));
                            }
 			   writeword (index (WPtr, 0), NoneSelected_o);
 			   IPtr++;
@@ -1268,7 +1298,7 @@ void mainloop (void)
                                 if (emudebug)
                                 {
 				        printf ("-I-EMUDBG: taltwt(3): (W-3)=Waiting_p\n");
-				        printf ("-I-EMUDBG: taltwt(3): Waiting until %8X\n", word (index (WPtr, -5)));
+				        printf ("-I-EMUDBG: taltwt(3): Waiting until #%8X.\n", word (index (WPtr, -5)));
                                 }
 				/* Put time into timer queue. */
 				temp = word (index (WPtr, -5));
@@ -1458,7 +1488,7 @@ void schedule (uint32_t wptr, uint32_t pri)
 	uint32_t temp;
 
         if (emudebug)
-                printf ("-I-EMUDBG: Schedule(1): process = #%8X pri = %s\n", wptr, pri ? "Lo" : "Hi");
+                printf ("-I-EMUDBG: Schedule(1): Process = #%8X at priority = %s\n", wptr, pri ? "Lo" : "Hi");
 
 	/* Remove from timer queue if a ready alt. */
 	temp = word (index (wptr, -3));
@@ -1470,16 +1500,9 @@ void schedule (uint32_t wptr, uint32_t pri)
 	if ((pri == HiPriority) && (CurPriority == LoPriority))
 	{
                 if (emudebug)
-                        printf ("-I-EMUDBG: Schedule(2): interrupt LoPri process\n");
+                        printf ("-I-EMUDBG: Schedule(2): Interrupt pending.\n");
 
-		interrupt ();
-
-                /* HaltOnErrorFlag is cleared before the process starts */
-                STATUS &= ~HaltOnErrorFlag;
-
-		CurPriority = HiPriority;
-		WPtr = wptr;
-		IPtr = word (index (WPtr, -1));
+                InterruptPending = wptr;
 	}
 	else
 	{
@@ -1498,7 +1521,7 @@ void schedule (uint32_t wptr, uint32_t pri)
 		if (ptr == NotProcess_p)
 		{
                         if (emudebug)
-                                printf ("-I-EMUDBG: Schedule(3): empty process list, create\n");
+                                printf ("-I-EMUDBG: Schedule(3): Empty process list, create.\n");
 
 			/* Empty process list. Create. */
 			if (pri == HiPriority)
@@ -1516,7 +1539,7 @@ void schedule (uint32_t wptr, uint32_t pri)
 		{
 			/* Process list already exists. Update. */
                         if (emudebug)
-                                printf ("-I-EMUDBG: Schedule(3): update process list\n");
+                                printf ("-I-EMUDBG: Schedule(3): Update process list.\n");
 
 			/* Get workspace pointer of last process in list. */
 			if (pri == HiPriority)
@@ -1549,6 +1572,26 @@ int run_process (void)
 {
 	uint32_t ptr;
 	uint32_t lastptr;
+
+
+        if (InterruptPending != NotProcess_p)
+        {
+                if (emudebug)
+                        printf ("-I-EMUDBG: Schedule(2): Interrupt LoPriority process.\n");
+
+		interrupt ();
+
+                /* HaltOnErrorFlag is cleared before the process starts */
+                STATUS &= ~HaltOnErrorFlag;
+
+		CurPriority = HiPriority;
+		WPtr = InterruptPending;
+		IPtr = word (index (WPtr, -1));
+
+                InterruptPending = NotProcess_p;
+
+                return 0;
+        }
 
         /* Let the current priority be unknown. */
         CurPriority = NotProcess_p;
@@ -1599,7 +1642,7 @@ int run_process (void)
 	}
 
         if (emudebug)
-	        printf ("-I-EMUDBG: RunProcess: pri = %s ptr = #%8X. FPtrReg0 (Hi) = #%8X, FPtrReg1 (Lo) = #%8X.\n", 
+	        printf ("-I-EMUDBG: RunProcess: CurPriority = %s, ptr = #%8X. FPtrReg0 (Hi) = #%8X, FPtrReg1 (Lo) = #%8X.\n", 
                         CurPriority ? "Lo" : "Hi",
                         ptr, FPtrReg0, FPtrReg1);
 
@@ -1693,19 +1736,6 @@ void start_process (void)
                 printf ("-E-EMU414: Error - stopped no Link/Process/Timer activity!\n");
                 handler (-1);
         }
-
-#if 0
-	while (run_process() != 0)
-	{
-                if (emudebug)
-		        printf ("-I-EMUDBG: StartProcess: Empty process list. Update comms.\n");
-
-		server ();
-
-		/* Update timers, check timer queues. */
-		update_time ();
-	}
-#endif
 
 	/* Reset timeslice counter. */
 	timeslice = 0;

@@ -137,19 +137,19 @@ int main (int argc, char **argv)
 	if (argc<2)
 	{
 		printf("\n");
-		printf("Usage : jserver [options] [program arguments]\n\n");
-		printf("jserver V1.1   14/7/96\n\n");
+		printf("Usage : t4 [options] [program arguments]\n\n");
+		printf("t4 V1.2   3/3/2020\n\n");
 		printf("Options:\n");
 		printf("    -sa                  Analyse transputer.\n");
 		printf("    -sb filename         Boot program \"filename\".\n");
 		printf("    -sc filename         Copy file \"filename\" to transputer.\n");
-                printf("    -sd                  Debug emulator.\n");
 		printf("    -se                  Terminate on transputer error.\n");
 		printf("    -si                  Output progress messages.\n");
-                printf("    -sm                  Debug emulator memory references.\n");
+                printf("    -sm                  Trace memory references.\n");
 		printf("    -sr                  Reset transputer.\n");
 		printf("    -sp number           Peek \"number\" kilobytes on analyse.\n");
 		printf("    -ss                  Provide host services to transputer.\n");
+                printf("    -sx                  Trace instruction execution.\n");
 		printf("\n");
 		handler (-1);
 	}
@@ -217,13 +217,6 @@ int main (int argc, char **argv)
 						copy=TRUE;
 					  }
 					  break;
-				case 'd': if (argv[arg][3]!='\0')
-					  {
-						strcat (CommandLineMost, argv[arg]);
-						strcat (CommandLineMost, " ");
-					  }
-					  else emudebug=true;
-					  break;
 				case 'e': if (argv[arg][3]!='\0')
 					  {
 						strcat (CommandLineMost, argv[arg]);
@@ -283,6 +276,13 @@ int main (int argc, char **argv)
 						strcat (CommandLineMost, " ");
 					  }
 					  else serve=TRUE;
+					  break;
+				case 'x': if (argv[arg][3]!='\0')
+					  {
+						strcat (CommandLineMost, argv[arg]);
+						strcat (CommandLineMost, " ");
+					  }
+					  else emudebug=true;
 					  break;
 				default : strcat(CommandLineMost, argv[arg]);
 					  strcat (CommandLineMost, " ");

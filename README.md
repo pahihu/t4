@@ -1,3 +1,65 @@
+Changes
+=======
+
+The simulator is ported to macOS/Linux 64bit architecture.
+The `-sx' flag enables instruction execution tracing and the `-sm' enables memory reference tracing.
+
+**NOTE**: There is the excellent [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) from Gavin Crate. Otherwise here is the code. Good luck!
+
+Example output from the instruction tracing:
+
+        -IPtr------Code-----------------------Mnemonic------------HE---AReg-----BReg-----CReg-------WPtr-----WPtr[0]-
+         80000202: 12                         LDLP    #2          --   80000148 80000077 80000077   80000230 80000048
+         80000203: 71                         LDL     #1          --   80000238 80000148 80000077   80000230 80000048
+         80000204: 41                         LDC     #1          --   80000010 80000238 80000148   80000230 80000048
+         80000205: F7                         IN                  --          1 80000010 80000238   80000230 80000048
+        -I-EMUDBG: In(1): Channel=#80000010, to memory at #80000238, length #1.
+        -I-EMUDBG: RunProcess: Empty process list. Cannot start!
+        -I-EMUDBG: StartProcess: Empty process list. Update comms.
+        -I-EMUSRV: BootTemp = 0. Loaded 0 bytes.
+        -I-EMUSRV: To server buffer 0; From server buffer 16384.
+        -I-EMUSRV: FromServerLen = #4000 Link0InLength = #1, loop = #1.
+        -I-EMUSRV: Comms request satisfied. Reschedule process #80000231.
+        -I-EMUDBG: Schedule(1): Process = #80000230 at priority = Lo
+        -I-EMUDBG: Schedule(2): Get front of process list pointer.
+        -I-EMUDBG: Schedule(3): Empty process list, create.
+        -I-EMUDBG: RunProcess: LoPriority process list non-empty.
+        -I-EMUDBG: RunProcess: CurPriority = Lo, ptr = #80000230. FPtrReg0 (Hi) = #80000000, FPtrReg1 (Lo) = #80000230.
+         80000206: 70                         LDL     #0          --          1 80000010 80000238   80000230 80000048
+         80000207: 71                         LDL     #1          --   80000048        1 80000010   80000230 80000048
+         80000208: 72                         LDL     #2          --   80000010 80000048        1   80000230 80000048
+         80000209: F7                         IN                  --         58 80000010 80000048   80000230 80000048
+        -I-EMUDBG: In(1): Channel=#80000010, to memory at #80000048, length #58.
+        -I-EMUDBG: RunProcess: Empty process list. Cannot start!
+        -I-EMUDBG: StartProcess: Empty process list. Update comms.
+        -I-EMUSRV: BootTemp = 1. Loaded 1 bytes.
+        -I-EMUSRV: To server buffer 0; From server buffer 16384.
+        -I-EMUSRV: FromServerLen = #4000 Link0InLength = #58, loop = #58.
+        -I-EMUSRV: Comms request satisfied. Reschedule process #80000231.
+        -I-EMUDBG: Schedule(1): Process = #80000230 at priority = Lo
+        -I-EMUDBG: Schedule(2): Get front of process list pointer.
+        -I-EMUDBG: Schedule(3): Empty process list, create.
+        -I-EMUDBG: RunProcess: LoPriority process list non-empty.
+        -I-EMUDBG: RunProcess: CurPriority = Lo, ptr = #80000230. FPtrReg0 (Hi) = #80000000, FPtrReg1 (Lo) = #80000230.
+         8000020A: 71                         LDL     #1          --         58 80000010 80000048   80000230 80000048
+         8000020B: 70                         LDL     #0          --   80000010       58 80000010   80000230 80000048
+         8000020C: 72                         LDL     #2          --   80000048 80000010       58   80000230 80000048
+         8000020D: F5                         ADD                 --         58 80000048 80000010   80000230 80000048
+         8000020E: 23 FF                      WCNT                --   800000A0 80000010 80000010   80000230 80000048
+         80000210: F0                         REV                 --   20000028        0 80000010   80000230 80000048
+         80000211: C0                         EQC     #0          --          0 20000028 80000010   80000230 80000048
+         80000212: C0                         EQC     #0          --          1 20000028 80000010   80000230 80000048
+         80000213: F5                         ADD                 --          0 20000028 80000010   80000230 80000048
+         80000214: 23 F4                      BCNT                --   20000028 80000010 80000010   80000230 80000048
+         80000216: D3                         STL     #3          --   800000A0 80000010 80000010   80000230 80000048
+         80000217: 70                         LDL     #0          --   80000010 80000010 80000010   80000230 80000048
+         80000218: 73                         LDL     #3          --   80000048 80000010 80000010   80000230 80000048
+         80000219: 23 FC                      GAJW                --   800000A0 80000048 80000010   80000230 80000048
+         8000021B: F0                         REV                 --   80000230 80000048 80000010   800000A0       62
+         8000021C: F6                         GCALL               --   80000048 80000230 80000010   800000A0       62
+         80000048: 21 B4                      AJW     #14         --   8000021D 80000230 80000010   800000A0       62
+
+
 General
 =======
 

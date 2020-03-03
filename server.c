@@ -254,7 +254,7 @@ int server (void)
 			}
 
                         if (emudebug)
-			        printf ("-I-EMUSRV: Satisifed comms request. Rescheduling process #%8X.\n", Link0OutWdesc);
+			        printf ("-I-EMUSRV: Satisfied comms request. Rescheduling process #%8X.\n", Link0OutWdesc);
 
 			/* Reschedule outputting process. */
 			schedule ((Link0OutWdesc & 0xfffffffe), (Link0OutWdesc & 0x00000001));
@@ -351,7 +351,7 @@ void message(void)
 #endif
 
         if (emudebug)
-	        printf ("-I-EMUSRV: Handling server command. Buffer = %d. Tag = %02X (%s)\n", ToServerLen, tag, msgtag (tag));
+	        printf ("-I-EMUSRV: Handling server command. Buffer = %d. Tag = #%02X (%s)\n", ToServerLen, tag, msgtag (tag));
 
 	switch (tag)
 	{

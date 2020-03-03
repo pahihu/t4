@@ -81,6 +81,7 @@ unsigned char ToServerBuffer[514];
 
 #define MAX_FD  256
 FILE *Files[MAX_FD];
+char *MessageTags[129];
 
 extern int  copy;
 extern FILE *CopyIn;
@@ -104,6 +105,7 @@ static
 void init_server(void)
 {
         int i;
+        char msg[16];
 
         for (i = 0; i < MAX_FD; i++)
                 Files[i] = (FILE *)NULL;
@@ -111,6 +113,47 @@ void init_server(void)
         Files[0] = stdin;
         Files[1] = stdout;
         Files[2] = stderr;
+
+        MessageTags[ SP_OPEN]    = "SP_OPEN";
+        MessageTags[ SP_CLOSE]   = "SP_CLOSE";
+        MessageTags[ SP_READ]    = "SP_READ";
+        MessageTags[ SP_WRITE]   = "SP_WRITE";
+        MessageTags[ SP_GETS]    = "SP_GETS";
+        MessageTags[ SP_PUTS]    = "SP_PUTS";
+        MessageTags[ SP_FLUSH]   = "SP_FLUSH";
+        MessageTags[ SP_SEEK]    = "SP_PEEK";
+        MessageTags[ SP_TELL]    = "SP_TELL";
+        MessageTags[ SP_EOF]     = "SP_EOF";
+        MessageTags[ SP_FERROR]  = "SP_FERROR";
+        MessageTags[ SP_REMOVE]  = "SP_REMOVE";
+        MessageTags[ SP_RENAME]  = "SP_RENAME";
+
+        MessageTags[ SP_GETKEY]  = "SP_GETKEY";
+        MessageTags[ SP_POLLKEY] = "SP_POLLKEY";
+        MessageTags[ SP_GETENV]  = "SP_GETENV";
+        MessageTags[ SP_TIME]    = "SP_TIME";
+        MessageTags[ SP_SYSTEM]  = "SP_SYSTEM";
+        MessageTags[ SP_EXIT]    = "SP_EXIT";
+
+        MessageTags[ SP_COMMANDLINE] = "SP_COMMANDLINE";
+        MessageTags[ SP_CORE]        = "SP_CORE";
+        MessageTags[ SP_VERSION]     = "SP_VERSION";
+
+        MessageTags[ SP_DOS]    = "SP_DOS";
+        MessageTags[ SP_HELIOS] = "SP_HELIOS";
+        MessageTags[ SP_VMS]    = "SP_VMS";
+        MessageTags[ SP_SUNOS]  = "SP_SUNOS";
+        MessageTags[ SP_TDS]    = "SP_TDS";
+        MessageTags[ SP_OTHER]  = "SP_OTHER";
+
+        for (i = 0; i < 129; i++)
+        {
+                if (MessageTags[i] == NULL)
+                {
+                        sprintf (msg, "MSG%X", i);
+                        MessageTags[i] = strdup (msg);
+                }
+        }
 }
 
 static
@@ -140,6 +183,17 @@ FILE* ToFile(unsigned int i)
                 handler(-1);
         }
         return Files[i];
+}
+
+static
+char *msgtag (unsigned char tag)
+{
+        static char msg[16];
+
+        if (tag < 129)
+                return MessageTags[tag];
+        sprintf (msg, "MSG%d", tag);
+        return msg;
 }
 
 
@@ -297,7 +351,7 @@ void message(void)
 #endif
 
         if (emudebug)
-	        printf ("-I-EMUSRV: Handling server command. Buffer = %d. Tag = %2X\n", ToServerLen, tag);
+	        printf ("-I-EMUSRV: Handling server command. Buffer = %d. Tag = %02X (%s)\n", ToServerLen, tag, msgtag (tag));
 
 	switch (tag)
 	{
@@ -967,6 +1021,8 @@ void sp_getkey (void)
 	ch = mygetchar();
 #endif
 
+        // fprintf (stderr, "SP_GETKEY: ch = %d (#%X).\n", ch, ch);
+
 	FromServerBuffer[0] = 6;
 	FromServerBuffer[1] = 0;
 
@@ -1275,8 +1331,13 @@ void sp_version (void)
 
 	/* Version * 10 */
 	FromServerBuffer[3] = 10;
+#ifdef LITTLE_ENDIAN
+        /* Sun 386 */
+	FromServerBuffer[4] = 7;
+#else
 	/* Sun 4 */
 	FromServerBuffer[4] = 5;
+#endif
 	/* SunOS */
 	FromServerBuffer[5] = 4;
 	/* B008 */

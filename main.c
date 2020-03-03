@@ -65,7 +65,7 @@
 
 int analyse     = FALSE;
 int copy        = FALSE;
-int exitonerror = true;
+int exitonerror = false;
 int peeksize    = 8;
 int emudebug    = FALSE;
 int emumem      = FALSE;

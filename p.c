@@ -39,6 +39,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "processor.h"
 #include "arithmetic.h"
 #include "server.h"
@@ -151,6 +152,28 @@ struct prof *profile_head = NULL;
 
 /* Signal handler. */
 void handler (int);
+
+void save_dump (void)
+{
+        FILE *fout;
+        unsigned int bytesWritten;
+
+        fout = fopen ("dump", "wb");
+        if (fout == NULL)
+        {
+                printf ("-E-EMU404: Error - failed to open dump file.\n");
+                handler (-1);
+        }
+        bytesWritten = fwrite (mem, sizeof (unsigned char), MEM_SIZE, fout);
+        if (bytesWritten != MEM_SIZE)
+        {
+                printf ("-E-EMU414: Error - failed to write dump file.\n");
+                fclose (fout);
+                unlink ("dump");
+                handler (-1);
+        }
+        fclose (fout);
+}
 
 char *mnemonic(unsigned char icode, uint32_t oreg)
 {
@@ -1466,17 +1489,23 @@ void mainloop (void)
 		if (profiling)
 			profile[0]++;
 #endif
-		if ((exitonerror || (STATUS & HaltOnErrorFlag)) && (STATUS & ErrorFlag))
+		if ((STATUS & ErrorFlag) &&
+                    (exitonerror || (STATUS & HaltOnErrorFlag)))
 			break;
-		if (quit==TRUE)
+		if (quit == TRUE)
 			break;
 	}
 
-	if ((exitonerror || (STATUS & HaltOnErrorFlag)) && (STATUS & ErrorFlag))
+	if (STATUS & ErrorFlag)
 	{
-		printf ("-I-EMU414: Transputer error flag is set.\n");
+                if (STATUS & HaltOnErrorFlag)
+                        printf ("-I-EMU414: Transputer HaltOnError flag is set.\n");
+		printf ("-I-EMU414: Transputer Error flag is set.\n");
 
 		/* Save dump file for later debugging if needed. *****/
+                printf ("-I-EMU414: Saving memory dump.\n");
+                save_dump ();
+                printf ("-I-EMU414: Done.\n");
 	}
 }
 

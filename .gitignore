@@ -1,6 +1,9 @@
 a.out
+t4
 *.[oa]
 *.exe
 *.*~
 *~
 TAGS
+*.btl
+*.log

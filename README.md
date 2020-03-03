@@ -1,8 +1,10 @@
 Changes
 =======
 
-The simulator is ported to macOS/Linux 64bit architecture.
-The `-sx' flag enables instruction execution tracing and the `-sm' enables memory reference tracing.
+* the simulator is ported to macOS/Linux 64bit architecture
+* fixed some process scheduling bugs
+* `-sx` flag enables instruction execution tracing
+* `-sm` enables memory reference tracing
 
 **NOTE**: There is the excellent [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) from Gavin Crate. Otherwise here is the code. Good luck!
 

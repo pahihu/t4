@@ -2007,6 +2007,12 @@ INLINE void update_time (void)
 uint32_t readword (uint32_t ptr)
 {
 	uint32_t result;
+#ifdef LITTLE_ENDIAN
+        uint32_t *wptr;
+
+        wptr = (uint32_t *)(mem + (MEM_WORD_MASK & ptr));
+        result = *wptr;
+#else
 	unsigned char val[4];
 
 	/* Get bytes, ensuring memory references are in range. */
@@ -2016,6 +2022,7 @@ uint32_t readword (uint32_t ptr)
 	val[3] = mem[(ptr & MEM_WORD_MASK)+3];
 
 	result = (val[0]) | (val[1]<<8) | (val[2]<<16) | (val[3]<<24);
+#endif
 
 	return (result);
 }
@@ -2034,10 +2041,13 @@ uint32_t word (uint32_t ptr)
 /* Write a word to memory. */
 void writeword (uint32_t ptr, uint32_t value)
 {
-	unsigned char val[4];
+#ifdef LITTLE_ENDIAN
+        uint32_t *wptr;
 
-        if (emumem)
-                printf ("\tWR: Mem[%8X] ! %8X\n", ptr, value);
+        wptr = (uint32_t *) (mem + (MEM_WORD_MASK & ptr));
+        *wptr = value;
+#else
+	unsigned char val[4];
 
 	val[0] = (value & 0x000000ff);
 	val[1] = ((value & 0x0000ff00)>>8);
@@ -2049,6 +2059,11 @@ void writeword (uint32_t ptr, uint32_t value)
 	mem[(ptr & MEM_WORD_MASK)+1] = val[1];
 	mem[(ptr & MEM_WORD_MASK)+2] = val[2];
 	mem[(ptr & MEM_WORD_MASK)+3] = val[3];
+#endif
+
+        if (emumem)
+                printf ("\tWR: Mem[%8X] ! %8X\n", ptr, value);
+
 }
 
 /* Read a byte from memory. */

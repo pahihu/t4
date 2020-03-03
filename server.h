@@ -86,7 +86,7 @@
 
 
 /* Function prototypes. */
-void server(void);
+int server(void);
 void message(void);
 void error_packet (void);
 void sp_open (void);

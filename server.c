@@ -124,7 +124,7 @@ unsigned int FromFile(FILE *fd)
 
         if (MAX_FD == i)
         {
-                printf("\nHelp - Files[] table overflow!\n");
+                printf ("-E-EMUSRV: Help - files[] table overflow!\n");
                 handler(-1);
         }
         Files[i] = fd;
@@ -136,16 +136,17 @@ FILE* ToFile(unsigned int i)
 {
         if (MAX_FD <= i || (FILE *)NULL == Files[i])
         {
-                printf("\nHelp - Invalid file descriptor!\n");
+                printf ("-E-EMUSRV: Help - invalid file descriptor!\n");
                 handler(-1);
         }
         return Files[i];
 }
 
 
-void server(void)
+int server (void)
 {
         static int do_init = 1;
+        int activity;
 
         if (do_init)
         {
@@ -156,26 +157,29 @@ void server(void)
 	if (profiling)
 		profile[2]++;
 #endif
+
+        activity = 0;
 	if (copy==TRUE)
 	{
 		/* Still copying boot file to link. */
 		boottemp = (16*1024) - FromServerLen;
 
                 if (emudebug)
-		        printf ("boottemp = %d",boottemp);
+		        printf ("-I-EMUSRV: BootTemp = %d.", boottemp);
 		bootlen  = fread ((char *) &(FromServerBuffer[FromServerLen]), 1, boottemp, CopyIn);
 		FromServerLen = FromServerLen + bootlen;
                 if (emudebug)
-		        printf ("\nLoaded %d bytes.\n", bootlen);
+		        printf (" Loaded %d bytes.\n", bootlen);
 		if ((bootlen < boottemp))
 		{
 			/* Met end of file. */
 			copy = FALSE;
 		}
+                activity++;
 	}
 
         if (emudebug)
-	        printf("\nComms server: To server buffer %d; From server buffer %d.\n", ToServerLen, FromServerLen);
+	        printf ("-I-EMUSRV: To server buffer %d; From server buffer %d.\n", ToServerLen, FromServerLen);
 
 	if (FromServerLen==0)
 	{
@@ -183,6 +187,7 @@ void server(void)
                 /* Check Link0OutWdesc for a valid process to see if there is a message.       */
 		if (Link0OutWdesc != NotProcess_p)
 		{
+                        activity++;
 			/* Move message to ToServerBuffer. */
 			for (loop1=0; loop1<Link0OutLength; loop1++)
 			{
@@ -191,11 +196,11 @@ void server(void)
 				Link0OutSource++;
 				/* The C compiler is broken. Hence 514. */
 				if (ToServerLen >= 514)
-					printf("\nHelp - Overflowing ToServerBuffer!\n");
+					printf ("-W-EMUSRV: Help - overflowing ToServerBuffer!\n");
 			}
 
                         if (emudebug)
-			        printf ("\nSatisifed comms request. Rescheduling process %8X.\n", Link0OutWdesc);
+			        printf ("-I-EMUSRV: Satisifed comms request. Rescheduling process #%8X.\n", Link0OutWdesc);
 
 			/* Reschedule outputting process. */
 			schedule ((Link0OutWdesc & 0xfffffffe), (Link0OutWdesc & 0x00000001));
@@ -210,15 +215,15 @@ void server(void)
           			length = ToServerBuffer[0] + (256 * ToServerBuffer[1]);
           			if (length<6)
           			{
-          				printf("\nBad message packet to server - too short! (%d)\n", length);
+          				printf ("-W-EMUSR: Bad message packet to server - too short! (%d)\n", length);
           			}
                     		else if (length>510)
                     		{
-                    			printf("\nBad message packet to server - too long! (%d)\n", length);
+                    			printf ("-W-EMUSRV: Bad message packet to server - too long! (%d)\n", length);
                     		}
                     		else if ((length&0x01)!=0)
                     		{
-                    			printf("\nBad message packet to server - odd length! (%d)\n", length);
+                    			printf ("-W-EMUSRV: Bad message packet to server - odd length! (%d)\n", length);
                     		}
 				else if ((length+2)==ToServerLen)
 				{
@@ -240,10 +245,11 @@ void server(void)
 		/* Can the next byte of outgoing message be transferred? */
 		if (Link0InWdesc != NotProcess_p)
 		{
+                        activity++;
 			/* Move the requested amount of message. */
 			loop1 = 0;
                         if (emudebug)
-                                printf ("\nFromServerLen = %8X", FromServerLen);
+                                printf ("-I-EMUSRV: FromServerLen = #%X", FromServerLen);
 			while ((loop1 < Link0InLength) && (FromServerLen > 0))
 			{
 				writebyte (Link0InDest, FromServerBuffer[loop1]);
@@ -257,14 +263,14 @@ void server(void)
 				FromServerBuffer[loop2] = FromServerBuffer[loop2+loop1];
 
                         if (emudebug)
-                                printf ("\nLink0InLength = %8X, loop = %8X.\n", Link0InLength, loop1);
+                                printf (" Link0InLength = #%X, loop = #%X.\n", Link0InLength, loop1);
 
 			/* If message request was fully satisfied, reset channel. */
 			Link0InLength = Link0InLength - loop1;
 			if (Link0InLength == 0)
 			{
                                 if (emudebug)
-				        printf ("Comms request satisfied. Reschedule process %8X.\n", Link0InWdesc);
+				        printf ("-I-EMUSRV: Comms request satisfied. Reschedule process #%8X.\n", Link0InWdesc);
 
 				/* Reschedule outputting process. */
 				schedule ((Link0InWdesc & 0xfffffffe), (Link0InWdesc & 0x00000001));
@@ -275,6 +281,7 @@ void server(void)
 			}
 		}
 	}
+        return activity;
 }
 
 void message(void)
@@ -290,7 +297,7 @@ void message(void)
 #endif
 
         if (emudebug)
-	        printf ("\nHandling server command. Buffer = %d. Tag = %2X\n", ToServerLen, tag);
+	        printf ("-I-EMUSRV: Handling server command. Buffer = %d. Tag = %2X\n", ToServerLen, tag);
 
 	switch (tag)
 	{
@@ -341,9 +348,9 @@ void message(void)
 		case SP_VERSION:     sp_version();
 				     break;
 
-		default:	printf ("\nBad server command %2X.\n", tag);
-				for (temp=0; temp<ToServerLen; temp++)
-					printf ("To server byte %2X.\n", ToServerBuffer[temp]);
+		default:	printf ("-E-EMUSRV: Error - bad server command %2X.\n", tag);
+				for (temp = 0; temp < ToServerLen; temp++)
+					printf ("-E-EMUSRV: To server byte %2X.\n", ToServerBuffer[temp]);
 				handler (-1);
 				break;
 	}
@@ -380,13 +387,13 @@ void sp_open (void)
 	namelen = ToServerBuffer[3]+(256*ToServerBuffer[4]);
         if (ToServerLen<(namelen+7))
 	{
-		printf("\nBad message packet - SP_OPEN - too short.\n");
+		printf ("-W-EMUSRV: Bad message packet - SP_OPEN - too short.\n");
 		error_packet ();
 		return;
 	}
 
 	if (namelen <= 0)
-	{printf("\nBad Packet\n");
+	{       printf ("-W-EMUSRV: Bad Packet\n");
 		error_packet ();
 		return;
 	}
@@ -424,7 +431,7 @@ void sp_open (void)
 
 	fd = fopen (filename, string);
 	if (fd == NULL)
-	{printf("\nFailed to open %s",filename);
+	{       printf ("-W-EMUSRV: Failed to open %s",filename);
 		error_packet ();
 		return;
 	}
@@ -485,7 +492,7 @@ void sp_read (void)
 
         if (ToServerLen<9)
 	{
-		printf("\nBad message packet - SP_READ - too short.\n");
+		printf ("-W-EMUSRV: Bad message packet - SP_READ - too short.\n");
 		error_packet ();
 		return;
 	}
@@ -495,7 +502,7 @@ void sp_read (void)
 	count = ToServerBuffer[7] + (ToServerBuffer[8]<<8);
 	if (count > 16384)
 	{
-		printf("\nSP_READ - Requested %d bytes - too many.\n", count);
+		printf ("-W-EMUSRV: SP_READ - Requested %d bytes - too many.\n", count);
 		handler (-1);
 	}
 
@@ -528,7 +535,7 @@ void sp_write (void)
 	datalen = ToServerBuffer[7]+(ToServerBuffer[8]<<8);
         if (ToServerLen<(datalen+9))
 	{
-		printf("\nBad message packet - SP_WRITE - too short.\n");
+		printf ("-W-EMUSRV: Bad message packet - SP_WRITE - too short.\n");
 		error_packet ();
 		return;
 	}
@@ -575,7 +582,7 @@ void sp_gets (void)
 
         if (ToServerLen<9)
 	{
-		printf("\nBad message packet - SP_GETS - too short.\n");
+		printf ("-W-EMUSRV: Bad message packet - SP_GETS - too short.\n");
 		error_packet ();
 		return;
 	}
@@ -585,7 +592,7 @@ void sp_gets (void)
 	count = ToServerBuffer[7] + (ToServerBuffer[8]<<8);
 	if (count > 16384)
 	{
-		printf("\nSP_GETS - Requested %d bytes - too many.\n", count);
+		printf ("-W-EMUSRV: SP_GETS - Requested %d bytes - too many.\n", count);
 		handler (-1);
 	}
 
@@ -630,7 +637,7 @@ void sp_puts (void)
 	datalen = ToServerBuffer[7]+(ToServerBuffer[8]<<8);
         if (ToServerLen<(datalen+9))
 	{
-		printf("\nBad message packet - SP_PUTS - too short.\n");
+		printf ("-W-EMUSRV: Bad message packet - SP_PUTS - too short.\n");
 		error_packet ();
 		return;
 	}
@@ -712,7 +719,7 @@ void sp_seek (void)
 
         if (ToServerLen<15)
 	{
-		printf("\nBad message packet - SP_SEEK - too short.\n");
+		printf ("-W-EMUSRV: Bad message packet - SP_SEEK - too short.\n");
 		error_packet ();
 		return;
 	}
@@ -840,7 +847,7 @@ void sp_remove (void)
 	namelen = ToServerBuffer[3]+(256*ToServerBuffer[4]);
         if (ToServerLen<(namelen+5))
 	{
-		printf("\nBad message packet - SP_REMOVE - too short.\n");
+		printf ("-W-EMUSRV: Bad message packet - SP_REMOVE - too short.\n");
 		error_packet ();
 		return;
 	}
@@ -885,7 +892,7 @@ void sp_rename (void)
 	oldnamelen = ToServerBuffer[3]+(256*ToServerBuffer[4]);
         if (ToServerLen<(oldnamelen+5))
 	{
-		printf("\nBad message packet - SP_RENAME - too short.\n");
+		printf ("-W-EMUSRV: Bad message packet - SP_RENAME - too short.\n");
 		error_packet ();
 		return;
 	}
@@ -902,7 +909,7 @@ void sp_rename (void)
 	newnamelen = ToServerBuffer[5+oldnamelen]+(256*ToServerBuffer[6+oldnamelen]);
         if (ToServerLen<(oldnamelen+newnamelen+7))
 	{
-		printf("\nBad message packet - SP_REMOVE - too short.\n");
+		printf ("-W-EMUSRV: Bad message packet - SP_REMOVE - too short.\n");
 		error_packet ();
 		return;
 	}
@@ -945,7 +952,7 @@ void sp_getkey (void)
 	if (t_state != GETK)
 	if ((ioctl (0, TCSETS, &t_getk)) != 0)
 	{
-		printf("\nBad ioctl - SP_GETKEY.\n");
+		printf ("-E-EMUSRV: Error - bad ioctl (SP_GETKEY).\n");
 		handler (-1);
 	}
 	t_state = GETK;
@@ -983,7 +990,7 @@ void sp_pollkey (void)
 	if (t_state != POLL)
 	if ((ioctl (0, TCSETS, &t_poll)) != 0)
 	{
-		printf("\nBad ioctl - SP_POLLKEY.\n");
+		printf ("-E-EMUSRV: Error - bad ioctl (SP_POLLKEY).\n");
 		handler (-1);
 	}
 	t_state = POLL;
@@ -1020,13 +1027,14 @@ void sp_pollkey (void)
 void sp_getenv (void)
 {
 	char name[256];
+        char temp[256];
 	char *string;
 	int  namelen;
 
 	namelen = ToServerBuffer[3]+(256*ToServerBuffer[4]);
         if (ToServerLen<(namelen+5))
 	{
-		printf("\nBad message packet - SP_GETENV - too short.\n");
+		printf ("-W-EMUSRV: Bad message packet - SP_GETENV - too short.\n");
 		error_packet ();
 		return;
 	}
@@ -1045,10 +1053,10 @@ void sp_getenv (void)
 #else
 	string = getenv (name);
 #endif
-	if ((0 == strcmp("IBOARDSIZE",name)) && (NULL == string))
+	if ((0 == strcmp("IBOARDSIZE", name)) && (NULL == string))
 	{
-		strcpy (name, "#200000");
-		string = name;
+		strcpy (temp, "#200000");
+		string = temp;
 	}
 
 	
@@ -1061,7 +1069,7 @@ void sp_getenv (void)
 	namelen = strlen (string);
 	strncpy ((char *) &FromServerBuffer[5], string, namelen);
         if (emudebug)
-                printf ("%s\n", string);
+                printf ("-I-EMUSRV: SP_GETENV - %s=%s\n", name, string);
 
 	FromServerBuffer[2] = SP_OK;
 
@@ -1087,7 +1095,7 @@ void sp_time (void)
 	utctime = time (0);
 	if (utctime == -1)
 	{
-		printf ("\nTime call failed - SP_TIME.\n");
+		printf ("-W-EMUSRV: Time call failed - SP_TIME.\n");
 		handler (-1);
 	}
 
@@ -1123,7 +1131,7 @@ void sp_system (void)
 	commandlen = ToServerBuffer[3]+(256*ToServerBuffer[4]);
         if (ToServerLen<(commandlen+7))
 	{
-		printf("\nBad message packet - SP_SYSTEM - too short.\n");
+		printf ("-W-EMUSRV: Bad message packet - SP_SYSTEM - too short.\n");
 		error_packet ();
 		return;
 	}
@@ -1180,7 +1188,7 @@ void sp_exit (void)
 	quitstatus = status;
 	quit = TRUE;
 
-	printf ("\n********** The server has exited **********\n");
+	printf ("-I-EMUSRV: ********** The server has exited **********\n");
 }
 
 

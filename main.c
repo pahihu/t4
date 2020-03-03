@@ -68,6 +68,7 @@ int copy        = FALSE;
 int exitonerror = true;
 int peeksize    = 8;
 int emudebug    = FALSE;
+int emumem      = FALSE;
 
 extern int32_t quit;
 extern int32_t quitstatus;
@@ -145,6 +146,7 @@ int main (int argc, char **argv)
                 printf("    -sd                  Debug emulator.\n");
 		printf("    -se                  Terminate on transputer error.\n");
 		printf("    -si                  Output progress messages.\n");
+                printf("    -sm                  Debug emulator memory references.\n");
 		printf("    -sr                  Reset transputer.\n");
 		printf("    -sp number           Peek \"number\" kilobytes on analyse.\n");
 		printf("    -ss                  Provide host services to transputer.\n");
@@ -235,6 +237,13 @@ int main (int argc, char **argv)
 						strcat (CommandLineMost, " ");
 					  }
 					  else verbose=TRUE;
+					  break;
+				case 'm': if (argv[arg][3]!='\0')
+					  {
+						strcat (CommandLineMost, argv[arg]);
+						strcat (CommandLineMost, " ");
+					  }
+					  else emumem=true;
 					  break;
 				case 'r': if (argv[arg][3]!='\0')
 					  {

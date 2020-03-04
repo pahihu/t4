@@ -1,0 +1,16 @@
+module kernel
+  file kernel
+  datafirst
+end
+
+module mm
+  file mm
+end
+
+module fs
+  file fs
+end
+
+module init
+  file init
+end

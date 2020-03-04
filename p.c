@@ -52,8 +52,7 @@
 #define TRUE  0x0001
 #define FALSE 0x0000
 
-#define ltZero(x)       ((x)&MostNeg)
-#define geZero(x)       (0==((x)&MostNeg))
+#define INT(x)          ((int32_t)(x))
 
 /* Memory space. */
 #define MEM_SIZE (2*1024*1024)
@@ -69,9 +68,6 @@ uint32_t AReg;
 uint32_t BReg;
 uint32_t CReg;
 uint32_t OReg;
-uint32_t temp;
-uint32_t temp2;
-uint32_t temp3;
 
 /* Other registers. */
 uint32_t ClockReg0;
@@ -86,17 +82,37 @@ uint32_t HiTimer;
 uint32_t LoTimer;
 uint32_t TPtrLoc0;
 uint32_t TPtrLoc1;
-uint32_t STATUS;                /* Error and HaltOnError flags */
+uint32_t STATUSReg;             /* Processor flags: GotoSNPBit, HaltOnError, Error */
 uint32_t Interrupt;
-uint32_t InterruptPending;
 
-#define ErrorFlag               0x00000001
-#define HaltOnErrorFlag         0x00000002
+#define GotoSNPBit              0x00000001
+#define HaltOnErrorFlag         0x00000080
+#define ErrorFlag               0x80000000
 
-#define SetError                STATUS |= ErrorFlag
-#define ClearError              STATUS &= ~ErrorFlag
-#define SetHaltOnError          STATUS |= HaltOnErrorFlag
-#define ClearHaltOnError        STATUS &= ~HaltOnErrorFlag
+#define SetGotoSNP              STATUSReg |= GotoSNPBit
+#define ClearGotoSNP            STATUSReg &= ~GotoSNPBit
+#define ReadGotoSNP             (STATUSReg & GotoSNPBit)
+
+#define SetError                STATUSReg |= ErrorFlag
+#define ClearError              STATUSReg &= ~ErrorFlag
+#define ReadError               (STATUSReg & ErrorFlag)
+
+#define SetHaltOnError          STATUSReg |= HaltOnErrorFlag
+#define ClearHaltOnError        STATUSReg &= ~HaltOnErrorFlag
+#define ReadHaltOnError         (STATUSReg & HaltOnErrorFlag)
+
+
+#define Iptr_s          (-1)
+#define Link_s          (-2)
+#define State_s         (-3)
+#define Pointer_s       (-3)
+#define TLink_s         (-4)
+#define Time_s          (-5)
+
+
+#define GetDescPriority(wdesc)  ((wdesc) & 0x00000001)
+#define GetDescWPtr(wdesc)      ((wdesc) & 0xfffffffe)
+
 
 /* Internal variables. */
 unsigned char Instruction;
@@ -207,7 +223,6 @@ void init_processor (void)
         TPtrLoc0 = NotProcess_p;
         TPtrLoc1 = NotProcess_p;
         Interrupt = FALSE;
-        InterruptPending = NotProcess_p;
 
         /* ErrorFlag is in an indeterminate state on power up */
 }
@@ -216,15 +231,16 @@ void init_processor (void)
 
 void mainloop (void)
 {
+        uint32_t temp, temp2;
+        uint32_t otherWdesc, otherWPtr, otherPtr, altState;
+
         int printIPtr, instrBytes;
         int asmLines;
 
-        uint32_t otherWdesc, otherWPtr, altState;
 
         printIPtr  = TRUE;
         instrBytes = 0;
         asmLines   = 0;
-
 
         init_processor ();
 
@@ -237,8 +253,15 @@ void mainloop (void)
 
 	while (1)
 	{
+#ifndef NDEBUG
+                temp = temp2 = 0xdeadbeef;
+                otherWdesc = otherWPtr = otherPtr = altState = 0xdeadbeef;
+#endif
 		/* Move timers on if necessary, and increment timeslice counter. */
 		update_time ();
+
+                if (ReadGotoSNP)
+                        start_process ();
 
 		/* Execute an instruction. */
 	Instruction = mem[IPtr & MEM_BYTE_MASK];
@@ -266,8 +289,8 @@ void mainloop (void)
                                 printf("   ");
                         printf("%-17s", mnemonic (Icode, OReg));
 	                printf ("   %c%c   %8X %8X %8X   %8X %8X\n", 
-                                FLAG(STATUS & HaltOnErrorFlag, 'H'),
-                                FLAG(STATUS &       ErrorFlag, 'E'),
+                                FLAG(ReadHaltOnError, 'H'),
+                                FLAG(      ReadError, 'E'),
                                 AReg, BReg, CReg, WPtr, readword (WPtr));
                         printIPtr = TRUE;
                 }
@@ -275,7 +298,7 @@ void mainloop (void)
 
 #ifdef PROFILE
 	if (profiling)
-		add_profile (((int32_t)Icode) - 0x100);
+		add_profile (INT(Icode) - 0x100);
 #endif
 
 	switch (Icode)
@@ -428,7 +451,8 @@ void mainloop (void)
                                 if (emudebug)
                                         printf ("-I-EMUDBG: endp: Waiting for parallel branches (%d).\n", temp);
 
-				start_process ();
+				/* start_process (); */
+                                SetGotoSNP;
 			   }
                            temp--;
                            writeword (index (AReg, 1), temp);
@@ -460,26 +484,27 @@ void mainloop (void)
 			   if (BReg != Link0In)
 			   {
 				/* Internal communication. */
-				temp = word (BReg);
-				if (temp == NotProcess_p)
+				otherWdesc = word (BReg);
+				if (otherWdesc == NotProcess_p)
 				{
 					/* Not ready. */
 					writeword (BReg, Wdesc);
-					writeword (index (WPtr, -3), CReg);
+					writeword (index (WPtr, Pointer_s), CReg);
                                         deschedule ();
 				}
 				else
 				{
 					/* Ready. */
-					temp2 = word (index ((temp & 0xfffffffe), -3));
+                                        otherWPtr = GetDescWPtr(otherWdesc);
+					otherPtr = word (index (otherWPtr, Pointer_s));
                                         if (emudebug)
-					        printf ("-I-EMUDBG: In(2): Transferring message from #%8X.\n", temp2);
+					        printf ("-I-EMUDBG: In(2): Transferring message from #%8X.\n", otherPtr);
 					for (loop=0;loop<AReg;loop++)
 					{
-						writebyte ((CReg + loop), byte (temp2 + loop));
+						writebyte ((CReg + loop), byte (otherPtr + loop));
 					}
 					writeword (BReg, NotProcess_p);
-					schedule ((temp & 0xfffffffe), (temp & 0x00000001)); /* OK */
+					schedule (otherWdesc);
 				}
 			   }
 			   else
@@ -498,7 +523,7 @@ void mainloop (void)
 			   IPtr++;
 			   break;
 		case 0x09: /* gt          */
-			   if (((int32_t)BReg) > ((int32_t)AReg))
+			   if (INT(BReg) > INT(AReg))
 			   {
 				AReg = true_t;
 			   }
@@ -521,24 +546,23 @@ void mainloop (void)
 			   if (BReg != Link0Out)
 			   {
 				/* Internal communication. */
-				temp = word (BReg);
+				otherWdesc = word (BReg);
                                 if (emudebug)
-                                        printf ("-I-EMUDBG: out(2): Internal communication. Channel word=#%8X.\n", temp);
-				if (temp == NotProcess_p)
+                                        printf ("-I-EMUDBG: out(2): Internal communication. Channel word=#%8X.\n", otherWdesc);
+				if (otherWdesc == NotProcess_p)
 				{
 					/* Not ready. */
                                         if (emudebug)
                                                 printf ("-I-EMUDBG: out(3): Not ready.\n");
 					writeword (BReg, Wdesc);
-					writeword (index (WPtr, -3), CReg);
+					writeword (index (WPtr, Pointer_s), CReg);
                                         deschedule ();
 				}
 				else
 				{
 					/* Ready. */
-                                        otherWdesc = temp;
-                                        otherWPtr  = otherWdesc & 0xfffffffe;
-					altState = word (index (otherWPtr, -3));
+                                        otherWPtr  = GetDescWPtr(otherWdesc);
+					altState = otherPtr = word (index (otherWPtr, State_s));
                                         if (emudebug)
                                                 printf ("-I-EMUDBG: out(3): Memory address/ALT state=#%8X.\n", altState);
 					if ((altState & 0xfffffffc) == MostNeg)
@@ -548,8 +572,8 @@ void mainloop (void)
                                                         printf ("-I-EMUDBG: out(4): ALT guard test - not ready to communicate.\n");
 
 						writeword (BReg, Wdesc);
-						writeword (index (WPtr, -3), CReg);
-						writeword (index (WPtr, -1), IPtr);
+						writeword (index (WPtr, Pointer_s), CReg);
+                                                deschedule ();
 
 						/* The alt is waiting. Rechedule it? */
 						if (altState != Ready_p)
@@ -559,13 +583,11 @@ void mainloop (void)
                                                         {
                                                                 printf ("-I-EMUDBG: out(5): ALT state=Ready_p.\n");
                                                                 printf ("-I-EMUDBG: out(6): Reschedule ALT process (Wdesc=#%8X, IPtr=#%8X).\n",
-                                                                                                otherWdesc, word (index (otherWPtr, -1)));
+                                                                                                otherWdesc, word (index (otherWPtr, Iptr_s)));
                                                         }
-							writeword (index (otherWPtr, -3), Ready_p);
-							schedule (otherWPtr, (otherWdesc & 0x00000001));
+							writeword (index (otherWPtr, State_s), Ready_p);
+							schedule (otherWdesc);
 						}
-
-                                                start_process ();
           				}
 					else
 					{
@@ -574,13 +596,10 @@ void mainloop (void)
                                                         printf ("-I-EMUDBG: out(4): Ready, communicate.\n");
 						for (loop = 0;loop < AReg; loop++)
 						{
-							writebyte ((temp2 + loop), byte (CReg + loop));
+							writebyte ((otherPtr + loop), byte (CReg + loop));
 						}
 						writeword (BReg, NotProcess_p);
-						schedule (otherWPtr, (otherWdesc & 0x00000001));
-
-                                                if (InterruptPending != NotProcess_p)
-                                                        start_process ();
+						schedule (otherWdesc);
 					}
 				}
 			   }
@@ -604,11 +623,10 @@ void mainloop (void)
 			   IPtr++;
 			   break;
 		case 0x0d: /* startp      */
-			   temp = (AReg & 0xfffffffe);
+			   temp = GetDescWPtr(AReg);
 			   IPtr++;
-			   writeword (index (temp, -1), (IPtr + BReg));
-			   schedule (temp, CurPriority);
-                           D_check();
+			   writeword (index (temp, Iptr_s), (IPtr + BReg));
+			   schedule (temp | CurPriority);
 			   break;
 		case 0x0e: /* outbyte     */
                            if (emudebug)
@@ -617,46 +635,43 @@ void mainloop (void)
 			   if (BReg != Link0Out)
 			   {
 				/* Internal communication. */
-				temp = word (BReg);
-				if (temp == NotProcess_p)
+				otherWdesc = word (BReg);
+				if (otherWdesc == NotProcess_p)
 				{
 					/* Not ready. */
 					writeword (BReg, Wdesc);
 					writeword (WPtr, AReg);
-					writeword (index (WPtr, -3), WPtr);
+					writeword (index (WPtr, Pointer_s), WPtr);
                                         deschedule ();
 				}
 				else
 				{
 					/* Ready. */
-					temp2 = word (index ((temp & 0xfffffffe), -3));
-					if ((temp2 & 0xfffffffc) == MostNeg)
+                                        otherWPtr = GetDescWPtr(otherWdesc);
+					altState = otherPtr = word (index (otherWPtr, Pointer_s));
+					if ((altState & 0xfffffffc) == MostNeg)
 					{
 						/* ALT guard test - not ready to communicate. */
 
 						writeword (BReg, Wdesc);
 						writeword (WPtr, AReg);
-						writeword (index (WPtr, -3), WPtr);
-						writeword (index (WPtr, -1), IPtr);
+						writeword (index (WPtr, Pointer_s), WPtr);
+                                                deschedule ();
 
 						/* The alt is waiting. Rechedule it? */
-						if (word (index ((temp & 0xfffffffe), -3)) != Ready_p)
+						if (altState != Ready_p)
 						{
 							/* The alt has not already been rescheduled. */
-							writeword (index ((temp & 0xfffffffe), -3), Ready_p);
-							schedule ((temp & 0xfffffffe), (temp & 0x00000001));
+							writeword (index (otherWPtr, State_s), Ready_p);
+							schedule (otherWdesc);
 						}
-
-                                                start_process ();
           				}
 					else
 					{
 						/* Ready. */
-						writebyte (temp2, AReg);
+						writebyte (otherPtr, AReg);
 						writeword (BReg, NotProcess_p);
-						schedule ((temp & 0xfffffffe), (temp & 0x00000001));
-                                                if (InterruptPending != NotProcess_p)
-                                                        start_process ();
+						schedule (otherWdesc);
 					}
 				}
 			   }
@@ -678,46 +693,43 @@ void mainloop (void)
 			   if (BReg != Link0Out)
 			   {
 				/* Internal communication. */
-				temp = word (BReg);
-				if (temp == NotProcess_p)
+				otherWdesc = word (BReg);
+				if (otherWdesc == NotProcess_p)
 				{
 					/* Not ready. */
 					writeword (BReg, Wdesc);
 					writeword (WPtr, AReg);
-					writeword (index (WPtr, -3), WPtr);
+					writeword (index (WPtr, Pointer_s), WPtr);
                                         deschedule ();
 				}
 				else
 				{
 					/* Ready. */
-					temp2 = word (index ((temp & 0xfffffffe), -3));
-					if ((temp2 & 0xfffffffc) == MostNeg)
+                                        otherWPtr = GetDescWPtr(otherWdesc);
+					altState = otherPtr =  word (index (otherWPtr, State_s));
+					if ((altState & 0xfffffffc) == MostNeg)
 					{
 						/* ALT guard test - not ready to communicate. */
 
 						writeword (BReg, Wdesc);
 						writeword (WPtr, AReg);
-						writeword (index (WPtr, -3), WPtr);
-						writeword (index (WPtr, -1), IPtr);
+						writeword (index (WPtr, Pointer_s), WPtr);
+                                                deschedule ();
 
 						/* The alt is waiting. Rechedule it? */
-						if (word (index ((temp & 0xfffffffe), -3)) != Ready_p)
+						if (altState != Ready_p)
 						{
 							/* The alt has not already been rescheduled. */
-							writeword (index ((temp & 0xfffffffe), -3), Ready_p);
-							schedule ((temp & 0xfffffffe), (temp & 0x00000001));
+							writeword (index (otherWPtr, State_s), Ready_p);
+							schedule (otherWdesc);
 						}
-
-                                                start_process ();
           				}
 					else
 					{
 						/* Ready. */
-						writeword (temp2, AReg);
+						writeword (otherPtr, AReg);
 						writeword (BReg, NotProcess_p);
-						schedule ((temp & 0xfffffffe), (temp & 0x00000001));
-                                                if (InterruptPending != NotProcess_p)
-                                                        start_process ();
+						schedule (otherWdesc);
 					}
 				}
 			   }
@@ -821,7 +833,7 @@ void mainloop (void)
 			   break;
 		case 0x1d: /* xdble       */
 			   CReg = BReg;
-			   if (ltZero(AReg) /* AReg < 0 */)
+			   if (INT(AReg) < 0)
 			   {
 				BReg = -1;
 			   }
@@ -838,10 +850,10 @@ void mainloop (void)
 			   IPtr++;
 			   break;
 		case 0x1f: /* rem         */
-			   if ((AReg==0) || ((AReg==-1)&&(BReg==0x80000000)))
+			   if ((AReg==0) || ((AReg==-1) && (BReg==0x80000000)))
 				SetError;
 			   else
-				AReg = ((int32_t)BReg) % ((int32_t)AReg);
+				AReg = INT(BReg) % INT(AReg);
 			   BReg = CReg;
 			   IPtr++;
 			   break;
@@ -880,7 +892,7 @@ void mainloop (void)
 		case 0x29: /* testerr     */
 			   CReg = BReg;
 			   BReg = AReg;
-			   if (STATUS & ErrorFlag)
+			   if (ReadError)
 			   {
 				AReg = false_t;
 			   }
@@ -901,7 +913,7 @@ void mainloop (void)
 			   IPtr++;
 			   if (CurPriority == HiPriority)
 			   {
-				if (((int32_t)(HiTimer - AReg)) > 0)
+				if (INT(HiTimer - AReg) > 0)
 					;
 				else
 				{
@@ -911,7 +923,7 @@ void mainloop (void)
 			   }
 			   else
 			   {
-				if (((int32_t)(LoTimer - AReg)) > 0)
+				if (INT(LoTimer - AReg) > 0)
 					;
 				else
 				{
@@ -924,7 +936,7 @@ void mainloop (void)
 			   if ((AReg==0) || ((AReg==-1)&&(BReg==0x80000000)))
 				SetError;
 			   else
-				AReg = ((int32_t)BReg) / ((int32_t)AReg);
+				AReg = INT(BReg) / INT(AReg);
 			   BReg = CReg;
 			   IPtr++;
 			   break;
@@ -935,7 +947,7 @@ void mainloop (void)
 				temp = HiTimer;
 			   else
 				temp = LoTimer;
-			   if ((BReg==true_t) && (((int32_t)(temp-CReg))>=0) && (word(index(WPtr,0))==NoneSelected_o))
+			   if ((BReg==true_t) && (INT(temp-CReg)>=0) && (word(index(WPtr,0))==NoneSelected_o))
 			   {
                                 if (emudebug)
 				        printf ("-I-EMUDBG: dist(2): Taking branch #%8X.\n", AReg);
@@ -1073,13 +1085,10 @@ void mainloop (void)
 			   break;
 		case 0x39: /* runp        */
 			   IPtr++;
-			   schedule ((AReg & 0xfffffffe), (AReg & 0x00000001));
-                           if (InterruptPending != NotProcess_p)
-                                start_process ();
+			   schedule (AReg);
 			   break;
 		case 0x3a: /* xword       */
-			   if ((AReg>BReg) &&
-                               (geZero(BReg)) /* BReg >= 0 */)
+			   if ((AReg>BReg) && (INT(BReg) >= 0))
 			   {
 				AReg = BReg;
 			   }
@@ -1146,23 +1155,23 @@ void mainloop (void)
 		case 0x43: /* alt         */
                            if (emudebug)
 			        printf ("-I-EMUDBG: alt: (W-3)=Enabling_p\n");
-			   writeword (index (WPtr, -3), Enabling_p);
+			   writeword (index (WPtr, State_s), Enabling_p);
 			   IPtr++;
 			   break;
 		case 0x44: /* altwt       */
                            if (emudebug)
                            {
 			        printf ("-I-EMUDBG: altwt(1): (W  )=NoneSelected_o\n");
-			        printf ("-I-EMUDBG: altwt(2): (W-3)=#%8X\n", word (index (WPtr,-3)));
+			        printf ("-I-EMUDBG: altwt(2): (W-3)=#%8X\n", word (index (WPtr, State_s)));
                            }
 			   writeword (index (WPtr, 0), NoneSelected_o);
 			   IPtr++;
-			   if ((word (index (WPtr, -3))) != Ready_p)
+			   if ((word (index (WPtr, State_s))) != Ready_p)
 			   {
 				/* No guards are ready, so deschedule process. */
                                 if (emudebug)
 				        printf ("-I-EMUDBG: altwt(3): (W-3)=Waiting_p\n");
-				writeword (index (WPtr, -3), Waiting_p);
+				writeword (index (WPtr, State_s), Waiting_p);
                                 deschedule ();
 			   }
 			   break;
@@ -1180,26 +1189,28 @@ void mainloop (void)
 		case 0x47: /* enbt        */
                            if (emudebug)
 			        printf ("-I-EMUDBG: enbt(1): Channel=%8X.\n", BReg);
-			   if ((AReg == true_t) && (word (index (WPtr, -4)) == TimeNotSet_p))
+			   if ((AReg == true_t) && (word (index (WPtr, TLink_s)) == TimeNotSet_p))
 			   {
                                 if (emudebug)
 				        printf ("-I-EMUDBG: enbt(2): Time not yet set.\n");
 				/* Set ALT time to this guard's time. */
-				writeword (index (WPtr, -4), TimeSet_p);
-				writeword (index (WPtr, -5), BReg);
+				writeword (index (WPtr, TLink_s), TimeSet_p);
+				writeword (index (WPtr, Time_s), BReg);
 			   }
-			   else if ((AReg==true_t) && (word(index(WPtr,-4))==TimeSet_p) && ((int32_t)(BReg-word(index(WPtr,-5))) >= 0))
+			   else if ((AReg == true_t) &&
+                                    (word (index (WPtr, TLink_s)) == TimeSet_p) &&
+                                    (INT(BReg - word (index (WPtr, Time_s))) >= 0))
 			   {
                                 if (emudebug)
 				        printf ("-I-EMUDBG: enbt(2): Time already set earlier than or equal to this one.\n");
 				/* ALT time is before this guard's time. Ignore. */
 			   }
-			   else if ((AReg==true_t) && (word(index(WPtr,-4))==TimeSet_p))
+			   else if ((AReg == true_t) && (word (index (WPtr, TLink_s)) == TimeSet_p))
 			   {
                                 if (emudebug)
 				        printf ("-I-EMUDBG: enbt(2): Time already set, but later than this one.\n");
 				/* ALT time is after this guard's time. Replace ALT time. */
-				writeword (index (WPtr, -5), BReg);
+				writeword (index (WPtr, Time_s), BReg);
 			   }
 			   BReg = CReg;
 			   IPtr++;
@@ -1221,7 +1232,7 @@ void mainloop (void)
 					{
                                                 if (emudebug)
 						        printf ("-I-EMUDBG: enbc(4): Ready link: (W-3)=Ready_p\n");
-						writeword (index (WPtr, -3), Ready_p);
+						writeword (index (WPtr, State_s), Ready_p);
 					}
 					else
 					{
@@ -1246,13 +1257,13 @@ void mainloop (void)
                                 if (emudebug)
 				        printf ("-I-EMUDBG: enbc(2): Waiting internal channel: (W-3)=Ready_p\n");
 				/* Waiting internal channel. */
-				writeword (index (WPtr, -3), Ready_p);
+				writeword (index (WPtr, State_s), Ready_p);
 			   }
 			   BReg = CReg;
 			   IPtr++;
 			   break;
 		case 0x49: /* enbs        */
-			   if (AReg == true_t) writeword (index (WPtr, -3), Ready_p);
+			   if (AReg == true_t) writeword (index (WPtr, State_s), Ready_p);
 			   IPtr++;
 			   break;
 		case 0x4a: /* move        */
@@ -1268,8 +1279,8 @@ void mainloop (void)
 			   IPtr++;
 			   break;
 		case 0x4c: /* csngl       */
-			   if ((ltZero(AReg) /*(AReg< 0)*/ && (BReg!=-1)) ||
-                               (geZero(AReg) /*(AReg>=0)*/ && (BReg!=0)))
+			   if (((INT(AReg)<0) && (INT(BReg)!=-1)) ||
+                               ((INT(AReg)>=0) && (BReg!=0)))
 			   {
 				SetError;
 			   }
@@ -1290,8 +1301,8 @@ void mainloop (void)
 			   IPtr++;
 			   break;
 		case 0x4e: /* talt        */
-			   writeword (index (WPtr, -3), Enabling_p);
-			   writeword (index (WPtr, -4), TimeNotSet_p);
+			   writeword (index (WPtr, State_s), Enabling_p);
+			   writeword (index (WPtr, TLink_s), TimeNotSet_p);
 			   IPtr++;
 			   break;
 		case 0x4f: /* ldiff       */
@@ -1311,23 +1322,23 @@ void mainloop (void)
                            if (emudebug)
                            {
 			        printf ("-I-EMUDBG: taltwt(1): (W  )=NoneSelected_o\n");
-			        printf ("-I-EMUDBG: taltwt(2): (W-3)=#%8X\n", word(index(WPtr,-3)));
+			        printf ("-I-EMUDBG: taltwt(2): (W-3)=#%8X\n", word (index (WPtr, State_s)));
                            }
 			   writeword (index (WPtr, 0), NoneSelected_o);
 			   IPtr++;
-			   if ((word (index (WPtr, -3))) != Ready_p)
+			   if ((word (index (WPtr, State_s))) != Ready_p)
 			   {
 				/* No guards are ready, so deschedule process, after putting time in timer queue. */
                                 if (emudebug)
                                 {
 				        printf ("-I-EMUDBG: taltwt(3): (W-3)=Waiting_p\n");
-				        printf ("-I-EMUDBG: taltwt(3): Waiting until #%8X.\n", word (index (WPtr, -5)));
+				        printf ("-I-EMUDBG: taltwt(3): Waiting until #%8X.\n", word (index (WPtr, Time_s)));
                                 }
 				/* Put time into timer queue. */
-				temp = word (index (WPtr, -5));
+				temp = word (index (WPtr, Time_s));
 				insert (temp);
 
-				writeword (index (WPtr, -3), Waiting_p);
+				writeword (index (WPtr, State_s), Waiting_p);
                                 deschedule ();
 			   }
 			   break;
@@ -1355,7 +1366,7 @@ void mainloop (void)
 			   break;
 		case 0x55: /* stoperr     */
 			   IPtr++;
-			   if (STATUS & ErrorFlag)
+			   if (ReadError)
 			   {
                                 deschedule ();
 			   }
@@ -1380,7 +1391,7 @@ void mainloop (void)
 		case 0x59: /* testhalterr */
 			   CReg = BReg;
 			   BReg = AReg;
-			   if (STATUS & HaltOnErrorFlag)
+			   if (ReadHaltOnError)
 			   {
 				AReg = true_t;
 			   }
@@ -1408,7 +1419,7 @@ void mainloop (void)
 			   IPtr++;
 			   break;
 		case 0x6c: /* postnormsn  */
-			   temp = ((int32_t)word (index (WPtr, 0))) - ((int32_t)CReg);
+			   temp = (INT(word (index (WPtr, 0))) - INT(CReg));
 			   if (temp > 0x000000ff)
 				CReg = 0x000000ff;
 			   else if (temp <= 0)
@@ -1489,17 +1500,17 @@ void mainloop (void)
 		if (profiling)
 			profile[0]++;
 #endif
-		if ((STATUS & ErrorFlag) &&
-                    (exitonerror || (STATUS & HaltOnErrorFlag)))
+		if ((ReadError) &&
+                    (exitonerror || (ReadHaltOnError)))
 			break;
 		if (quit == TRUE)
 			break;
 	}
 
-	if (STATUS & ErrorFlag)
+	if (ReadError)
 	{
-                if (STATUS & HaltOnErrorFlag)
-                        printf ("-I-EMU414: Transputer HaltOnError flag is set.\n");
+                if (ReadHaltOnError)
+                        printf ("-I-EMU414: Transputer HaltOnError flag was set.\n");
 		printf ("-I-EMU414: Transputer Error flag is set.\n");
 
 		/* Save dump file for later debugging if needed. *****/
@@ -1511,16 +1522,20 @@ void mainloop (void)
 
 
 /* Add a process to the relevant priority process queue. */
-void schedule (uint32_t wptr, uint32_t pri)
+void schedule (uint32_t wdesc)
 {
+        uint32_t wptr, pri;
 	uint32_t ptr;
 	uint32_t temp;
+
+        wptr = GetDescWPtr(wdesc);
+        pri  = GetDescPriority(wdesc);
 
         if (emudebug)
                 printf ("-I-EMUDBG: Schedule(1): Process = #%8X at priority = %s\n", wptr, pri ? "Lo" : "Hi");
 
 	/* Remove from timer queue if a ready alt. */
-	temp = word (index (wptr, -3));
+	temp = word (index (wptr, State_s));
 	if (temp == Ready_p)
 		purge_timer ();
 
@@ -1529,9 +1544,18 @@ void schedule (uint32_t wptr, uint32_t pri)
 	if ((pri == HiPriority) && (CurPriority == LoPriority))
 	{
                 if (emudebug)
-                        printf ("-I-EMUDBG: Schedule(2): Interrupt pending.\n");
+                        printf ("-I-EMUDBG: Schedule(2): Interrupt LoPriority process.\n");
 
-                InterruptPending = wptr;
+		interrupt ();
+
+                /* HaltOnErrorFlag is cleared before the process starts */
+                STATUSReg &= (ErrorFlag | HaltOnErrorFlag);
+                ClearHaltOnError;
+
+		CurPriority = HiPriority;
+		WPtr = wptr;
+		IPtr = word (index (WPtr, Iptr_s));
+
 	}
 	else
 	{
@@ -1581,7 +1605,7 @@ void schedule (uint32_t wptr, uint32_t pri)
 			}
 
 			/* Link new process onto end of list. */
-			writeword (index (ptr, -2), wptr);
+			writeword (index (ptr, Link_s), wptr);
 
 			/* Update end-of-process-list pointer. */
 			if (pri == HiPriority)
@@ -1602,25 +1626,6 @@ int run_process (void)
 	uint32_t ptr;
 	uint32_t lastptr;
 
-
-        if (InterruptPending != NotProcess_p)
-        {
-                if (emudebug)
-                        printf ("-I-EMUDBG: Schedule(2): Interrupt LoPriority process.\n");
-
-		interrupt ();
-
-                /* HaltOnErrorFlag is cleared before the process starts */
-                STATUS &= ~HaltOnErrorFlag;
-
-		CurPriority = HiPriority;
-		WPtr = InterruptPending;
-		IPtr = word (index (WPtr, -1));
-
-                InterruptPending = NotProcess_p;
-
-                return 0;
-        }
 
         /* Let the current priority be unknown. */
         CurPriority = NotProcess_p;
@@ -1678,12 +1683,12 @@ int run_process (void)
 	if ((CurPriority == LoPriority) && (Interrupt == TRUE))
 	{
 		/* Return to interrupted LoPriority process. */
-		WPtr = word (index (MostNeg, 11)) & 0xfffffffe;
+		WPtr = GetDescWPtr(word (index (MostNeg, 11)));
 		IPtr = word (index (MostNeg, 12));
 		AReg = word (index (MostNeg, 13));
 		BReg = word (index (MostNeg, 14));
 		CReg = word (index (MostNeg, 15));
-		STATUS = word (index (MostNeg, 16));
+		STATUSReg = word (index (MostNeg, 16));
 		/*EReg = word (index (MostNeg, 17));*/
 		Interrupt = FALSE;
 	}  
@@ -1700,7 +1705,7 @@ int run_process (void)
 			WPtr = ptr;
 
 			/* Get Iptr. */
-			IPtr = word (index (WPtr, -1));
+			IPtr = word (index (WPtr, Iptr_s));
 
 			/* Empty list now. */
 			if (CurPriority == HiPriority)
@@ -1718,16 +1723,16 @@ int run_process (void)
 			WPtr = ptr;
 
 			/* Get Iptr. */
-			IPtr = word (index (WPtr, -1));
+			IPtr = word (index (WPtr, Iptr_s));
 
 			/* Point at second process in chain. */
 			if (CurPriority == HiPriority)
 			{
-				FPtrReg0 = word (index (WPtr, -2));
+				FPtrReg0 = word (index (WPtr, Link_s));
 			}
 			else
 			{
-				FPtrReg1 = word (index (WPtr, -2));
+				FPtrReg1 = word (index (WPtr, Link_s));
 			}
 		}
 	}
@@ -1740,7 +1745,10 @@ void start_process (void)
 {
         int active;
 
-	/* First, handle any host link communication. */
+        /* First, clear GotoSNP flag. */
+        ClearGotoSNP;
+
+	/* Second, handle any host link communication. */
         do
         {
                 active = TRUE;
@@ -1779,20 +1787,21 @@ void start_process (void)
 void deschedule (void)
 {
         /* Write Iptr into workspace */
-	writeword (index (WPtr, -1), IPtr);
+	writeword (index (WPtr, Iptr_s), IPtr);
 
         /* Start a new process. */
-        start_process ();
+        SetGotoSNP;
+        /* start_process (); */
 }
 
 /* Save the current process and place it on the relevant priority process queue. */
 void reschedule (void)
 {
 	/* Write Iptr into worksapce. */
-	writeword (index (WPtr, -1), IPtr);
+	writeword (index (WPtr, Iptr_s), IPtr);
 
 	/* Put on process list. */
-	schedule (WPtr, CurPriority);
+	schedule (WPtr | CurPriority);
 }
 
 /* Check whether the current process needs descheduling,  */
@@ -1813,7 +1822,8 @@ void D_check (void)
 		/* reschedule really moves the process to the end of the queue! */
 		reschedule ();
 
-		start_process ();
+		/* start_process (); */
+                SetGotoSNP;
 	}
 #ifdef PROFILE
 	if (profiling)
@@ -1840,7 +1850,7 @@ void interrupt (void)
 	writeword (index (MostNeg, 13), AReg);
 	writeword (index (MostNeg, 14), BReg);
 	writeword (index (MostNeg, 15), CReg);
-	writeword (index (MostNeg, 16), STATUS);
+	writeword (index (MostNeg, 16), STATUSReg);
 	/*writeword (index (MostNeg, 17), EReg);*/
 
         /* Note: that an interrupted process is not placed onto the scheduling lists. */
@@ -1855,7 +1865,7 @@ void insert (uint32_t time)
 	uint32_t nextptr;
 	uint32_t timetemp;
 
-	writeword (index (WPtr, -5), (time + 1));
+	writeword (index (WPtr, Time_s), (time + 1));
 
 	if (CurPriority == HiPriority)
 		ptr = TPtrLoc0;
@@ -1866,7 +1876,7 @@ void insert (uint32_t time)
 	{
 		/* Empty list. */
 		/*writeword (ptr, WPtr); Strange! */
-		writeword (index (WPtr, -4), NotProcess_p);
+		writeword (index (WPtr, TLink_s), NotProcess_p);
 		if (CurPriority == HiPriority)
 			TPtrLoc0 = WPtr;
 		else
@@ -1875,11 +1885,11 @@ void insert (uint32_t time)
 	else
 	{
 		/* One or more entries. */
-		timetemp = word (index (ptr, -5));
-		if (((int32_t)(timetemp - time)) > 0)
+		timetemp = word (index (ptr, Time_s));
+		if (INT(timetemp - time) > 0)
 		{
 			/* Put in front of first entry. */
-			writeword (index (WPtr, -4), ptr);
+			writeword (index (WPtr, TLink_s), ptr);
 			if (CurPriority == HiPriority)
 				TPtrLoc0 = WPtr;
 			else
@@ -1889,20 +1899,20 @@ void insert (uint32_t time)
 		{
 			/* Somewhere after the first entry. */
 			/* Run along list until ptr is before the time and nextptr is after it. */
-			nextptr = word (index (ptr, -4));
+			nextptr = word (index (ptr, TLink_s));
 			if (nextptr != NotProcess_p)
-				timetemp = word (index (nextptr, -5));
-			while ((((int32_t)(time - timetemp)) > 0) && (nextptr != NotProcess_p))
+				timetemp = word (index (nextptr, Time_s));
+			while ((INT(time - timetemp) > 0) && (nextptr != NotProcess_p))
 			{
 				ptr = nextptr;
-				nextptr = word (index (ptr, -4));
+				nextptr = word (index (ptr, TLink_s));
 				if (nextptr != NotProcess_p)
-					timetemp = word (index (ptr, -5));
+					timetemp = word (index (ptr, Time_s));
 			}
 
 			/* Insert into list. */
-			writeword (index (ptr, -4), WPtr);
-			writeword (index (WPtr, -4), nextptr);
+			writeword (index (ptr, TLink_s), WPtr);
+			writeword (index (WPtr, TLink_s), nextptr);
 		}
 	}
 }
@@ -1918,7 +1928,7 @@ void purge_timer (void)
 	{
 		while (TPtrLoc0 == WPtr)
 		{
-			TPtrLoc0 = word (index (WPtr, -4));
+			TPtrLoc0 = word (index (WPtr, TLink_s));
 		}
 
 		ptr = TPtrLoc0;
@@ -1928,7 +1938,7 @@ void purge_timer (void)
 	{
 		while (TPtrLoc1 == WPtr)
 		{
-			TPtrLoc1 = word (index (WPtr, -4));
+			TPtrLoc1 = word (index (WPtr, TLink_s));
 		}
 
 		ptr = TPtrLoc1;
@@ -1940,13 +1950,13 @@ void purge_timer (void)
 	{
 		if (ptr == WPtr)
 		{
-			ptr = word (index (ptr, -4));
-			writeword (index (oldptr, -4), ptr);
+			ptr = word (index (ptr, TLink_s));
+			writeword (index (oldptr, TLink_s), ptr);
 		}
 		else
 		{
 			oldptr = ptr;
-			ptr = word (index (ptr, -4));
+			ptr = word (index (ptr, TLink_s));
 		}
 	}	
 }
@@ -1954,6 +1964,8 @@ void purge_timer (void)
 /* Update time, check timer queues. */
 INLINE void update_time (void)
 {
+        uint32_t temp3;
+
 	/* Move timers on if necessary, and increment timeslice counter. */
 	count1++;
 	if (count1 > 10)
@@ -1963,13 +1975,13 @@ INLINE void update_time (void)
 		count2++;
 
 		/* Check high priority timer queue. */
-		temp3 = word (index (TPtrLoc0, -5));
-		while ((((int32_t)(HiTimer - temp3)) > 0) && (TPtrLoc0 != NotProcess_p))
+		temp3 = word (index (TPtrLoc0, Time_s));
+		while ((INT(HiTimer - temp3) > 0) && (TPtrLoc0 != NotProcess_p))
 		{
-			schedule (TPtrLoc0, HiPriority);
+			schedule (TPtrLoc0 | HiPriority);
 
-			TPtrLoc0 = word (index (TPtrLoc0, -4));
-			temp3 = word (index (TPtrLoc0, -5));
+			TPtrLoc0 = word (index (TPtrLoc0, TLink_s));
+			temp3 = word (index (TPtrLoc0, Time_s));
 		}
 
 		if (count2 > 64)
@@ -1979,13 +1991,13 @@ INLINE void update_time (void)
 			count3++;
 
 			/* Check low priority timer queue. */
-			temp3 = word (index (TPtrLoc1, -5));
-			while ((((int32_t)(LoTimer - temp3)) > 0) && (TPtrLoc1 != NotProcess_p))
+			temp3 = word (index (TPtrLoc1, Time_s));
+			while ((INT(LoTimer - temp3) > 0) && (TPtrLoc1 != NotProcess_p))
 			{
-				schedule (TPtrLoc1, LoPriority);
+				schedule (TPtrLoc1 | LoPriority);
 
-				TPtrLoc1 = word (index (TPtrLoc1, -4));
-				temp3 = word (index (TPtrLoc1, -5));
+				TPtrLoc1 = word (index (TPtrLoc1, TLink_s));
+				temp3 = word (index (TPtrLoc1, Time_s));
 			}
 
 			if (count3 > 15)

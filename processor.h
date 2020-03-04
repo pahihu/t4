@@ -60,7 +60,7 @@
 void mainloop      (void);
 void execute       (void);
 void operate       (void);
-void schedule      (uint32_t, uint32_t);
+void schedule      (uint32_t);
 int  run_process   (void);
 void start_process (void);
 void deschedule    (void);

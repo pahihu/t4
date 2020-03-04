@@ -257,7 +257,7 @@ int server (void)
 			        printf ("-I-EMUSRV: Satisfied comms request. Rescheduling process #%8X.\n", Link0OutWdesc);
 
 			/* Reschedule outputting process. */
-			schedule ((Link0OutWdesc & 0xfffffffe), (Link0OutWdesc & 0x00000001));
+			schedule (Link0OutWdesc);
 
 			/* Reset Link0Out. */
 			Link0OutWdesc = NotProcess_p;
@@ -327,7 +327,7 @@ int server (void)
 				        printf ("-I-EMUSRV: Comms request satisfied. Reschedule process #%8X.\n", Link0InWdesc);
 
 				/* Reschedule outputting process. */
-				schedule ((Link0InWdesc & 0xfffffffe), (Link0InWdesc & 0x00000001));
+				schedule (Link0InWdesc);
 
 				/* Reset channel. */
 				Link0InWdesc = NotProcess_p;

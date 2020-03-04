@@ -87,13 +87,6 @@ extern int  copy;
 extern FILE *CopyIn;
 extern int  emudebug;
 
-extern uint32_t Link0OutWdesc;
-extern uint32_t Link0OutSource;
-extern uint32_t Link0OutLength;
-extern uint32_t Link0InWdesc;
-extern uint32_t Link0InDest;
-extern uint32_t Link0InLength;
-
 extern int profiling;
 extern int32_t profile[10];
 

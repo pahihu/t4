@@ -79,6 +79,31 @@ void print_profile (void);
 
 /* Processor definitions. */
 #define Link0Out 0x80000000 /****/
+#define Link1Out 0x80000004 /****/
+#define Link2Out 0x80000008 /****/
+#define Link3Out 0x8000000C /****/
 #define Link0In  0x80000010 /****/
+#define Link1In  0x80000014 /****/
+#define Link2In  0x80000018 /****/
+#define Link3In  0x8000001C /****/
 
-/*define PROFILE*/
+typedef struct _Channel_ {
+        uint32_t ProcDesc;
+        uint32_t Address;
+        uint32_t Length;
+} Channel;
+
+typedef struct _LinkIface_ {
+        Channel Out;
+        Channel In;
+} LinkIface;
+
+extern LinkIface Link[4];
+
+/* Link 0 registers. */
+#define Link0OutWdesc   Link[0].Out.ProcDesc
+#define Link0OutSource  Link[0].Out.Address
+#define Link0OutLength  Link[0].Out.Length
+#define Link0InWdesc    Link[0].In.ProcDesc
+#define Link0InDest     Link[0].In.Address
+#define Link0InLength   Link[0].In.Length

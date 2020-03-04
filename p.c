@@ -74,14 +74,17 @@ uint32_t ClockReg0;
 uint32_t ClockReg1;
 uint32_t TNextReg0;
 uint32_t TNextReg1;
+uint32_t TPtrLoc0;              /* 0x80000024 */
+uint32_t TPtrLoc1;              /* 0x80000028 */
+
+#define HiTimer                 ClockReg0
+#define LoTimer                 ClockReg1
+
 uint32_t FPtrReg0;
 uint32_t BPtrReg0;
 uint32_t FPtrReg1;
 uint32_t BPtrReg1;
-uint32_t HiTimer;
-uint32_t LoTimer;
-uint32_t TPtrLoc0;
-uint32_t TPtrLoc1;
+
 uint32_t STATUSReg;             /* Processor flags: GotoSNPBit, HaltOnError, Error */
 uint32_t Interrupt;
 
@@ -123,8 +126,8 @@ uint32_t t4_overflow;
 uint32_t t4_carry;
 uint32_t t4_normlen;
 uint32_t CurPriority;
-#define Go   1
-#define Stop 0
+#define TimersGo   1
+#define TimersStop 0
 int loop;
 int count1;
 int count2;
@@ -144,13 +147,7 @@ extern int32_t profile[10];
 extern int emudebug;
 extern int emumem;
 
-/* Link 0 registers. */
-uint32_t Link0OutWdesc;
-uint32_t Link0OutSource;
-uint32_t Link0OutLength;
-uint32_t Link0InWdesc;
-uint32_t Link0InDest;
-uint32_t Link0InLength;
+LinkIface Link[4];
 
 /* Macros. */
 #define index(a,b)		((a)+(4*(b)))
@@ -248,7 +245,7 @@ void mainloop (void)
 	count2 = 0;
 	count3 = 0;
 	timeslice = 0;
-	Timers = Stop;
+	Timers = TimersStop;
 
 
 	while (1)
@@ -264,7 +261,7 @@ void mainloop (void)
                         start_process ();
 
 		/* Execute an instruction. */
-	Instruction = mem[IPtr & MEM_BYTE_MASK];
+	Instruction = byte (IPtr);
 	Icode = Instruction & 0xf0;
 	Idata = Instruction & 0x0f;
 	OReg  = OReg | Idata;
@@ -1359,7 +1356,7 @@ void mainloop (void)
 		case 0x54: /* sttimer     */
 			   ClockReg0 = AReg;
 			   ClockReg1 = AReg;
-			   Timers = Go;
+			   Timers = TimersGo;
 			   AReg = BReg;
 			   BReg = CReg;
 			   IPtr++;
@@ -1548,8 +1545,10 @@ void schedule (uint32_t wdesc)
 
 		interrupt ();
 
-                /* HaltOnErrorFlag is cleared before the process starts */
+                /* Preserve Error and HaltOnError flags only. */
                 STATUSReg &= (ErrorFlag | HaltOnErrorFlag);
+
+                /* ??? HaltOnErrorFlag is cleared before the process starts. */
                 ClearHaltOnError;
 
 		CurPriority = HiPriority;
@@ -1786,12 +1785,13 @@ void start_process (void)
 /* Save the current process and start a new process. */
 void deschedule (void)
 {
+        if (emudebug)
+                printf ("-I-EMUDBG: Deschedule process #%8X.\n", Wdesc);
         /* Write Iptr into workspace */
 	writeword (index (WPtr, Iptr_s), IPtr);
 
-        /* Start a new process. */
+        /* Set StartNewProcess flag. */
         SetGotoSNP;
-        /* start_process (); */
 }
 
 /* Save the current process and place it on the relevant priority process queue. */
@@ -1804,7 +1804,7 @@ void reschedule (void)
 	schedule (WPtr | CurPriority);
 }
 
-/* Check whether the current process needs descheduling,  */
+/* Check whether the current process needs rescheduling,  */
 /* i.e. has executed for a timeslice period.              */
 void D_check (void)
 {
@@ -1813,16 +1813,23 @@ void D_check (void)
 	/* First, handle any host link communication. */
 	server ();
 
+        /* High priority processes never timesliced. */
+        if (CurPriority == HiPriority)
+                return;
+
 	/* Check for timeslice. */
 	if (timeslice > 1)
 	{
+                if (emudebug)
+                        printf ("-I-EMUDBG: Timeslice process #%8X.\n", Wdesc);
+
 		/* Must change process! */
 		timeslice = 0;
 
 		/* reschedule really moves the process to the end of the queue! */
 		reschedule ();
 
-		/* start_process (); */
+		/* Set StartNewProcess flag. */
                 SetGotoSNP;
 	}
 #ifdef PROFILE
@@ -1971,7 +1978,7 @@ INLINE void update_time (void)
 	if (count1 > 10)
 	{
 		count1 = 0;
-		if (Timers == Go) HiTimer++;
+		if (Timers == TimersGo) HiTimer++;
 		count2++;
 
 		/* Check high priority timer queue. */
@@ -1984,10 +1991,10 @@ INLINE void update_time (void)
 			temp3 = word (index (TPtrLoc0, Time_s));
 		}
 
-		if (count2 > 64)
+		if (count2 > 64) /* ~ 64us */
 		{
 			count2 = 0;
-			if (Timers == Go) LoTimer++;
+			if (Timers == TimersGo) LoTimer++;
 			count3++;
 
 			/* Check low priority timer queue. */
@@ -2000,7 +2007,7 @@ INLINE void update_time (void)
 				temp3 = word (index (TPtrLoc1, Time_s));
 			}
 
-			if (count3 > 15)
+			if (count3 > 15) /* ~ 960us */
 			{
 				count3 = 0;
 				timeslice++;
@@ -2082,6 +2089,7 @@ void writeword (uint32_t ptr, uint32_t value)
 unsigned char byte (uint32_t ptr)
 {
 	unsigned char result;
+
 
 	/* Get byte, ensuring memory reference is in range. */
 	result = mem[(ptr & MEM_BYTE_MASK)];

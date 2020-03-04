@@ -1,0 +1,6 @@
+The bootload files in this directory are from the excellent Transputer Emulator
+from Gavin Crate (https://sites.google.com/site/transputeremulator/).
+
+The bootload.asm and netload.occ files are from the "occam 2 toolset user manual
+- part 2 (occam libraries and appendices)" 72-TDS-267-02 March 1991
+

@@ -1,0 +1,338 @@
+-----------------------------------------------------------------------------------------
+--                                                                                     --
+-- This generic loader is written and should be compiled with out any processor type   --
+-- dependencies. That is the same object code is used even if the processor is one of  --
+-- the sixteen bit variety                                                             --
+--                                                                                     --
+-----------------------------------------------------------------------------------------
+PROC Loader ([4]CHAN OF ANY   links,
+             CHAN OF ANY      bootlink.in, bootlink.out,
+             [4]BYTE          memory,
+             VAL INT          Buffer.address,
+             INT              Next.address,
+             INT              Entry.point,
+             INT              Data.point)
+
+
+--{{{  constants
+VAL   data.field            IS  #3F :
+VAL   data.field.bits       IS  6 :
+VAL   tag.field             IS  #C0 :
+VAL   tag.field.bits        IS  2 :
+VAL   message               IS  0 :
+VAL   number                IS  1 :
+VAL   operate               IS  2 :
+VAL   prefix                IS  3 :
+VAL   tag.prefix            IS  prefix << data.field.bits :
+VAL   message.length        IS  60 :
+
+VAL   load                  IS  0 :
+VAL   pass                  IS  1 :
+VAL   open                  IS  2 :
+VAL   operate.open          IS  BYTE ((operate << data.field.bits)
+                                        \/ open) :
+VAL   close                 IS  3 :
+VAL   operate.close         IS  BYTE ((operate << data.field.bits)
+                                        \/ close) :
+VAL   address               IS  4 :
+VAL   execute               IS  5 :
+VAL   Data.position         IS  6 :
+VAL   operate.execute       IS  BYTE ((operate << data.field.bits)
+                                        \/ execute) :
+
+VAL   operate.data.position IS  BYTE ((operate << data.field.bits)
+                                        \/ Data.position) :
+VAL   code.load             IS  7 :
+VAL   operate.code.load     IS  BYTE ((operate << data.field.bits)
+                                        \/ code.load) :
+
+VAL   code.address          IS  8 :
+VAL   operate.code.address  IS  BYTE ((operate << data.field.bits)
+                                        \/ code.address) :
+
+VAL   data.load             IS  9 :
+VAL   operate.data.load     IS  BYTE ((operate << data.field.bits)
+                                        \/ data.load) :
+
+VAL   data.address          IS  10 :
+VAL   operate.data.address  IS  BYTE ((operate << data.field.bits)
+                                        \/ data.address) :
+
+VAL   Entry.position        IS  11 :
+VAL   operate.entry.position IS BYTE ((operate << data.field.bits)
+                                        \/ Entry.position) :
+
+VAL   Bootstrap.load        IS  12 :
+VAL   Operate.bootstrap.load IS BYTE ((operate << data.field.bits)
+                                        \/ Bootstrap.load) :
+
+VAL   Bootstrap.end         IS  13 :
+VAL   Operate.bootstrap.end IS  BYTE ((operate << data.field.bits)
+                                        \/ Bootstrap.end) :
+
+--{{{ VARIABLES
+BYTE  command :
+INT   Bootstrap.depth, links.to.load, last.address, output.link :
+BOOL  loading :
+SEQ
+  bootlink.in ? command
+  WHILE command <> operate.execute
+    INT    tag, operand :
+    --{{{  process command
+    SEQ
+      tag := (INT command) >> data.field.bits
+      operand := (INT command) /\ data.field
+      IF
+        --{{{  tag = message
+        tag = message
+          INT   load.address :
+          SEQ
+            IF
+              --{{{  loading
+              loading
+                SEQ
+                  load.address := last.address
+                  last.address := load.address PLUS operand
+              --{{{  passing on
+              TRUE
+                load.address := Buffer.address
+            --{{{  read in message
+            IF
+              operand <> 0
+                bootlink.in ? [memory FROM load.address FOR operand]
+              TRUE
+                SKIP
+            --{{{  send message to outputs
+            SEQ i = 0 FOR 4
+              IF
+                (links.to.load /\ (1 << i)) <> 0
+                  SEQ
+                    links[i] ! command
+                    IF
+                      operand <> 0
+                        links[i] ! [memory FROM load.address FOR operand]
+                      TRUE
+                        SKIP
+                TRUE
+                  SKIP
+        --{{{  tag = operate
+        tag = operate
+          IF
+            --{{{  operand = load
+            operand = load
+              SEQ
+                loading := TRUE
+                links.to.load := 0
+            --{{{  operand = data.load
+            operand = data.load
+              SEQ
+                loading := TRUE
+                links.to.load := 0
+            --{{{  operand = Code.load
+            operand = code.load
+              SEQ
+                loading := TRUE
+                links.to.load := 0
+            --{{{  operand = pass
+            operand = pass
+              SEQ
+                loading := FALSE
+                links.to.load := 0
+            --{{{  operand = open
+            operand = open
+              INT   depth :
+              SEQ
+                depth := 1
+                WHILE depth <> 0
+                  SEQ
+                    bootlink.in ? command
+                    IF
+                      command = operate.open
+                        depth := depth + 1
+                      command = operate.close
+                        depth := depth - 1
+                      TRUE
+                        SKIP
+                    IF
+                      depth <> 0
+                        links[output.link] ! command
+                      TRUE
+                        SKIP
+            --{{{  operand = address
+            operand = address
+              SEQ
+                --{{{  read in load offset
+                BOOL   more :
+                SEQ
+                  last.address := 0
+                  more := TRUE
+                  WHILE more
+                    SEQ
+                      last.address := last.address << data.field.bits
+                      bootlink.in ? command
+                      last.addess := last.address PLUS
+                                     ((INT command) /\ data.field)
+                      more := (INT command) >= tag.prefix
+                --{{{  entry address
+                Next.address := last.address
+            operand = Data.position
+              SEQ
+                --{{{  read in data position offset
+                BOOL   more :
+                SEQ
+                  Data.point := 0
+                  more := TRUE
+                  WHILE more
+                    SEQ
+                      Data.point := Data.point << data.field.bits
+                      bootlink.in ? command
+                      Data.point := Data.point PLUS
+                                      ((INT command) /\ data.field)
+                      more := (INT command) >= tag.prefix
+            operand = Entry.position
+              SEQ
+                --{{{  read in data position offset
+                BOOL   more :
+                SEQ
+                  Entry.point := 0
+                  more := TRUE
+                  WHILE more
+                    SEQ
+                      Entry.point := Entry.point << data.field.bits
+                      bootlink.in ? command
+                      Entry.point := Entry.point PLUS
+                                      ((INT command) /\ data.field)
+                      more := (INT command) >= tag.prefix
+                --{{{  entry address
+            operand = code.address
+              SEQ
+                --{{{  read in load address
+                BOOL   more :
+                SEQ
+                  last.address := 0
+                  more := TRUE
+                  WHILE more
+                    SEQ
+                      last.address := last.address << data.field.bits
+                      bootlink.in ? command
+                      last.address := last.address PLUS
+                                      ((INT command) /\ data.field)
+
+                      more := (INT command) >= tag.prefix
+                Entry.point := last.address
+            operand = data.address
+              SEQ
+                --{{{  read in load offset
+                BOOL   more :
+                SEQ
+                  last.address := 0
+                  more := TRUE
+                  WHILE more
+                    SEQ
+                      last.address := last.address << data.field.bits
+                      bootlink.in ? command
+                      last.address := last.address PLUS
+                                      ((INT command) /\ data.field)
+
+                      more := (INT command) >= tag.prefix
+                --{{{  entry address
+                Data.point := last.address
+            operand = Bootstrap.load
+              INT   load.address :
+              INT   Bootstrap.length :
+              BOOL  more :
+              SEQ
+                Bootstrap.depth := 0
+                Bootstrap.length := 0
+                load.address := Buffer.address
+                more := TRUE
+                bootlink.in ? command
+                more := (INT command) >= data.field
+                WHILE more
+                  SEQ
+                    Bootstrap.depth := Bootstrap.depth PLUS 1
+                    SEQ i = 0 FOR 4
+                      IF
+                        (links.to.load /\ (1 << i)) <> 0
+                          SEQ
+                            links[i] ! command
+                        TRUE
+                          SKIP
+                    bootlink.in ? command
+                    more := (INT command) >= data.field
+
+                operand := (INT command) /\ data.field
+
+                IF
+                  Bootstrap.depth > 0
+                    --{{{  read in message
+                    SEQ
+                      IF
+                        operand <> 0
+                          bootlink.in ? [memory FROM load.address FOR operand]
+                        TRUE
+                          SKIP
+                      --{{{  send message to outputs
+                      SEQ i = 0 FOR 4
+                        IF
+                          (links.to.load /\ (1 << i)) <> 0
+                            SEQ
+                              links[i] ! command
+                              IF
+                                operand <> 0
+                                  links[i] ! [memory FROM load.address
+                                                     FOR operand]
+                                TRUE
+                                  SKIP
+                          TRUE
+                            SKIP
+                  TRUE
+                    SEQ
+                      more := TRUE
+                      -- The next processor(s) are to be booted !!! --
+                      -- so build a bootable packet and output down link --
+                      WHILE more
+                        SEQ
+                          bootlink.in ? [memory FROM load.address FOR operand]
+                          load.address := load.address PLUS operand
+                          Bootstrap.length := Bootstrap.length PLUS operand
+                          bootlink.in ? command
+                          -- Stop building when a proper command
+                          -- is received. This should be when a
+                          -- 'Bootstrap.end' is received
+                          more := (INT command) < data.field
+                          operand := (INT command) /\ data.field
+
+                      SEQ i = 0 FOR 4
+                        IF
+                          (links.to.load /\ (1 << i)) <> 0
+                            SEQ
+                              links[i] ! (BYTE Bootstrap.length)
+                              IF
+                                Bootstrap.length <> 0
+                                  links[i] ! [memory FROM Buffer.address
+                                                     FOR Bootstrap.length]
+                                TRUE
+                                  SKIP
+                          TRUE
+                            SKIP
+            operand = Bootstrap.end
+              SEQ
+                SEQ ii = 0 FOR Bootstrap.depth
+                  SEQ
+                    -- Pass on all the other bootstrap ends
+                    bootlink.in ? command
+                    SEQ i = 0 FOR 4
+                      IF
+                        (links.to.load /\ (1 << i)) <> 0
+                          links[i] ! command
+                        TRUE
+                          SKIP
+                Bootstrap.depth := 0
+
+        --{{{  tag = number
+        TRUE
+          SEQ
+            output.link := operand
+            links.to.load := links.to.load \/ (1 << output.link)
+      bootlink.in ? command

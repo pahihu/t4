@@ -1,0 +1,205 @@
+Efficiency of encoding
+----------------------
+
+Memory is word accessed the processor will receive four instructions
+for every fetch. There is an extra word of pre-fetch buffer, so the
+processor rarely has to wait for an instruction fetch before proceeding.
+Since the buffer is short, there is little time penalty when a jump
+instruction causes the buffer contents to be discarded.
+
+
+Priority
+--------
+
+LoPri processes are periodically timesliced, a process is only permitted
+to run for a maximum of two time slices before it is forcibly descheduled
+at the next descheduling point.
+Timeslice period is 5120 cycles of the external 5MHz input clock (~1ms).
+HiPri process is waiting for an external channel to become ready,
+then the interrupt latency is typically 19 processor cycles (max. 58 cycles,
+assuming use of on-chip RAM).
+
+
+Timers
+------
+
+Clock0          HiPri processor clock value, incremented every  1us
+Clock1          LoPri processor clock value, incremented every 64us
+TNextReg0       Time of earliest event on HiPri timer queue
+TNextReg1       Time of earliest event on LoPri timer queue
+
+
+Ident   Interpretation
+----------------------
+b       Bit number of the highest bit set in register A. Bit 0 is the
+        least significant bit.
+n       Number of places shifted.
+w       Number of words in the message. Part words are counted as full
+        words. If the message is not word aligned the number of words
+        is increased to include the part words at either end of the
+        message.
+
+
+Function codes
+--------------
+0x      j                3      jump                            D
+1x      ldlp             1      load local ptr
+2x      pfix             1      prefix
+3x      ldnl             2      load non-local
+4x      ldc              1      load constant
+5x      ldnlp            1      load non-local ptr
+6x      nfix             1      negative prefix
+7x      ldl              2      load local
+8x      adc              1      add constant                    E
+9x      call             7      call
+Ax      cj               2      cond jump (not taken)
+                         4      (taken)
+Bx      ajw              1      adjust wksp
+Cx      eqc              2      equals constant
+Dx      stl              1      store local
+Ex      stnl             2      store non-local
+Fx      ior              -      operate
+
+
+Arithmetic/logical operation codes
+----------------------------------
+46      and              1      and
+4B      or               1      or
+33      xor              1      exclusive or
+32      not              1      bitwise not
+41      shl             n+2     shift left
+40      shr             n+2     shift right
+05      add              1      add                             E
+0C      sub              1      subtract                        E
+53      mul             40      multiply                        E
+72      fmul            38      frac multiply (no rounding)     E
+                        35      (rounding)                      E
+2C      div             39      divide                          E
+1F      rem             37      remainder                       E
+09      gt               2      greater than
+04      diff             1      difference
+52      sum              1      sum
+08      prod            b+4     product
+
+
+Long arithmetic operation codes
+-------------------------------
+16      ladd             2      long add                        E
+38      lsub             2      long subtract                   E
+37      lsum             2      long sum
+4F      ldiff            2      long diff
+31      lmul            33      long multiply
+1A      ldiv            35      long divide                     E
+36      lshl            n+3     long shift left (n>32)
+                        n-28    (n>=32)
+35      lshr            n+3     long shift right (n<32)
+                        n-28    (n>=32)
+19      norm            n+5     normalise (n<32)
+                        n-26    (n>=32)
+                         3      (n=64)
+
+
+Floating-point support operation codes
+--------------------------------------
+73      cflerr           3      chk FP error                    E
+63      unpacksn        15      unpack SF num
+6D      roundsn         12/15   round SF num
+6C      postnormsn       5/30   post-normalise correction of
+                                SF num
+71      ldinf            1      load SF Inf
+
+NB. Typical/Maximum cycles.
+
+
+General operation codes
+-----------------------
+00      rev              1      reverse
+3A      xword            4      extend to word
+56      cword            5      chk word                        E
+1D      xdble            2      extend to double
+4C      csngl            3      chk single                      E
+42      mint             1      min int
+
+
+Indexing/array operation codes
+------------------------------
+02      bsub             1      byte subs
+0A      wsub             2      words subs
+34      bcnt             2      byte cnt
+3F      wcnt             5      word cnt
+01      lb               5      load byte
+3B      sb               4      store byte
+4A      move            2w+8    move msg
+
+
+Timer handling operation codes
+------------------------------
+22      ldtimer          2      load timer
+2B      tin             30      timer input (time future)       D
+                         4      (time past)                     D
+4E      talt             4      timer alt start
+51      taltwt          15      timer alt wait (time past)      D
+                        48      timer alt wait (time future)    D
+47      enbt             8      enable timer
+2E      dist            23      disble timer
+
+
+Input/output operation codes
+----------------------------
+07      in              2w+19   input msg                       D
+0B      out             2w+19   output msg                      D
+0F      outword         23      output word                     D
+0E      outbyte         23      output byte                     D
+12      resetch          3      reset chan
+43      alt              2      alt start
+44      altwt            5      alt wait (chan rdy)             D
+                        17      alt wait (chan not rdy)         D
+45      altend           4      alt end
+49      enbs             3      enable skip
+30      diss             4      disable skip
+48      enbc             7      enable chan (rdy)
+                         5      enable chan (not rdy)
+2F      disc             8      disable chan
+
+
+Control operation codes
+-----------------------
+20      ret              5      return
+1B      ldpi             2      load ptr to instr
+3C      gajw             2      general adjust wksp
+06      gcall            4      general call
+21      lend            10      loop end (loop)                 D
+                         5      loop end (exit)                 D
+
+Scheduling operation codes
+--------------------------
+0D      startp          12      start proc                      D
+03      endp            13      end proc                        D
+39      runp            10      run proc
+15      stopp           11      stop proc
+1E      ldpri            1      load current pri
+
+
+Error handling operation codes
+------------------------------
+13      csub0           2       chk subs from 0                 E
+4D      ccnt1           3       chk count from 1                E
+29      testerr         2       test error false and clr (no error)
+                        3       (error)
+10      seterr          1       set error                       E
+55      stoperr         2       stop on error (no error)        D
+57      clrhalterr      1       clear halt-on-error
+58      sethalterr      1       set halt-on-error
+59      testhalterr     2       test halt-on-error
+
+
+Processor initialisation operation codes
+----------------------------------------
+2A      testpranal      2       test processor analysing
+3E      saveh           4       save HiPriQ regs
+3D      savel           4       save LoPriQ regs
+18      sthf            1       store HiPri front ptr
+50      sthb            1       store HiPri back ptr
+1C      stlf            1       store LoPri front ptr
+17      stlb            1       store LoPri back ptr
+54      sttimer         1       store timer

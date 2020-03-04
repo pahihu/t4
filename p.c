@@ -86,7 +86,10 @@ uint32_t FPtrReg1;
 uint32_t BPtrReg1;
 
 uint32_t STATUSReg;             /* Processor flags: GotoSNPBit, HaltOnError, Error */
-uint32_t Interrupt;
+
+uint32_t IntEnabled;            /* Interrupt enabled */
+#define ClearInterrupt          writeword (0x8000002C, MostNeg + 1)
+#define ReadInterrupt           (word (0x8000002C) != (MostNeg + 1))
 
 #define GotoSNPBit              0x00000001
 #define HaltOnErrorFlag         0x00000080
@@ -219,9 +222,11 @@ void init_processor (void)
         CReg = Link0In;
         TPtrLoc0 = NotProcess_p;
         TPtrLoc1 = NotProcess_p;
-        Interrupt = FALSE;
+        ClearInterrupt;
 
-        /* ErrorFlag is in an indeterminate state on power up */
+        IntEnabled = TRUE;
+
+        /* ErrorFlag is in an indeterminate state on power up. */
 }
 
 #define FLAG(x,y)       ((x) ? (y) : '-')
@@ -230,6 +235,7 @@ void mainloop (void)
 {
         uint32_t temp, temp2;
         uint32_t otherWdesc, otherWPtr, otherPtr, altState;
+        uint32_t PrevError;
 
         int printIPtr, instrBytes;
         int asmLines;
@@ -254,6 +260,9 @@ void mainloop (void)
                 temp = temp2 = 0xdeadbeef;
                 otherWdesc = otherWPtr = otherPtr = altState = 0xdeadbeef;
 #endif
+                /* Save current value of Error flag */
+                PrevError = ReadError;
+
 		/* Move timers on if necessary, and increment timeslice counter. */
 		update_time ();
 
@@ -265,6 +274,9 @@ void mainloop (void)
 	Icode = Instruction & 0xf0;
 	Idata = Instruction & 0x0f;
 	OReg  = OReg | Idata;
+
+        /* Disable interrupts on PFIX or NFIX. */
+        IntEnabled = IntEnabled && ((Icode != 0x20) && (Icode != 0x60));
 
         if (emudebug)
         {
@@ -303,7 +315,7 @@ void mainloop (void)
 		case 0x00: /* j     */
 			   IPtr++;
 			   IPtr = IPtr + OReg;
-			   OReg = 0;
+			   OReg = 0; IntEnabled = TRUE;
 			   D_check();
 			   break;
 		case 0x10: /* ldlp  */
@@ -311,7 +323,7 @@ void mainloop (void)
 			   BReg = AReg;
 			   AReg = index (WPtr, OReg);
 			   IPtr++;
-			   OReg = 0;
+			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0x20: /* pfix  */
 			   OReg = OReg << 4;
@@ -320,19 +332,19 @@ void mainloop (void)
 		case 0x30: /* ldnl  */
 			   AReg = word (index (AReg, OReg));
 			   IPtr++;
-			   OReg = 0;
+			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0x40: /* ldc   */
 			   CReg = BReg;
 			   BReg = AReg;
 			   AReg = OReg;
 			   IPtr++;
-			   OReg = 0;
+			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0x50: /* ldnlp */
 			   AReg = index (AReg, OReg);
 			   IPtr++;
-			   OReg = 0;
+			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0x60: /* nfix  */
 			   OReg = (~OReg) << 4;
@@ -343,7 +355,7 @@ void mainloop (void)
 			   BReg = AReg;
 			   AReg = word (index (WPtr, OReg));
 			   IPtr++;
-			   OReg = 0;
+			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0x80: /* adc   */
 			   t4_overflow = FALSE;
@@ -352,7 +364,7 @@ void mainloop (void)
 			   if (t4_overflow == TRUE)
 				SetError;
 			   IPtr++;
-			   OReg = 0;
+			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0x90: /* call  */
 			   IPtr++;
@@ -363,7 +375,7 @@ void mainloop (void)
 			   WPtr = index ( WPtr, -4);
 			   AReg = IPtr;
 			   IPtr = IPtr + OReg;
-			   OReg = 0;
+			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0xa0: /* cj    */
 			   IPtr++;
@@ -376,12 +388,12 @@ void mainloop (void)
 			   {
 				IPtr = IPtr + OReg;
 			   }
-			   OReg = 0;
+			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0xb0: /* ajw   */
 			   WPtr = index (WPtr, OReg);
 			   IPtr++;
-			   OReg = 0;
+			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0xc0: /* eqc   */
 			   if (AReg == OReg)
@@ -393,22 +405,25 @@ void mainloop (void)
 				AReg = false_t;
 			   }
 			   IPtr++;
-			   OReg = 0;
+			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0xd0: /* stl   */
 			   writeword (index (WPtr, OReg), AReg);
 			   AReg = BReg;
 			   BReg = CReg;
 			   IPtr++;
-			   OReg = 0;
+			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0xe0: /* stnl  */
 			   writeword (index (AReg, OReg), BReg);
 			   AReg = CReg;
 			   IPtr++;
-			   OReg = 0;
+			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0xf0: /* opr   */
+
+        IntEnabled = TRUE;
+
 #ifdef PROFILE
 	if (profiling)
 		add_profile (OReg);
@@ -1497,7 +1512,8 @@ void mainloop (void)
 		if (profiling)
 			profile[0]++;
 #endif
-		if ((ReadError) &&
+                /* Halt when Error flag was set */
+		if ((!PrevError && ReadError) &&
                     (exitonerror || (ReadHaltOnError)))
 			break;
 		if (quit == TRUE)
@@ -1638,7 +1654,7 @@ int run_process (void)
 		CurPriority = HiPriority;
 	}
         /* Is there an interrupted LoPriority process? */
-        else if (Interrupt == TRUE)
+        else if (ReadInterrupt)
         {
                 if (emudebug)
 	                printf ("-I-EMUDBG: RunProcess: There is an interrupted LoPriority process.\n");
@@ -1679,7 +1695,7 @@ int run_process (void)
                         CurPriority ? "Lo" : "Hi",
                         ptr, FPtrReg0, FPtrReg1);
 
-	if ((CurPriority == LoPriority) && (Interrupt == TRUE))
+	if ((CurPriority == LoPriority) && (ReadInterrupt))
 	{
 		/* Return to interrupted LoPriority process. */
 		WPtr = GetDescWPtr(word (index (MostNeg, 11)));
@@ -1689,7 +1705,7 @@ int run_process (void)
 		CReg = word (index (MostNeg, 15));
 		STATUSReg = word (index (MostNeg, 16));
 		/*EReg = word (index (MostNeg, 17));*/
-		Interrupt = FALSE;
+                ClearInterrupt;
 	}  
 	else if (ptr == NotProcess_p)
 	{
@@ -1743,6 +1759,9 @@ int run_process (void)
 void start_process (void)
 {
         int active;
+
+        if ((CurPriority == LoPriority) && !IntEnabled)
+                return;
 
         /* First, clear GotoSNP flag. */
         ClearGotoSNP;
@@ -1811,7 +1830,8 @@ void D_check (void)
 	/* Called only from 'j' and 'lend'. */
 
 	/* First, handle any host link communication. */
-	server ();
+        if ((CurPriority == HiPriority) || IntEnabled)
+	        server ();
 
         /* High priority processes never timesliced. */
         if (CurPriority == HiPriority)
@@ -1845,7 +1865,7 @@ void interrupt (void)
 	/* A high priority process has become ready, interrupting a low priority one. */
 
 	/* Sanity check. */
-	if (Interrupt == TRUE)
+	if (ReadInterrupt)
 	{
 		printf ("-E-EMU414: Error - multiple interrupts of low priority processes!\n");
 		handler (-1);
@@ -1861,8 +1881,6 @@ void interrupt (void)
 	/*writeword (index (MostNeg, 17), EReg);*/
 
         /* Note: that an interrupted process is not placed onto the scheduling lists. */
-
-	Interrupt = TRUE;
 }
 
 /* Insert a process into the relevant priority process queue. */
@@ -1982,14 +2000,17 @@ INLINE void update_time (void)
 		count2++;
 
 		/* Check high priority timer queue. */
-		temp3 = word (index (TPtrLoc0, Time_s));
-		while ((INT(HiTimer - temp3) > 0) && (TPtrLoc0 != NotProcess_p))
-		{
-			schedule (TPtrLoc0 | HiPriority);
+                if ((CurPriority == HiPriority) || IntEnabled)
+                {
+		        temp3 = word (index (TPtrLoc0, Time_s));
+		        while ((INT(HiTimer - temp3) > 0) && (TPtrLoc0 != NotProcess_p))
+		        {
+			        schedule (TPtrLoc0 | HiPriority);
 
-			TPtrLoc0 = word (index (TPtrLoc0, TLink_s));
-			temp3 = word (index (TPtrLoc0, Time_s));
-		}
+			        TPtrLoc0 = word (index (TPtrLoc0, TLink_s));
+			        temp3 = word (index (TPtrLoc0, Time_s));
+		        }
+                }
 
 		if (count2 > 64) /* ~ 64us */
 		{
@@ -1998,14 +2019,17 @@ INLINE void update_time (void)
 			count3++;
 
 			/* Check low priority timer queue. */
-			temp3 = word (index (TPtrLoc1, Time_s));
-			while ((INT(LoTimer - temp3) > 0) && (TPtrLoc1 != NotProcess_p))
-			{
-				schedule (TPtrLoc1 | LoPriority);
+                        if ((CurPriority == HiPriority) || IntEnabled)
+                        {
+			        temp3 = word (index (TPtrLoc1, Time_s));
+			        while ((INT(LoTimer - temp3) > 0) && (TPtrLoc1 != NotProcess_p))
+			        {
+				        schedule (TPtrLoc1 | LoPriority);
 
-				TPtrLoc1 = word (index (TPtrLoc1, TLink_s));
-				temp3 = word (index (TPtrLoc1, Time_s));
-			}
+				        TPtrLoc1 = word (index (TPtrLoc1, TLink_s));
+				        temp3 = word (index (TPtrLoc1, Time_s));
+			        }
+                        }
 
 			if (count3 > 15) /* ~ 960us */
 			{

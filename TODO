@@ -8,13 +8,18 @@ BOOT FILES
         200303AP  entering 100, does NOT stop when reached 100
         200304AP  works, as expected
 
--sqrroots.btl
++sqrroots.btl
         200303AP  entering 12.0, reports Error flag is set
                   disabling the Error checking prints the number 12.00000,
                   then reports NaN as its root
         200304AP  invalid instruction MOVE2DINIT
+        200304AP  works as expected: no Interrupt flag, uninterruptible NFIX/PFIX
 
--knight.btl
++knight.btl
         200303AP  entering board size 5, and (1,1) reports no path found
         200304AP  infinite loop ???
+        200304AP  works as expected: no Interrupt flag, uninterruptible NFIX/PFIX
+
+-Minix demo boot.btl
+        200304AP  hangs on Loading boot monitor...
 

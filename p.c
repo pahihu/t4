@@ -215,8 +215,9 @@ char *mnemonic(unsigned char icode, uint32_t oreg)
 
 void init_processor (void)
 {
-        Link0OutWdesc = NotProcess_p;
-        Link0InWdesc = NotProcess_p;
+        /* M.Bruestle 15.2.2012 */
+        writeword (Link0Out, NotProcess_p);
+        writeword (Link0In, NotProcess_p);
 
         IPtr = MemStart;
         CReg = Link0In;
@@ -490,6 +491,12 @@ void mainloop (void)
 			   IPtr = temp;
 			   break;
 		case 0x07: /* in          */
+OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
+                           {
+                                if (emudebug)
+                                        printf ("-W-EMUDBG: Doing in on Link0Out.\n");
+                                goto OprOut;
+                           }
                            if (emudebug)
 			        printf ("-I-EMUDBG: In(1): Channel=#%8X, to memory at #%8X, length #%X.\n", BReg, CReg, AReg);
 			   IPtr++;
@@ -523,7 +530,6 @@ void mainloop (void)
 			   {
 				/* Link communication. */
 				writeword (BReg, Wdesc);
- 				Link0InWdesc  = Wdesc;
 				Link0InDest   = CReg;
 				Link0InLength = AReg;
                                 deschedule ();
@@ -552,6 +558,12 @@ void mainloop (void)
 			   IPtr++;
 			   break;
 		case 0x0b: /* out         */
+OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
+                           {
+                                if (emudebug)
+                                        printf ("-W-EMUDBG: Doing out on Link0In.\n");
+                                goto OprIn;
+                           }
                            if (emudebug)
 			        printf ("-I-EMUDBG: out(1): Channel=#%8X, length #%X, from memory at #%8X.\n", BReg, AReg, CReg);
 			   IPtr++;
@@ -619,7 +631,6 @@ void mainloop (void)
 			   {
 				/* Link communication. */
 				writeword (BReg, Wdesc);
-				Link0OutWdesc  = Wdesc;
 				Link0OutSource = CReg;
 				Link0OutLength = AReg;
                                 deschedule ();
@@ -644,7 +655,18 @@ void mainloop (void)
                            if (emudebug)
 			        printf ("-I-EMUDBG: outbyte: Channel=#%8X.\n", BReg);
 			   IPtr++;
-			   if (BReg != Link0Out)
+                           if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
+                           {
+                                if (emudebug)
+			                printf ("-W-EMUDBG: Doing outbyte on Link0In.\n");
+				/* Link communication. */
+				writeword (BReg, Wdesc);
+				writeword (WPtr, AReg);
+				Link0InDest = WPtr;
+				Link0InLength = 1;
+                                deschedule ();
+                           }
+			   else if (BReg != Link0Out)
 			   {
 				/* Internal communication. */
 				otherWdesc = word (BReg);
@@ -692,7 +714,6 @@ void mainloop (void)
 				/* Link communication. */
 				writeword (BReg, Wdesc);
 				writeword (WPtr, AReg);
-				Link0OutWdesc  = Wdesc;
 				Link0OutSource = WPtr;
 				Link0OutLength = 1;
                                 deschedule ();
@@ -702,7 +723,18 @@ void mainloop (void)
                            if (emudebug)
 			        printf ("-I-EMUDBG: outword: Channel=#%8X.\n", BReg);
 			   IPtr++;
-			   if (BReg != Link0Out)
+                           if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
+                           {
+                                if (emudebug)
+			                printf ("-W-EMUDBG: Doing outword on Link0In.\n");
+				/* Link communication. */
+				writeword (BReg, Wdesc);
+				writeword (WPtr, AReg);
+				Link0InDest   = WPtr;
+				Link0InLength = 4;
+                                deschedule ();
+                           }
+			   else if (BReg != Link0Out)
 			   {
 				/* Internal communication. */
 				otherWdesc = word (BReg);
@@ -750,7 +782,6 @@ void mainloop (void)
 				/* Link communication. */
 				writeword (BReg, Wdesc);
 				writeword (WPtr, AReg);
-				Link0OutWdesc  = Wdesc;
 				Link0OutSource = WPtr;
 				Link0OutLength = 4;
                                 deschedule ();
@@ -764,14 +795,6 @@ void mainloop (void)
 			   temp = AReg;
 			   AReg = word (temp);
 			   writeword (temp, NotProcess_p);
-			   if (temp == Link0In)
-			   {
-				Link0InWdesc = NotProcess_p;
-			   }
-			   else if (temp == Link0Out)
-			   {
-				Link0OutWdesc = NotProcess_p;
-			   }
 			   IPtr++;
 			   break;
 		case 0x13: /* csub0       */
@@ -1251,7 +1274,6 @@ void mainloop (void)
                                                 if (emudebug)
 						        printf ("-I-EMUDBG: enbc(4): Empty link: Initialise link.\n");
 						writeword (BReg, Wdesc);
-						Link0InWdesc = Wdesc;
 					}
 				}
 				else

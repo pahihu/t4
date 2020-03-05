@@ -194,6 +194,13 @@ int server (void)
 {
         static int do_init = 1;
         int activity;
+        uint32_t LinkWdesc; 
+
+        /* M.Bruestle 15.2.2012
+         *
+         * No Wdesc register in Link hardware, use channel control word directly.
+         *
+         */
 
         if (do_init)
         {
@@ -231,8 +238,9 @@ int server (void)
 	if (FromServerLen==0)
 	{
 		/* No messages leaving server, so server can handle the next incoming message. */
-                /* Check Link0OutWdesc for a valid process to see if there is a message.       */
-		if (Link0OutWdesc != NotProcess_p)
+                /* Check Link0Out for a valid process to see if there is a message.       */
+                LinkWdesc = word (Link0Out);
+		if (LinkWdesc != NotProcess_p)
 		{
                         activity++;
 			/* Move message to ToServerBuffer. */
@@ -247,13 +255,12 @@ int server (void)
 			}
 
                         if (emudebug)
-			        printf ("-I-EMUSRV: Satisfied comms request. Rescheduling process #%8X.\n", Link0OutWdesc);
+			        printf ("-I-EMUSRV: Satisfied comms request. Rescheduling process #%8X.\n", LinkWdesc);
 
 			/* Reschedule outputting process. */
-			schedule (Link0OutWdesc);
+			schedule (LinkWdesc);
 
 			/* Reset Link0Out. */
-			Link0OutWdesc = NotProcess_p;
 			writeword (Link0Out, NotProcess_p);
 
 			/* Check if incoming message is all here yet. */
@@ -290,7 +297,8 @@ int server (void)
 	else
 	{
 		/* Can the next byte of outgoing message be transferred? */
-		if (Link0InWdesc != NotProcess_p)
+                LinkWdesc = word (Link0In);
+		if (LinkWdesc != NotProcess_p)
 		{
                         activity++;
 			/* Move the requested amount of message. */
@@ -317,13 +325,12 @@ int server (void)
 			if (Link0InLength == 0)
 			{
                                 if (emudebug)
-				        printf ("-I-EMUSRV: Comms request satisfied. Reschedule process #%8X.\n", Link0InWdesc);
+				        printf ("-I-EMUSRV: Comms request satisfied. Reschedule process #%8X.\n", LinkWdesc);
 
 				/* Reschedule outputting process. */
-				schedule (Link0InWdesc);
+				schedule (LinkWdesc);
 
 				/* Reset channel. */
-				Link0InWdesc = NotProcess_p;
 				writeword (Link0In, NotProcess_p);
 			}
 		}

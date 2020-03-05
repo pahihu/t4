@@ -88,7 +88,6 @@ void print_profile (void);
 #define Link3In  0x8000001C /****/
 
 typedef struct _Channel_ {
-        uint32_t ProcDesc;
         uint32_t Address;
         uint32_t Length;
 } Channel;
@@ -101,9 +100,7 @@ typedef struct _LinkIface_ {
 extern LinkIface Link[4];
 
 /* Link 0 registers. */
-#define Link0OutWdesc   Link[0].Out.ProcDesc
 #define Link0OutSource  Link[0].Out.Address
 #define Link0OutLength  Link[0].Out.Length
-#define Link0InWdesc    Link[0].In.ProcDesc
 #define Link0InDest     Link[0].In.Address
 #define Link0InLength   Link[0].In.Length

@@ -82,7 +82,7 @@ FILE *CopyIn;
 
 extern unsigned char *mem;
 extern uint32_t WPtr;
-extern uint32_t CurPriority;
+extern uint32_t ProcPriority;
 
 /* Profile flag. */
 int profiling = false;
@@ -324,7 +324,7 @@ int main (int argc, char **argv)
 	WPtr = MemStart + temp2;
 	while ((WPtr & 0x00000003) != 0x00000000)
 		WPtr++;
-	CurPriority = LoPriority;
+	ProcPriority = LoPriority;
 
 	/* Initialise profiling array. */
 	for (temp=0; temp<10; temp++)

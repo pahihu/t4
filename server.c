@@ -190,6 +190,7 @@ char *msgtag (unsigned char tag)
 }
 
 
+/* XXX support ALT construction on Link0 */
 int server (void)
 {
         static int do_init = 1;
@@ -249,7 +250,7 @@ int server (void)
 				ToServerBuffer[ToServerLen] = byte (Link0OutSource);
 				ToServerLen++;
 				Link0OutSource++;
-				/* The C compiler is broken. Hence 514. */
+				/* XXX The C compiler is broken. Hence 514. */
 				if (ToServerLen >= 514)
 					printf ("-W-EMUSRV: Help - overflowing ToServerBuffer!\n");
 			}
@@ -284,7 +285,7 @@ int server (void)
 					/* Full message has arrived. Handle it. */
 					message();
 
-					/* Delete handled message. */
+					/* XXX Delete handled message. */
 					for (loop1=0; loop1<(length+2); loop1++)
 					{
 						ToServerBuffer[loop1] = ToServerBuffer[loop1+length+2];
@@ -305,6 +306,7 @@ int server (void)
 			loop1 = 0;
                         if (emudebug)
                                 printf ("-I-EMUSRV: FromServerLen = #%X", FromServerLen);
+                        /* XXX */
 			while ((loop1 < Link0InLength) && (FromServerLen > 0))
 			{
 				writebyte (Link0InDest, FromServerBuffer[loop1]);
@@ -352,6 +354,9 @@ void message(void)
 
         if (emudebug)
 	        printf ("-I-EMUSRV: Handling server command. Buffer = %d. Tag = #%02X (%s)\n", ToServerLen, tag, msgtag (tag));
+
+        /* XXX: 1024byte getblock/putblock support */
+        /* XXX: correctly respond to non-supported sp function request */
 
 	switch (tag)
 	{
@@ -626,7 +631,7 @@ void sp_write (void)
 }
 
 
-void sp_gets (void)
+void sp_gets (void) /* XXX */
 {
 	FILE *fd;
 	int count;
@@ -680,7 +685,7 @@ void sp_gets (void)
 }
 
 
-void sp_puts (void)
+void sp_puts (void) /* XXX */
 {
 	FILE *fd;
 	int  datalen;
@@ -736,7 +741,7 @@ void sp_puts (void)
 }
 
 
-void sp_flush (void)
+void sp_flush (void) /* XXX */
 {
 	FILE *fd;
 
@@ -763,7 +768,7 @@ void sp_flush (void)
 }
 
 
-void sp_seek (void)
+void sp_seek (void) /* XXX */
 {
 	FILE *fd;
 	int32_t offset;
@@ -1038,7 +1043,7 @@ void sp_getkey (void)
 }
 
 
-void sp_pollkey (void)
+void sp_pollkey (void) /* XXX */
 {
 	char ch;
 
@@ -1178,7 +1183,7 @@ void sp_time (void)
 }
 
 
-void sp_system (void)
+void sp_system (void) /* XXX */
 {
 	char command[256];
 	int  commandlen;

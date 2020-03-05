@@ -74,8 +74,8 @@ uint32_t ClockReg0;
 uint32_t ClockReg1;
 uint32_t TNextReg0;
 uint32_t TNextReg1;
-uint32_t TPtrLoc0;              /* 0x80000024 */
-uint32_t TPtrLoc1;              /* 0x80000028 */
+uint32_t TPtrLoc0;              /* XXX 0x80000024 */
+uint32_t TPtrLoc1;              /* XXX 0x80000028 */
 
 #define HiTimer                 ClockReg0
 #define LoTimer                 ClockReg1
@@ -128,7 +128,7 @@ int  Timers;
 uint32_t t4_overflow;
 uint32_t t4_carry;
 uint32_t t4_normlen;
-uint32_t CurPriority;
+uint32_t ProcPriority;
 #define TimersGo   1
 #define TimersStop 0
 int loop;
@@ -139,7 +139,8 @@ int timeslice;
 int32_t quit = FALSE;
 int32_t quitstatus;
 
-#define Wdesc   (WPtr | CurPriority)
+/* XXX Wdesc contains MostNeg + 1 in idle state */
+#define Wdesc   (WPtr | ProcPriority)
 
 /* External variables. */
 extern int analyse;
@@ -223,7 +224,7 @@ void init_processor (void)
         CReg = Link0In;
         TPtrLoc0 = NotProcess_p;
         TPtrLoc1 = NotProcess_p;
-        ClearInterrupt;
+        ClearInterrupt; /* XXX not required ??? */
 
         IntEnabled = TRUE;
 
@@ -286,7 +287,7 @@ void mainloop (void)
                 {
                         if (0 == asmLines++ % 25)
                                 printf ("-IPtr------Code-----------------------Mnemonic------------HE---AReg-----BReg-----CReg-------WPtr-----WPtr[0]-\n");
-                        printf ("%c%8X: ", HiPriority == CurPriority ? 'H' : ' ', IPtr);
+                        printf ("%c%8X: ", HiPriority == ProcPriority ? 'H' : ' ', IPtr);
                         printIPtr = FALSE;
                         instrBytes = 0;
                 }
@@ -367,7 +368,7 @@ void mainloop (void)
 			   IPtr++;
 			   OReg = 0; IntEnabled = TRUE;
 			   break;
-		case 0x90: /* call  */
+		case 0x90: /* XXX call  */
 			   IPtr++;
 			   writeword (index (WPtr, -1), CReg);
 			   writeword (index (WPtr, -2), BReg);
@@ -415,7 +416,7 @@ void mainloop (void)
 			   IPtr++;
 			   OReg = 0; IntEnabled = TRUE;
 			   break;
-		case 0xe0: /* stnl  */
+		case 0xe0: /* XXX stnl  */
 			   writeword (index (AReg, OReg), BReg);
 			   AReg = CReg;
 			   IPtr++;
@@ -447,7 +448,7 @@ void mainloop (void)
 			   BReg = CReg;
 			   IPtr++;
 			   break;
-		case 0x03: /* endp        */
+		case 0x03: /* XXX endp        */
 			   temp = word (index (AReg, 1));
 			   if (temp == 1)
 			   {
@@ -649,7 +650,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   temp = GetDescWPtr(AReg);
 			   IPtr++;
 			   writeword (index (temp, Iptr_s), (IPtr + BReg));
-			   schedule (temp | CurPriority);
+			   schedule (temp | ProcPriority);
 			   break;
 		case 0x0e: /* outbyte     */
                            if (emudebug)
@@ -791,7 +792,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   SetError;
 			   IPtr++;
 			   break;
-		case 0x12: /* resetch     */
+		case 0x12: /* XXX resetch     */
 			   temp = AReg;
 			   AReg = word (temp);
 			   writeword (temp, NotProcess_p);
@@ -836,7 +837,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   CReg = t4_normlen;
 			   IPtr++;
 			   break;
-		case 0x1a: /* ldiv        */
+		case 0x1a: /* XXX ldiv        */
 			   if (CReg >= AReg)
 			   {
 				SetError;
@@ -866,7 +867,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   BReg = CReg;
 			   IPtr++;
 			   break;
-		case 0x1d: /* xdble       */
+		case 0x1d: /* XXX xdble       */
 			   CReg = BReg;
 			   if (INT(AReg) < 0)
 			   {
@@ -881,10 +882,10 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x1e: /* ldpri       */
 			   CReg = BReg;
 			   BReg = AReg;
-			   AReg = CurPriority;
+			   AReg = ProcPriority;
 			   IPtr++;
 			   break;
-		case 0x1f: /* rem         */
+		case 0x1f: /* XXX rem         */
 			   if ((AReg==0) || ((AReg==-1) && (BReg==0x80000000)))
 				SetError;
 			   else
@@ -914,7 +915,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x22: /* ldtimer     */
 			   CReg = BReg;
 			   BReg = AReg;
-			   if (CurPriority == HiPriority)
+			   if (ProcPriority == HiPriority)
 			   {
 				AReg = HiTimer;
 			   }
@@ -944,9 +945,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   if (analyse) AReg = true_t; else AReg = false_t;
 			   IPtr++;
 			   break;
-		case 0x2b: /* tin         */
+		case 0x2b: /* XXX: missing Waiting_p tin         */
 			   IPtr++;
-			   if (CurPriority == HiPriority)
+			   if (ProcPriority == HiPriority)
 			   {
 				if (INT(HiTimer - AReg) > 0)
 					;
@@ -967,7 +968,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				}
 			   }
 			   break;
-		case 0x2c: /* div         */
+		case 0x2c: /* XXX div         */
 			   if ((AReg==0) || ((AReg==-1)&&(BReg==0x80000000)))
 				SetError;
 			   else
@@ -975,10 +976,10 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   BReg = CReg;
 			   IPtr++;
 			   break;
-		case 0x2e: /* dist        */
+		case 0x2e: /* XXX dist        */
                            if (emudebug)
 			        printf ("-I-EMUDBG: dist(1): Time=%8X.\n", CReg);
-			   if (CurPriority == HiPriority)
+			   if (ProcPriority == HiPriority)
 				temp = HiTimer;
 			   else
 				temp = LoTimer;
@@ -997,7 +998,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   }
 			   IPtr++;
 			   break;
-		case 0x2f: /* disc        */
+		case 0x2f: /* XXX: support ALT construct on Link0 disc        */
                            if (emudebug)
 			        printf ("-I-EMUDBG: disc(1): Channel=#%8X.\n", CReg);
           		   if (CReg == Link0In)
@@ -1122,7 +1123,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   IPtr++;
 			   schedule (AReg);
 			   break;
-		case 0x3a: /* xword       */
+		case 0x3a: /* XXX xword       */
 			   if ((AReg>BReg) && (INT(BReg) >= 0))
 			   {
 				AReg = BReg;
@@ -1134,12 +1135,13 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   BReg = CReg;
 			   IPtr++;
 			   break;
-		case 0x3b: /* sb          */
+		case 0x3b: /* XXX sb          */
 			   writebyte (AReg, BReg);
 			   AReg = CReg;
 			   IPtr++;
 			   break;
 		case 0x3c: /* gajw        */
+                           /* XXX: proc prio toggle trick of AReg lsb=1       */
 			   temp = AReg;
 			   AReg = WPtr;
 			   WPtr = temp;
@@ -1159,7 +1161,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   BReg = CReg;
 			   IPtr++;
 			   break;
-		case 0x3f: /* wcnt        */
+		case 0x3f: /* XXX wcnt        */
 			   CReg = BReg;
 			   BReg = AReg & 0x00000003;
 			   AReg = AReg >> 2;
@@ -1250,7 +1252,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   BReg = CReg;
 			   IPtr++;
 			   break;
-		case 0x48: /* enbc        */
+		case 0x48: /* XXX: support ALT construct on Link0  enbc        */
                            if (emudebug)
 			        printf ("-I-EMUDBG: enbc(1): Channel=#%8X.\n", BReg);
 			   if ((AReg == true_t) && (word(BReg) == NotProcess_p))
@@ -1312,7 +1314,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   BReg = CReg;
 			   IPtr++;
 			   break;
-		case 0x4c: /* csngl       */
+		case 0x4c: /* XXX csngl       */
 			   if (((INT(AReg)<0) && (INT(BReg)!=-1)) ||
                                ((INT(AReg)>=0) && (BReg!=0)))
 			   {
@@ -1381,7 +1383,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   BReg = CReg;
 			   IPtr++;
 			   break;
-		case 0x53: /* mul         */
+		case 0x53: /* XXX mul         */
 			   t4_overflow = FALSE;
 			   t4_carry = 0;
 			   AReg = t4_emul32 (BReg, AReg);
@@ -1398,14 +1400,14 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   BReg = CReg;
 			   IPtr++;
 			   break;
-		case 0x55: /* stoperr     */
+		case 0x55: /* XXX stoperr     */
 			   IPtr++;
 			   if (ReadError)
 			   {
                                 deschedule ();
 			   }
 			   break;
-		case 0x56: /* cword       */
+		case 0x56: /* XXX cword       */
 			   if ((BReg>=AReg) || (BReg>=(-AReg)))
 			   {
 				SetError;
@@ -1435,7 +1437,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   }
 			   IPtr++;
 			   break;
-		case 0x63: /* unpacksn    */
+		case 0x63: /* XXX unpacksn    */
 			   temp = AReg;
 			   CReg = BReg << 2;
 			   AReg = (temp & 0x007fffff) << 8;
@@ -1452,7 +1454,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   CReg = (CReg & 0xfffffffc) | temp2;
 			   IPtr++;
 			   break;
-		case 0x6c: /* postnormsn  */
+		case 0x6c: /* XXX postnormsn  */
 			   temp = (INT(word (index (WPtr, 0))) - INT(CReg));
 			   if (temp > 0x000000ff)
 				CReg = 0x000000ff;
@@ -1467,7 +1469,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				CReg = temp;
 			   IPtr++;
 			   break;
-		case 0x6d: /* roundsn     */
+		case 0x6d: /* XXX roundsn     */
 			   temp = BReg & 0x00000080;
 			   AReg = BReg & 0x7fffffff;
 			   if (temp != 0)
@@ -1497,7 +1499,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   AReg = t4_infinity ();
 			   IPtr++;
 			   break;
-		case 0x72: /* fmul        */
+		case 0x72: /* XXX: missing round-to-nearest  fmul        */
 			   t4_overflow = FALSE;
 			   t4_carry = 0;
 			   if ((AReg==0x80000000)&&(BReg==0x80000000))
@@ -1576,7 +1578,7 @@ void schedule (uint32_t wdesc)
 
 	/* If a high priority process is being scheduled */
 	/* while a low priority process runs, interrupt! */
-	if ((pri == HiPriority) && (CurPriority == LoPriority))
+	if ((pri == HiPriority) && (ProcPriority == LoPriority))
 	{
                 if (emudebug)
                         printf ("-I-EMUDBG: Schedule(2): Interrupt LoPriority process.\n");
@@ -1589,7 +1591,7 @@ void schedule (uint32_t wdesc)
                 /* ??? HaltOnErrorFlag is cleared before the process starts. */
                 ClearHaltOnError;
 
-		CurPriority = HiPriority;
+		ProcPriority = HiPriority;
 		WPtr = wptr;
 		IPtr = word (index (WPtr, Iptr_s));
 
@@ -1665,7 +1667,7 @@ int run_process (void)
 
 
         /* Let the current priority be unknown. */
-        CurPriority = NotProcess_p;
+        ProcPriority = NotProcess_p;
 
 	/* Is the HiPriority process list non-empty? */
 	if (FPtrReg0 != NotProcess_p)
@@ -1673,25 +1675,25 @@ int run_process (void)
                 if (emudebug)
 	                printf ("-I-EMUDBG: RunProcess: HiPriority process list non-empty.\n");
 		/* There is a HiPriority process available. */
-		CurPriority = HiPriority;
+		ProcPriority = HiPriority;
 	}
         /* Is there an interrupted LoPriority process? */
         else if (ReadInterrupt)
         {
                 if (emudebug)
 	                printf ("-I-EMUDBG: RunProcess: There is an interrupted LoPriority process.\n");
-                CurPriority = LoPriority;
+                ProcPriority = LoPriority;
         }
 	else if (FPtrReg1 != NotProcess_p)
 	{
                 if (emudebug)
 	                printf ("-I-EMUDBG: RunProcess: LoPriority process list non-empty.\n");
 		/* There are only LoPriority processes available. */
-		CurPriority = LoPriority;
+		ProcPriority = LoPriority;
 	}
 
         /* Check current priority. */
-        if (CurPriority == NotProcess_p)
+        if (ProcPriority == NotProcess_p)
         {
                 if (emudebug)
                         printf ("-I-EMUDBG: RunProcess: Empty process list. Cannot start!\n");
@@ -1701,7 +1703,7 @@ int run_process (void)
 
 
 	/* Get front of process list pointer. */
-	if (CurPriority == HiPriority)
+	if (ProcPriority == HiPriority)
 	{
 		ptr = FPtrReg0;
 		lastptr = BPtrReg0;
@@ -1713,11 +1715,11 @@ int run_process (void)
 	}
 
         if (emudebug)
-	        printf ("-I-EMUDBG: RunProcess: CurPriority = %s, ptr = #%8X. FPtrReg0 (Hi) = #%8X, FPtrReg1 (Lo) = #%8X.\n", 
-                        CurPriority ? "Lo" : "Hi",
+	        printf ("-I-EMUDBG: RunProcess: ProcPriority = %s, ptr = #%8X. FPtrReg0 (Hi) = #%8X, FPtrReg1 (Lo) = #%8X.\n", 
+                        ProcPriority ? "Lo" : "Hi",
                         ptr, FPtrReg0, FPtrReg1);
 
-	if ((CurPriority == LoPriority) && (ReadInterrupt))
+	if ((ProcPriority == LoPriority) && (ReadInterrupt))
 	{
 		/* Return to interrupted LoPriority process. */
 		WPtr = GetDescWPtr(word (index (MostNeg, 11)));
@@ -1727,7 +1729,7 @@ int run_process (void)
 		CReg = word (index (MostNeg, 15));
 		STATUSReg = word (index (MostNeg, 16));
 		/*EReg = word (index (MostNeg, 17));*/
-                ClearInterrupt;
+                ClearInterrupt; /* XXX Not necessary ??? */
 	}  
 	else if (ptr == NotProcess_p)
 	{
@@ -1745,7 +1747,7 @@ int run_process (void)
 			IPtr = word (index (WPtr, Iptr_s));
 
 			/* Empty list now. */
-			if (CurPriority == HiPriority)
+			if (ProcPriority == HiPriority)
 			{
 				FPtrReg0 = NotProcess_p;
 			}
@@ -1763,7 +1765,7 @@ int run_process (void)
 			IPtr = word (index (WPtr, Iptr_s));
 
 			/* Point at second process in chain. */
-			if (CurPriority == HiPriority)
+			if (ProcPriority == HiPriority)
 			{
 				FPtrReg0 = word (index (WPtr, Link_s));
 			}
@@ -1782,7 +1784,7 @@ void start_process (void)
 {
         int active;
 
-        if ((CurPriority == LoPriority) && !IntEnabled)
+        if ((ProcPriority == LoPriority) && !IntEnabled)
                 return;
 
         /* First, clear GotoSNP flag. */
@@ -1842,7 +1844,7 @@ void reschedule (void)
 	writeword (index (WPtr, Iptr_s), IPtr);
 
 	/* Put on process list. */
-	schedule (WPtr | CurPriority);
+	schedule (WPtr | ProcPriority);
 }
 
 /* Check whether the current process needs rescheduling,  */
@@ -1852,11 +1854,11 @@ void D_check (void)
 	/* Called only from 'j' and 'lend'. */
 
 	/* First, handle any host link communication. */
-        if ((CurPriority == HiPriority) || IntEnabled)
+        if ((ProcPriority == HiPriority) || IntEnabled)
 	        server ();
 
         /* High priority processes never timesliced. */
-        if (CurPriority == HiPriority)
+        if (ProcPriority == HiPriority)
                 return;
 
 	/* Check for timeslice. */
@@ -1914,7 +1916,7 @@ void insert (uint32_t time)
 
 	writeword (index (WPtr, Time_s), (time + 1));
 
-	if (CurPriority == HiPriority)
+	if (ProcPriority == HiPriority)
 		ptr = TPtrLoc0;
 	else
 		ptr = TPtrLoc1;
@@ -1924,7 +1926,7 @@ void insert (uint32_t time)
 		/* Empty list. */
 		/*writeword (ptr, WPtr); Strange! */
 		writeword (index (WPtr, TLink_s), NotProcess_p);
-		if (CurPriority == HiPriority)
+		if (ProcPriority == HiPriority)
 			TPtrLoc0 = WPtr;
 		else
 			TPtrLoc1 = WPtr;
@@ -1937,7 +1939,7 @@ void insert (uint32_t time)
 		{
 			/* Put in front of first entry. */
 			writeword (index (WPtr, TLink_s), ptr);
-			if (CurPriority == HiPriority)
+			if (ProcPriority == HiPriority)
 				TPtrLoc0 = WPtr;
 			else
 				TPtrLoc1 = WPtr;
@@ -1971,7 +1973,7 @@ void purge_timer (void)
 	uint32_t oldptr;
 
 	/* Delete any entries at the beginning of the list. */
-	if (CurPriority == HiPriority)
+	if (ProcPriority == HiPriority)
 	{
 		while (TPtrLoc0 == WPtr)
 		{
@@ -2008,7 +2010,7 @@ void purge_timer (void)
 	}	
 }
 
-/* Update time, check timer queues. */
+/* XXX Update time, check timer queues. */
 INLINE void update_time (void)
 {
         uint32_t temp3;
@@ -2022,7 +2024,7 @@ INLINE void update_time (void)
 		count2++;
 
 		/* Check high priority timer queue. */
-                if ((CurPriority == HiPriority) || IntEnabled)
+                if ((ProcPriority == HiPriority) || IntEnabled)
                 {
 		        temp3 = word (index (TPtrLoc0, Time_s));
 		        while ((INT(HiTimer - temp3) > 0) && (TPtrLoc0 != NotProcess_p))
@@ -2041,7 +2043,7 @@ INLINE void update_time (void)
 			count3++;
 
 			/* Check low priority timer queue. */
-                        if ((CurPriority == HiPriority) || IntEnabled)
+                        if ((ProcPriority == HiPriority) || IntEnabled)
                         {
 			        temp3 = word (index (TPtrLoc1, Time_s));
 			        while ((INT(LoTimer - temp3) > 0) && (TPtrLoc1 != NotProcess_p))

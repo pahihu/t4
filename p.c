@@ -2017,7 +2017,7 @@ INLINE void update_time (void)
 
 	/* Move timers on if necessary, and increment timeslice counter. */
 	count1++;
-	if (count1 > 10)
+	if (count1 > 77)
 	{
 		count1 = 0;
 		if (Timers == TimersGo) HiTimer++;

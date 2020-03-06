@@ -1,6 +1,26 @@
-The bootload files and the hello example in this directory are from the 
-excellent Transputer Emulator from Gavin Crate (https://sites.google.com/site/transputeremulator/).
+The following files are from the excellent Transputer Emulator from Gavin Crate
+(https://sites.google.com/site/transputeremulator/):
 
-The bootload.asm and netload.occ files are from the "occam 2 toolset user manual
-- part 2 (occam libraries and appendices)" 72-TDS-267-02 March 1991
+hello/
+knight.btl
+prime.btl
+sqrroots.btl
+
+
+The Minix demo and the Whetstone-benchmark is from Ram's Transputer Home page (http://www.classiccmp.org/transputer):
+
+minix-demo/
+whetston/
+
+
+These examples are from comp.sys.transputer, written by Michael Bruestle:
+
+inoutswap.asm
+linkwdesc.asm
+
+
+These files are from the "occam 2 toolset user manual - part 2 (occam libraries and appendices)" 72-TDS-267-02 March 1991:
+
+bootload.asm
+netload.occ
 

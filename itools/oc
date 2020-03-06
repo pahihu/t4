@@ -1,0 +1,2 @@
+#!/bin/sh
+t4 -se -sb $D7205/itools/oc.btl $*

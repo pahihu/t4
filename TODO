@@ -20,6 +20,10 @@ BOOT FILES
         200304AP  infinite loop ???
         200304AP  works as expected: no Interrupt flag, uninterruptible NFIX/PFIX
 
++D7205A occam 2 toolset
+        200306AP  successfully built hello.occ
+
 -Minix demo boot.btl
         200304AP  hangs on Loading boot monitor...
+        200306AP  hangs on sizing memory, server reports too short messages
 

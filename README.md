@@ -1,10 +1,25 @@
+Goals
+=====
+
+* emulate the first generation T414/T800 transputers
+* instruction tracing
+* to run the D7205A occam 2 toolset on macOS and Linux 64bit
+
+Non-goals
+=========
+
+* cycle accurate emulation
+* to be efficient
+
 Changes
 =======
 
-* the simulator is ported to macOS/Linux 64bit architecture
-* fixed some process scheduling bugs
+* D7205A occam 2 toolset successfully built hello example
+* itools directory contains D7205A environment setup and some tool scripts
 * `-sx` flag enables instruction execution tracing
 * `-sm` enables memory reference tracing
+* fixed some process scheduling bugs
+* the simulator is ported to macOS/Linux 64bit architecture
 
 **NOTE**: There is the excellent [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) from Gavin Crate. Otherwise here is the code. Good luck!
 

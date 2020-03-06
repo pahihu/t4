@@ -78,14 +78,22 @@ int  FromServerLen = 0;
 int  ToServerLen = 0;
 unsigned char FromServerBuffer[(16*1024)+5];
 unsigned char ToServerBuffer[514];
+void dump_message (char *msg, unsigned char *buffer, int len);
+int DumpMessage;
 
 #define MAX_FD  256
-FILE *Files[MAX_FD];
+typedef struct _FileDesc_ {
+        FILE *fd;
+        int type;
+} FileDesc;
+
+FileDesc Files[MAX_FD];
 char *MessageTags[129];
 
 extern int  copy;
 extern FILE *CopyIn;
 extern int  emudebug;
+extern int  msgdebug;
 
 extern int profiling;
 extern int32_t profile[10];
@@ -95,17 +103,25 @@ extern struct termios t_poll;
 extern enum {INIT, GETK, POLL} t_state;
 
 static
-void init_server(void)
+void init_server (void)
 {
         int i;
         char msg[16];
 
         for (i = 0; i < MAX_FD; i++)
-                Files[i] = (FILE *)NULL;
+        {
+                Files[i].fd = (FILE *)NULL;
+                Files[i].type = -1;
+        }
 
-        Files[0] = stdin;
-        Files[1] = stdout;
-        Files[2] = stderr;
+        Files[0].fd = stdin;
+        Files[0].type = SP_TEXT;
+        Files[1].fd = stdout;
+        Files[1].type = SP_TEXT;
+        Files[2].fd = stderr;
+        Files[2].type = SP_TEXT;
+
+        DumpMessage = FALSE;
 
         MessageTags[ SP_OPEN]    = "SP_OPEN";
         MessageTags[ SP_CLOSE]   = "SP_CLOSE";
@@ -150,12 +166,12 @@ void init_server(void)
 }
 
 static
-unsigned int FromFile(FILE *fd)
+unsigned int FromFile (FILE *fd)
 {
         unsigned int i;
 
         i = 0;
-        while (Files[i] && i < MAX_FD)
+        while (Files[i].fd && i < MAX_FD)
                 i++;
 
         if (MAX_FD == i)
@@ -163,19 +179,19 @@ unsigned int FromFile(FILE *fd)
                 printf ("-E-EMUSRV: Help - files[] table overflow!\n");
                 handler(-1);
         }
-        Files[i] = fd;
+        Files[i].fd = fd;
         return i;
 }
 
 static
-FILE* ToFile(unsigned int i)
+FILE* ToFile (unsigned int i)
 {
-        if (MAX_FD <= i || (FILE *)NULL == Files[i])
+        if (MAX_FD <= i || (FILE *)NULL == Files[i].fd)
         {
                 printf ("-E-EMUSRV: Help - invalid file descriptor!\n");
                 handler(-1);
         }
-        return Files[i];
+        return Files[i].fd;
 }
 
 static
@@ -307,6 +323,7 @@ int server (void)
                         if (emudebug)
                                 printf ("-I-EMUSRV: FromServerLen = #%X", FromServerLen);
                         /* XXX */
+                        dump_message ("Reply.", FromServerBuffer, FromServerLen);
 			while ((loop1 < Link0InLength) && (FromServerLen > 0))
 			{
 				writebyte (Link0InDest, FromServerBuffer[loop1]);
@@ -340,10 +357,46 @@ int server (void)
         return activity;
 }
 
+int printable (int ch)
+{
+        return (31 < ch) && (ch < 127) ? ch : '.';
+}
+
+void dump_message (char *msg, unsigned char *buffer, int len)
+{
+        int temp, i, ch;
+
+        if (!msgdebug)
+                return;
+
+        if (FALSE == DumpMessage)
+                return;
+
+        if (msg)
+                printf ("-I-EMUSRV: %s\n", msg);
+        printf ("-I-EMUSRV: Message dump.\n");
+        for (temp = 0; temp < len; temp += 16)
+        {
+                for (i = 0; i < 16; i++)
+                {
+                        ch = temp + i < len ? buffer[temp + i] : 0;
+                        printf ("%02X ", ch);
+                }
+                printf ("    ");
+                for (i = 0; i < 16; i++)
+                {
+                        ch = temp + i < len ? buffer[temp + i] : 0;
+                        printf ("%c", printable (ch));
+                }
+                printf ("\n");
+        }
+
+        DumpMessage = FALSE;
+}
+
 void message(void)
 {
 	unsigned char tag;
-	int temp;
 
 	tag = ToServerBuffer[2];
 	
@@ -352,11 +405,14 @@ void message(void)
 	check_input();
 #endif
 
-        if (emudebug)
+        if (msgdebug || emudebug)
 	        printf ("-I-EMUSRV: Handling server command. Buffer = %d. Tag = #%02X (%s)\n", ToServerLen, tag, msgtag (tag));
 
         /* XXX: 1024byte getblock/putblock support */
         /* XXX: correctly respond to non-supported sp function request */
+
+        DumpMessage = TRUE;
+        dump_message (0, ToServerBuffer, ToServerLen);
 
 	switch (tag)
 	{
@@ -408,11 +464,11 @@ void message(void)
 				     break;
 
 		default:	printf ("-E-EMUSRV: Error - bad server command %2X.\n", tag);
-				for (temp = 0; temp < ToServerLen; temp++)
-					printf ("-E-EMUSRV: To server byte %2X.\n", ToServerBuffer[temp]);
+                                dump_message (0, ToServerBuffer, ToServerLen);
 				handler (-1);
 				break;
 	}
+        DumpMessage = TRUE;
 }
 
 
@@ -452,7 +508,7 @@ void sp_open (void)
 	}
 
 	if (namelen <= 0)
-	{       printf ("-W-EMUSRV: Bad Packet\n");
+	{       printf ("-W-EMUSRV: Bad Packet.\n");
 		error_packet ();
 		return;
 	}
@@ -490,7 +546,9 @@ void sp_open (void)
 
 	fd = fopen (filename, string);
 	if (fd == NULL)
-	{       printf ("-W-EMUSRV: Failed to open %s",filename);
+	{       
+                if (emudebug)
+                        printf ("-W-EMUSRV: Failed to open %s!\n",filename);
 		error_packet ();
 		return;
 	}
@@ -500,7 +558,8 @@ void sp_open (void)
 
 	FromServerBuffer[2] = SP_OK;
 
-        fdx = FromFile(fd);
+        fdx = FromFile (fd);
+        Files[fdx].type = type;
 
 	FromServerBuffer[3] = ((unsigned int)fdx) & 0x000000ff;
 	FromServerBuffer[4] = (((unsigned int)fdx) & 0x0000ff00) >>  8;
@@ -519,14 +578,15 @@ void sp_close (void)
         unsigned int fdx;
 
         fdx = ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24);
-	fd = ToFile(fdx);
+	fd = ToFile (fdx);
 
 	if (fclose(fd) != 0)
 	{
 		error_packet ();
 		return;
 	}
-        Files[fdx] = (FILE *)NULL;
+        Files[fdx].fd   = (FILE *)NULL;
+        Files[fdx].type = -1;
 
 	FromServerBuffer[0] = 6;
 	FromServerBuffer[1] = 0;
@@ -556,7 +616,7 @@ void sp_read (void)
 		return;
 	}
 
-	fd = ToFile(ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
+	fd = ToFile (ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
 
 	count = ToServerBuffer[7] + (ToServerBuffer[8]<<8);
 	if (count > 16384)
@@ -588,8 +648,10 @@ void sp_write (void)
 	int  datalen;
 	int  length;
 	int  pos;
+        unsigned int fdx;
 
-	fd = ToFile(ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
+        fdx = ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24);
+	fd = ToFile (fdx);
 
 	datalen = ToServerBuffer[7]+(ToServerBuffer[8]<<8);
         if (ToServerLen<(datalen+9))
@@ -600,9 +662,10 @@ void sp_write (void)
 	}
 
 	/* Massage output to avoid CRs. */
-	for (pos = 9; pos < (9 + datalen); pos++)
-		if (ToServerBuffer[pos] == 0x0d)
-			ToServerBuffer[pos] = 0x00;
+        if (Files[fdx].type == SP_TEXT)
+	        for (pos = 9; pos < (9 + datalen); pos++)
+		        if (ToServerBuffer[pos] == 0x0d)
+			        ToServerBuffer[pos] = 0x00;
 
 	length = fwrite ((&ToServerBuffer[9]), 1, datalen, fd);
 
@@ -646,7 +709,7 @@ void sp_gets (void) /* XXX */
 		return;
 	}
 
-	fd = ToFile(ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
+	fd = ToFile (ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
 
 	count = ToServerBuffer[7] + (ToServerBuffer[8]<<8);
 	if (count > 16384)
@@ -691,7 +754,7 @@ void sp_puts (void) /* XXX */
 	int  datalen;
 	int  length;
 
-	fd = ToFile(ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
+	fd = ToFile (ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
 
 	datalen = ToServerBuffer[7]+(ToServerBuffer[8]<<8);
         if (ToServerLen<(datalen+9))
@@ -745,7 +808,7 @@ void sp_flush (void) /* XXX */
 {
 	FILE *fd;
 
-	fd = ToFile(ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
+	fd = ToFile (ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
 
 	if (fflush (fd) != 0)
 	{
@@ -774,7 +837,7 @@ void sp_seek (void) /* XXX */
 	int32_t offset;
 	int origin;
 
-	fd = ToFile(ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
+	fd = ToFile (ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
 
         if (ToServerLen<15)
 	{
@@ -816,7 +879,7 @@ void sp_tell (void)
 	FILE *fd;
 	int32_t position;
 
-	fd = ToFile(ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
+	fd = ToFile (ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
 
 	position = ftell (fd);
 	if (position < 0)
@@ -845,7 +908,7 @@ void sp_eof (void)
 {
 	FILE *fd;
 
-	fd = ToFile(ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
+	fd = ToFile (ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
 
 	if ((feof (fd)) == 0)
 	{
@@ -872,7 +935,7 @@ void sp_ferror (void)
 {
 	FILE *fd;
 
-	fd = ToFile(ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
+	fd = ToFile (ToServerBuffer[3] + (ToServerBuffer[4]<<8) + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24));
 
 	if ((ferror (fd)) == 0)
 	{
@@ -1249,7 +1312,8 @@ void sp_exit (void)
 	quitstatus = status;
 	quit = TRUE;
 
-	printf ("-I-EMUSRV: ********** The server has exited **********\n");
+        if (emudebug)
+	        printf ("-I-EMUSRV: ********** The server has exited **********\n");
 }
 
 
@@ -1270,7 +1334,7 @@ void sp_commandline (void)
 	else
 	{
 		strcpy ((char *) &FromServerBuffer[5], CommandLineAll);
-		length = strlen (CommandLineMost);
+		length = strlen (CommandLineAll);
 	}
 
 	FromServerBuffer[2] = SP_OK;

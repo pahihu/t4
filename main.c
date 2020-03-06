@@ -69,6 +69,7 @@ int exitonerror = false;
 int peeksize    = 8;
 int emudebug    = FALSE;
 int emumem      = FALSE;
+int msgdebug    = FALSE;
 
 extern int32_t quit;
 extern int32_t quitstatus;
@@ -122,6 +123,8 @@ int main (int argc, char **argv)
 	int temp;
 	int temp2;
 
+        msgdebug = NULL != getenv ("MSGDEBUG");
+
 #ifdef __MWERKS__
 	/* Create some menus, etc. */
 	menu ();
@@ -163,9 +166,8 @@ int main (int argc, char **argv)
 		if (arg>0) strcat(CommandLineAll, " ");
 		strcat(CommandLineAll, argv[arg]);
 	}
-	strcat(CommandLineAll, "\n");
         if (emudebug)
-	  printf("\nFull command line is : %s", CommandLineAll);
+	  printf("\nFull command line is : %s\n", CommandLineAll);
 
 	for (arg=1;arg<argc;arg++)
 	{
@@ -295,11 +297,11 @@ int main (int argc, char **argv)
 			strcat (CommandLineMost, " ");
 		}
 	}
-	CommandLineMost[strlen(CommandLineMost)-1] = '\n';
+	CommandLineMost[strlen(CommandLineMost)-1] = '\0';
 
         if (emudebug)
         {
-	        printf("Most command line is : %s", CommandLineMost);
+	        printf("Most command line is : %s\n", CommandLineMost);
 	        printf("analyse %d; copy %d; exit %d; verbose %d; reset %d; peek %d; serve %d\n", analyse,copy,exitonerror,verbose,reset,peeksize,serve);
         }
 

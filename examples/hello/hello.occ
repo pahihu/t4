@@ -1,0 +1,7 @@
+#INCLUDE "hostio.inc" --  -- contains SP protocol
+PROC hello (CHAN OF SP fs, ts )
+  #USE "hostio.lib"
+  SEQ
+    so.write.string.nl    (fs, ts, "Hello world...")
+    so.exit           (fs, ts, sps.success)
+:

@@ -23,6 +23,11 @@ Changes
 
 **NOTE**: There is the excellent [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) from Gavin Crate. Otherwise here is the code. Good luck!
 
+
+pahihu,  6 / 3 / 2020
+
+
+
 Example output from the instruction tracing:
 
         -IPtr------Code-----------------------Mnemonic------------HE---AReg-----BReg-----CReg-------WPtr-----WPtr[0]-

@@ -170,6 +170,24 @@ struct prof *profile_head = NULL;
 /* Signal handler. */
 void handler (int);
 
+void processor_state (void)
+{
+        printf ("-I-EMU414: Processor state\n");
+        printf ("\tIptr          #%8X\n", IPtr);
+        printf ("\tWptr          #%8X\n", WPtr);
+        printf ("\tAreg          #%8X\n", AReg);
+        printf ("\tBreg          #%8X\n", BReg);
+        printf ("\tCreg          #%8X\n", CReg);
+        printf ("\tError         %s\n", ReadError ? "Set" : "Clear");
+        printf ("\tHalt on Error %s\n", ReadHaltOnError ? "Set" : "Clear");
+        printf ("\tFptr1 (Low    #%8X\n", FPtrReg1);
+        printf ("\tBptr1  queue) #%8X\n", BPtrReg1);
+        printf ("\tFptr0 (High   #%8X\n", FPtrReg0);
+        printf ("\tBptr0  queue) #%8X\n", BPtrReg0);
+        printf ("\tTptr1 (Timer  #%8X\n", TPtrLoc1);
+        printf ("\tTptr0 (queues #%8X\n", TPtrLoc0);
+}
+
 void save_dump (void)
 {
         FILE *fout;
@@ -1550,6 +1568,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                         printf ("-I-EMU414: Transputer HaltOnError flag was set.\n");
 		printf ("-I-EMU414: Transputer Error flag is set.\n");
 
+                processor_state ();
+
 		/* Save dump file for later debugging if needed. *****/
                 printf ("-I-EMU414: Saving memory dump.\n");
                 save_dump ();
@@ -1813,6 +1833,7 @@ void start_process (void)
         if (!active)
         {
                 printf ("-E-EMU414: Error - stopped no Link/Process/Timer activity!\n");
+                processor_state ();
                 handler (-1);
         }
 

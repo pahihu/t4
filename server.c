@@ -77,7 +77,7 @@ int  loop2;
 int  FromServerLen = 0;
 int  ToServerLen = 0;
 unsigned char FromServerBuffer[(16*1024)+5];
-unsigned char ToServerBuffer[512];
+unsigned char ToServerBuffer[514];
 void dump_message (char *msg, unsigned char *buffer, int len);
 int DumpMessage;
 
@@ -271,7 +271,7 @@ int server (void)
 				ToServerBuffer[ToServerLen] = byte (Link0OutSource);
 				ToServerLen++;
 				Link0OutSource++;
-				if (ToServerLen == 512)
+				if (ToServerLen == 514)
                                 {
 					printf ("-E-EMUSRV: Help - overflowing ToServerBuffer!\n");
                                         handler (-1);

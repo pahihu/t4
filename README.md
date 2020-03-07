@@ -1,7 +1,7 @@
 Goals
 =====
 
-* emulate the first generation T414/T800 transputers
+* emulate the first generation T414 (maybe T800) transputers
 * instruction tracing
 * to run the D7205A occam 2 toolset on macOS and Linux 64bit
 
@@ -9,11 +9,13 @@ Non-goals
 =========
 
 * cycle accurate emulation
+* emulate multiple transputers
 * to be efficient
 
 Changes
 =======
 
+* working Minix demo
 * D7205A occam 2 toolset successfully built hello example
 * itools directory contains D7205A environment setup and some tool scripts
 * `-sx` flag enables instruction execution tracing
@@ -24,7 +26,7 @@ Changes
 **NOTE**: There is the excellent [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) from Gavin Crate. Otherwise here is the code. Good luck!
 
 
-pahihu,  6 / 3 / 2020
+pahihu,  7 / 3 / 2020
 
 
 

@@ -77,8 +77,6 @@ extern int32_t quitstatus;
 char CommandLineAll[256]  = "\0";
 char CommandLineMost[256] = "\0";
 
-unsigned char core[16*1024];
-
 FILE *CopyIn;
 
 extern unsigned char *mem;
@@ -304,6 +302,9 @@ int main (int argc, char **argv)
 	        printf("Most command line is : %s\n", CommandLineMost);
 	        printf("analyse %d; copy %d; exit %d; verbose %d; reset %d; peek %d; serve %d\n", analyse,copy,exitonerror,verbose,reset,peeksize,serve);
         }
+
+        /* Initialize memory with 'random' values. */
+        init_memory ();
 
 	/* Open boot file. */
 	if ((CopyIn = fopen(CopyFileName, "rb"))==NULL)

@@ -56,10 +56,14 @@
 #define INT(x)          ((int32_t)(x))
 
 /* Memory space. */
-#define MEM_SIZE (2*1024*1024)
-#define MEM_WORD_MASK ((uint32_t)0x001ffffc)
-#define MEM_BYTE_MASK ((uint32_t)0x001fffff)
+#define CORE_SIZE       (2*1024)
+unsigned char core[CORE_SIZE];
+
+#define MEM_SIZE        (2*1024*1024)
+#define MEM_WORD_MASK   ((uint32_t)0x001ffffc)
+#define MEM_BYTE_MASK   ((uint32_t)0x001fffff)
 unsigned char *mem;
+
 uint32_t readword (uint32_t);
 
 /* Registers. */
@@ -69,6 +73,9 @@ uint32_t AReg;
 uint32_t BReg;
 uint32_t CReg;
 uint32_t OReg;
+
+uint32_t DReg;
+uint32_t EReg;
 
 /* Other registers. */
 uint32_t ClockReg0;
@@ -117,6 +124,9 @@ uint32_t IntEnabled;            /* Interrupt enabled */
 #define GetDescPriority(wdesc)  ((wdesc) & 0x00000001)
 #define GetDescWPtr(wdesc)      ((wdesc) & 0xfffffffe)
 
+#define BytesPerWord            4
+#define WordsRead(addr,len)     (((addr&(BytesPerWord-1))?1:0)+(len+(BytesPerWord-1))/BytesPerWord)
+#define BytesRead(addr,len)     (WordsRead(addr,len)*BytesPerWord)
 
 /* Internal variables. */
 unsigned char Instruction;
@@ -153,7 +163,7 @@ extern int msgdebug;
 LinkIface Link[4];
 
 /* Macros. */
-#define index(a,b)		((a)+(4*(b)))
+#define index(a,b)		((a)+(BytesPerWord*(b)))
 
 /* Profile information structure and head. */
 struct prof
@@ -273,6 +283,19 @@ char *mnemonic(unsigned char icode, uint32_t oreg)
         return str;
 }
 
+void init_memory (void)
+{
+        unsigned int i;
+
+#ifndef NDEBUG
+        for (i = 0; i < CORE_SIZE; i += 4)
+                writeword (MostNeg + i, 0x2ffa2ffa);
+
+        for (i = 0; i < MEM_SIZE; i += 4)
+                writeword (ExtMemStart + i, 0x2ffa2ffa);
+#endif
+}
+
 void init_processor (void)
 {
         /* M.Bruestle 15.2.2012 */
@@ -379,6 +402,7 @@ void mainloop (void)
 	switch (Icode)
 	{
 		case 0x00: /* j     */
+                           EReg = Wdesc;
 			   IPtr++;
 			   IPtr = IPtr + OReg;
 			   OReg = 0; IntEnabled = TRUE;
@@ -568,10 +592,10 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 			   if (BReg != Link0In)
 			   {
 				/* Internal communication. */
-				otherWdesc = word (BReg);
+				EReg = word (BReg);
                                 if (msgdebug || emudebug)
-                                        printf ("-I-EMUDBG: In(2): Internal communication. Channel word=#%08X.\n", otherWdesc);
-				if (otherWdesc == NotProcess_p)
+                                        printf ("-I-EMUDBG: In(2): Internal communication. Channel word=#%08X.\n", EReg);
+				if (EReg == NotProcess_p)
 				{
 					/* Not ready. */
                                         if (msgdebug || emudebug)
@@ -583,7 +607,7 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 				else
 				{
 					/* Ready. */
-                                        otherWPtr = GetDescWPtr(otherWdesc);
+                                        otherWPtr = GetDescWPtr(EReg);
 					otherPtr = word (index (otherWPtr, Pointer_s));
                                         if (msgdebug || emudebug)
 					        printf ("-I-EMUDBG: In(3): Transferring message from #%08X.\n", otherPtr);
@@ -591,8 +615,9 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 					{
 						writebyte ((CReg + loop), byte (otherPtr + loop));
 					}
+                                        CReg = CReg + BytesRead(CReg, AReg);
 					writeword (BReg, NotProcess_p);
-					schedule (otherWdesc);
+					schedule (EReg);
 				}
 			   }
 			   else
@@ -609,9 +634,11 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 		case 0x08: /* prod        */
 			   AReg = BReg * AReg;
 			   BReg = CReg;
+                           DReg = AReg;
 			   IPtr++;
 			   break;
 		case 0x09: /* gt          */
+                           EReg = INT(BReg) - INT(AReg);
 			   if (INT(BReg) > INT(AReg))
 			   {
 				AReg = true_t;
@@ -641,10 +668,10 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   if (BReg != Link0Out)
 			   {
 				/* Internal communication. */
-				otherWdesc = word (BReg);
+				EReg = word (BReg);
                                 if (msgdebug || emudebug)
-                                        printf ("-I-EMUDBG: out(2): Internal communication. Channel word=#%08X.\n", otherWdesc);
-				if (otherWdesc == NotProcess_p)
+                                        printf ("-I-EMUDBG: out(2): Internal communication. Channel word=#%08X.\n", EReg);
+				if (EReg == NotProcess_p)
 				{
 					/* Not ready. */
                                         if (msgdebug || emudebug)
@@ -656,7 +683,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				else
 				{
 					/* Ready. */
-                                        otherWPtr  = GetDescWPtr(otherWdesc);
+                                        otherWPtr  = GetDescWPtr(EReg);
 					altState = otherPtr = word (index (otherWPtr, State_s));
                                         if (msgdebug || emudebug)
                                                 printf ("-I-EMUDBG: out(3): Memory address/ALT state=#%08X.\n", altState);
@@ -678,10 +705,10 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                                         {
                                                                 printf ("-I-EMUDBG: out(5): ALT state=Ready_p.\n");
                                                                 printf ("-I-EMUDBG: out(6): Reschedule ALT process (Wdesc=#%08X, IPtr=#%08X).\n",
-                                                                                                otherWdesc, word (index (otherWPtr, Iptr_s)));
+                                                                                                EReg, word (index (otherWPtr, Iptr_s)));
                                                         }
 							writeword (index (otherWPtr, State_s), Ready_p);
-							schedule (otherWdesc);
+							schedule (EReg);
 						}
           				}
 					else
@@ -693,8 +720,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 						{
 							writebyte ((otherPtr + loop), byte (CReg + loop));
 						}
+                                                CReg = CReg + BytesRead(CReg, AReg);
 						writeword (BReg, NotProcess_p);
-						schedule (otherWdesc);
+						schedule (EReg);
 					}
 				}
 			   }
@@ -722,7 +750,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   temp = GetDescWPtr(AReg);
 			   IPtr++;
 			   writeword (index (temp, Iptr_s), (IPtr + BReg));
-			   schedule (temp | ProcPriority);
+                           EReg = temp | ProcPriority;
+			   schedule (EReg);
 			   break;
 		case 0x0e: /* outbyte     */
                            if (msgdebug || emudebug)
@@ -778,6 +807,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 						/* Ready. */
 						writebyte (otherPtr, AReg);
 						writeword (BReg, NotProcess_p);
+                                                CReg = otherPtr + BytesPerWord;
 						schedule (otherWdesc);
 					}
 				}
@@ -861,6 +891,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 						/* Ready. */
 						writeword (otherPtr, AReg);
 						writeword (BReg, NotProcess_p);
+                                                CReg = otherPtr + BytesPerWord;
 						schedule (otherWdesc);
 					}
 				}
@@ -922,6 +953,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   IPtr++;
 			   break;
 		case 0x19: /* norm        */
+                           DReg = AReg;
 			   AReg = t4_norm64 (BReg, AReg);
 			   BReg = t4_carry;
 			   CReg = t4_normlen;
@@ -945,6 +977,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				AReg = temp;
 				BReg = temp2;
 			   }
+                           CReg = BReg;
 			   IPtr++;
 			   break;
 		case 0x1b: /* ldpi        */
@@ -981,6 +1014,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   else
 				AReg = INT(BReg) % INT(AReg);
 			   BReg = CReg;
+                           CReg = AReg;
 			   IPtr++;
 			   break;
 		case 0x20: /* ret         */
@@ -988,17 +1022,20 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   WPtr = index (WPtr, 4);
 			   break;
 		case 0x21: /* lend        */ /****/
+                           EReg = Wdesc;
 			   temp = word (index (BReg, 1));
 			   IPtr++;
 			   if (temp > 1)
 			   {
 				writeword (index (BReg, 1), (temp - 1));
-				writeword (BReg, (word (BReg) + 1));
+                                CReg = word (BReg) + 1;
+				writeword (BReg, CReg);
 				IPtr =  IPtr - AReg;
 				D_check();
 			   }
 			   else
 			   {
+                                CReg = 0;
 				writeword (index (BReg, 1), (temp - 1));
 			   }
 			   break;
@@ -1015,6 +1052,30 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   }
 			   IPtr++;
 			   break;
+                case 0x24: /* testlde     */
+                           CReg = BReg;
+                           BReg = AReg;
+                           AReg = EReg;
+                           IPtr++;
+                           break;
+                case 0x25: /* testldd     */
+                           CReg = BReg;
+                           BReg = AReg;
+                           AReg = DReg;
+                           IPtr++;
+                           break;
+                case 0x27: /* testste     */
+                           EReg = AReg;
+                           AReg = BReg;
+                           BReg = CReg;
+                           IPtr++;
+                           break;
+                case 0x28: /* teststd     */
+                           DReg = AReg;
+                           AReg = BReg;
+                           BReg = CReg;
+                           IPtr++;
+                           break;
 		case 0x29: /* testerr     */
 			   CReg = BReg;
 			   BReg = AReg;
@@ -1039,7 +1100,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   IPtr++;
 			   if (ProcPriority == HiPriority)
 			   {
-				if (INT(ClockReg0 - AReg) > 0)
+                                DReg = INT(ClockReg0 - AReg);
+				if (INT(DReg) > 0)
 					;
 				else
 				{
@@ -1049,7 +1111,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   }
 			   else
 			   {
-				if (INT(ClockReg1 - AReg) > 0)
+                                DReg = INT(ClockReg1 - AReg);
+				if (INT(DReg) > 0)
 					;
 				else
 				{
@@ -1060,10 +1123,17 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   break;
 		case 0x2c: /* XXX div         */
 			   if ((AReg==0) || ((AReg==-1)&&(BReg==0x80000000)))
+                           {
 				SetError;
+                                temp = 0;
+                           }
 			   else
+                           {
+                                temp = INT(BReg) % INT(AReg);
 				AReg = INT(BReg) / INT(AReg);
+                           }
 			   BReg = CReg;
+                           CReg = temp;
 			   IPtr++;
 			   break;
 		case 0x2e: /* XXX dist        */
@@ -1073,12 +1143,14 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				temp = ClockReg0;
 			   else
 				temp = ClockReg1;
-			   if ((BReg==true_t) && (INT(temp-CReg)>=0) && (word(index(WPtr,0))==NoneSelected_o))
+                           DReg = INT(temp-CReg);
+			   if ((BReg==true_t) && (INT(DReg)>=0) && (word(index(WPtr,0))==NoneSelected_o))
 			   {
                                 if (emudebug)
 				        printf ("-I-EMUDBG: dist(2): Taking branch #%8X.\n", AReg);
 				writeword (index (WPtr, 0), AReg);
 				AReg = true_t;
+                                CReg = TimeNotSet_p;
 			   }
 			   else
 			   {
@@ -1091,6 +1163,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x2f: /* XXX: support ALT construct on Link0 disc        */
                            if (emudebug)
 			        printf ("-I-EMUDBG: disc(1): Channel=#%08X.\n", CReg);
+                           EReg = Wdesc;
           		   if (CReg == Link0In)
           		   {
                                 if (emudebug)
@@ -1169,6 +1242,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   t4_carry = CReg;
 			   AReg = t4_mul32 (BReg, AReg);
 			   BReg = t4_carry;
+                           CReg = BReg;
 			   IPtr++;
 			   break;
 		case 0x32: /* not         */
@@ -1187,11 +1261,13 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x35: /* lshr        */
 			   AReg = t4_shr64 (CReg, BReg, AReg);
 			   BReg = t4_carry;
+                           CReg = BReg;
 			   IPtr++;
 			   break;
 		case 0x36: /* lshl        */
 			   AReg = t4_shl64 (CReg, BReg, AReg);
 			   BReg = t4_carry;
+                           CReg = BReg;
 			   IPtr++;
 			   break;
 		case 0x37: /* lsum        */
@@ -1211,7 +1287,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   break;
 		case 0x39: /* runp        */
 			   IPtr++;
-			   schedule (AReg);
+                           EReg = AReg;
+			   schedule (EReg);
 			   break;
 		case 0x3a: /* XXX xword       */
 			   if ((AReg>BReg) && (INT(BReg) >= 0))
@@ -1228,6 +1305,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x3b: /* XXX sb          */
 			   writebyte (AReg, BReg);
 			   AReg = CReg;
+                           CReg = 0;
 			   IPtr++;
 			   break;
 		case 0x3c: /* gajw        */
@@ -1255,6 +1333,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   CReg = BReg;
 			   BReg = AReg & 0x00000003;
 			   AReg = AReg >> 2;
+                           DReg = 2;
 			   IPtr++;
 			   break;
 		case 0x40: /* shr         */
@@ -1267,9 +1346,10 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   break;
 		case 0x41: /* shl         */
 			   if (AReg < 32)
-				AReg = BReg << AReg;
+				EReg = BReg << AReg;
 			   else
-				AReg = 0;
+				EReg = 0;
+                           AReg = EReg;
 			   BReg = CReg;
 			   IPtr++;
 			   break;
@@ -1328,9 +1408,13 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                     (word (index (WPtr, TLink_s)) == TimeSet_p) &&
                                     (INT(BReg - word (index (WPtr, Time_s))) >= 0))
 			   {
-                                if (emudebug)
-				        printf ("-I-EMUDBG: enbt(2): Time already set earlier than or equal to this one.\n");
-				/* ALT time is before this guard's time. Ignore. */
+                                DReg = INT(BReg - word (index (WPtr, Time_s)));
+                                if (INT(DReg) >= 0)
+                                {
+                                        if (emudebug)
+				                printf ("-I-EMUDBG: enbt(2): Time already set earlier than or equal to this one.\n");
+				        /* ALT time is before this guard's time. Ignore. */
+                                }
 			   }
 			   else if ((AReg == true_t) && (word (index (WPtr, TLink_s)) == TimeSet_p))
 			   {
@@ -1345,6 +1429,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x48: /* XXX: support ALT construct on Link0  enbc        */
                            if (emudebug)
 			        printf ("-I-EMUDBG: enbc(1): Channel=#%08X.\n", BReg);
+                           EReg = Wdesc;
 			   if ((AReg == true_t) && (word(BReg) == NotProcess_p))
 			   {
                                 if (emudebug)
@@ -1389,7 +1474,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   IPtr++;
 			   break;
 		case 0x49: /* enbs        */
-			   if (AReg == true_t) writeword (index (WPtr, State_s), Ready_p);
+			   if (AReg == true_t)
+                                writeword (index (WPtr, State_s), Ready_p);
 			   IPtr++;
 			   break;
 		case 0x4a: /* move        */
@@ -1397,6 +1483,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   {
 				writebyte ((BReg+temp), byte (CReg+temp));
 			   }
+                           DReg = WordsRead(CReg, AReg);
+                           CReg = CReg + DReg * BytesPerWord;
 			   IPtr++;
 			   break;
 		case 0x4b: /* or          */
@@ -1533,6 +1621,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   AReg = (temp & 0x007fffff) << 8;
 			   AReg = AReg | 0x80000000;
 			   BReg = (temp & 0x7f800000) >> 23;
+                           DReg = 23;
 			   if (t4_iszero (temp))
 				temp2 = 0x00000000;
 			   else if (t4_isinf (temp))
@@ -1552,6 +1641,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   {
 				temp = 1 - temp;
 				CReg = 0;
+                                DReg = temp;
 				AReg = t4_shr64 (BReg, AReg, temp);
 				BReg = t4_carry;
 			   }
@@ -1571,12 +1661,13 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   if (((CReg & 0x80000000) == 0) && (CReg >= 0x000000ff))
 			   {
 				AReg = t4_infinity ();
-				CReg = BReg << 1;
+				CReg = BReg << 1; /* ??? tis_cde-reg says BReg only. */
 			   }
 			   else
 			   {
 				AReg = (AReg & 0x7fffff00) >> 8;
 				temp = (CReg & 0x000001ff) << 23;
+                                DReg = 23;
 				AReg = AReg | temp;
 				BReg = AReg;
 				CReg = CReg >> 9;
@@ -1594,9 +1685,10 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   t4_carry = 0;
 			   if ((AReg==0x80000000)&&(BReg==0x80000000))
 				SetError;
-			   AReg = t4_mul32 (AReg, BReg);
-			   AReg = t4_shr64 (t4_carry, AReg, (uint32_t)31);
+			   temp = t4_mul32 (AReg, BReg);
+			   AReg = t4_shr64 (t4_carry, temp, (uint32_t)31);
 			   BReg = CReg;
+                           CReg = temp;
 			   IPtr++;
 			   break;
 		case 0x73: /* cflerr      */
@@ -1604,21 +1696,15 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				SetError;
 			   IPtr++;
 			   break;
-		default  : printf ("-E-EMU414: Error - bad Icode!.\n");
-	                   printf ("-E-EMU414: IPtr=%08X, Instr=%2X [%6s], OReg=%8X, AReg=%8X, BReg=%8X, CReg=%8X, WPtr=%08X. WPtr[0]=%8X\n", 
-                                        IPtr, Instruction, 
-                                        mnemonic (Icode, OReg),
-                                        OReg, AReg, BReg, CReg, WPtr,word(WPtr));
+		default  : printf ("-E-EMU414: Error - bad Icode! (#%02X)\n", OReg);
+                           processor_state ();
 			   handler (-1);
 			   break;
 	}
 			   OReg = 0;
 			   break;
-		default  : printf ("-E-EMU414: Error - bad Icode!.\n");
-	                   printf ("-E-EMU414: IPtr=%08X, Instr=%2X [%6s], OReg=%8X, AReg=%8X, BReg=%8X, CReg=%8X, WPtr=%08X. WPtr[0]=%8X\n", 
-                                        IPtr, Instruction, 
-                                        mnemonic (Icode, OReg),
-                                        OReg, AReg, BReg, CReg, WPtr,word(WPtr));
+		default  : printf ("-E-EMU414: Error - bad Icode! (#%02X)\n", OReg);
+                           processor_state ();
 			   handler (-1);
 			   break;
 	}
@@ -2003,21 +2089,20 @@ void interrupt (void)
 /* Insert a process into the relevant priority process queue. */
 void insert (uint32_t time)
 {
-	uint32_t ptr;
 	uint32_t nextptr;
 	uint32_t timetemp;
 
 	writeword (index (WPtr, Time_s), (time + 1));
 
 	if (ProcPriority == HiPriority)
-		ptr = TPtrLoc0;
+		DReg = TPtrLoc0;
 	else
-		ptr = TPtrLoc1;
+		DReg = TPtrLoc1;
 
-	if (ptr == NotProcess_p)
+	if (DReg == NotProcess_p)
 	{
 		/* Empty list. */
-		/*writeword (ptr, WPtr); Strange! */
+		/*writeword (DReg, WPtr); Strange! */
 		writeword (index (WPtr, TLink_s), NotProcess_p);
 		if (ProcPriority == HiPriority)
 			TPtrLoc0 = WPtr;
@@ -2027,11 +2112,11 @@ void insert (uint32_t time)
 	else
 	{
 		/* One or more entries. */
-		timetemp = word (index (ptr, Time_s));
+		timetemp = word (index (DReg, Time_s));
 		if (INT(timetemp - time) > 0)
 		{
 			/* Put in front of first entry. */
-			writeword (index (WPtr, TLink_s), ptr);
+			writeword (index (WPtr, TLink_s), DReg);
 			if (ProcPriority == HiPriority)
 				TPtrLoc0 = WPtr;
 			else
@@ -2040,20 +2125,20 @@ void insert (uint32_t time)
 		else
 		{
 			/* Somewhere after the first entry. */
-			/* Run along list until ptr is before the time and nextptr is after it. */
-			nextptr = word (index (ptr, TLink_s));
+			/* Run along list until DReg is before the time and nextptr is after it. */
+			nextptr = word (index (DReg, TLink_s));
 			if (nextptr != NotProcess_p)
 				timetemp = word (index (nextptr, Time_s));
 			while ((INT(time - timetemp) > 0) && (nextptr != NotProcess_p))
 			{
-				ptr = nextptr;
-				nextptr = word (index (ptr, TLink_s));
+				DReg = nextptr;
+				nextptr = word (index (DReg, TLink_s));
 				if (nextptr != NotProcess_p)
-					timetemp = word (index (ptr, Time_s));
+					timetemp = word (index (DReg, Time_s));
 			}
 
 			/* Insert into list. */
-			writeword (index (ptr, TLink_s), WPtr);
+			writeword (index (DReg, TLink_s), WPtr);
 			writeword (index (WPtr, TLink_s), nextptr);
 		}
 	}
@@ -2062,7 +2147,6 @@ void insert (uint32_t time)
 /* Purge a process from the timer queue, if it is there. */
 void purge_timer (void)
 {
-	uint32_t ptr;
 	uint32_t oldptr;
 
 	/* Delete any entries at the beginning of the list. */
@@ -2073,8 +2157,8 @@ void purge_timer (void)
 			TPtrLoc0 = word (index (WPtr, TLink_s));
 		}
 
-		ptr = TPtrLoc0;
-		oldptr = ptr;
+		DReg = TPtrLoc0;
+		oldptr = DReg;
 	}
 	else
 	{
@@ -2083,22 +2167,22 @@ void purge_timer (void)
 			TPtrLoc1 = word (index (WPtr, TLink_s));
 		}
 
-		ptr = TPtrLoc1;
-		oldptr = ptr;
+		DReg = TPtrLoc1;
+		oldptr = DReg;
 	}
 
 	/* List exists. */
-	while (ptr != NotProcess_p)
+	while (DReg != NotProcess_p)
 	{
-		if (ptr == WPtr)
+		if (DReg == WPtr)
 		{
-			ptr = word (index (ptr, TLink_s));
-			writeword (index (oldptr, TLink_s), ptr);
+			DReg = word (index (DReg, TLink_s));
+			writeword (index (oldptr, TLink_s), DReg);
 		}
 		else
 		{
-			oldptr = ptr;
-			ptr = word (index (ptr, TLink_s));
+			oldptr = DReg;
+			DReg = word (index (DReg, TLink_s));
 		}
 	}	
 }
@@ -2144,7 +2228,8 @@ INLINE void update_time (void)
 		        temp3 = word (index (TPtrLoc0, Time_s));
 		        while ((INT(ClockReg0 - temp3) > 0) && (TPtrLoc0 != NotProcess_p))
 		        {
-			        schedule (TPtrLoc0 | HiPriority);
+                                EReg = TPtrLoc0 | HiPriority;
+			        schedule (EReg);
 
 			        TPtrLoc0 = word (index (TPtrLoc0, TLink_s));
 			        temp3 = word (index (TPtrLoc0, Time_s));
@@ -2164,7 +2249,8 @@ INLINE void update_time (void)
 			        temp3 = word (index (TPtrLoc1, Time_s));
 			        while ((INT(ClockReg1 - temp3) > 0) && (TPtrLoc1 != NotProcess_p))
 			        {
-				        schedule (TPtrLoc1 | LoPriority);
+                                        EReg = TPtrLoc1 | LoPriority;
+				        schedule (EReg);
 
 				        TPtrLoc1 = word (index (TPtrLoc1, TLink_s));
 				        temp3 = word (index (TPtrLoc1, Time_s));
@@ -2194,16 +2280,33 @@ uint32_t readword (uint32_t ptr)
 #warning Using little-endian access!
         uint32_t *wptr;
 
-        wptr = (uint32_t *)(mem + (MEM_WORD_MASK & ptr));
+        if (INT(ptr) < INT(ExtMemStart))
+                wptr = (uint32_t *)(core + (MEM_WORD_MASK & ptr));
+        else
+        {
+                ptr -= CORE_SIZE;
+                wptr = (uint32_t *)(mem + (MEM_WORD_MASK & ptr));
+        }
         result = *wptr;
 #else
 	unsigned char val[4];
 
 	/* Get bytes, ensuring memory references are in range. */
-	val[0] = mem[(ptr & MEM_WORD_MASK)];
-	val[1] = mem[(ptr & MEM_WORD_MASK)+1];
-	val[2] = mem[(ptr & MEM_WORD_MASK)+2];
-	val[3] = mem[(ptr & MEM_WORD_MASK)+3];
+        if (INT(ptr) < INT(ExtMemStart))
+        {
+	        val[0] = core[(ptr & MEM_WORD_MASK)];
+	        val[1] = core[(ptr & MEM_WORD_MASK)+1];
+	        val[2] = core[(ptr & MEM_WORD_MASK)+2];
+	        val[3] = core[(ptr & MEM_WORD_MASK)+3];
+        }
+        else
+        {
+                ptr -= CORE_SIZE;
+	        val[0] = mem[(ptr & MEM_WORD_MASK)];
+	        val[1] = mem[(ptr & MEM_WORD_MASK)+1];
+	        val[2] = mem[(ptr & MEM_WORD_MASK)+2];
+	        val[3] = mem[(ptr & MEM_WORD_MASK)+3];
+        }
 
 	result = (val[0]) | (val[1]<<8) | (val[2]<<16) | (val[3]<<24);
 #endif
@@ -2225,11 +2328,18 @@ uint32_t word (uint32_t ptr)
 /* Write a word to memory. */
 void writeword (uint32_t ptr, uint32_t value)
 {
+
 #ifdef LITTLE_ENDIAN
 #warning Using little-endian access!
         uint32_t *wptr;
 
-        wptr = (uint32_t *) (mem + (MEM_WORD_MASK & ptr));
+        if (INT(ptr) < INT(ExtMemStart))
+                wptr = (uint32_t *) (core + (MEM_WORD_MASK & ptr));
+        else
+        {
+                ptr -= CORE_SIZE;
+                wptr = (uint32_t *) (mem + (MEM_WORD_MASK & ptr));
+        }
         *wptr = value;
 #else
 	unsigned char val[4];
@@ -2240,10 +2350,21 @@ void writeword (uint32_t ptr, uint32_t value)
 	val[3] = ((value & 0xff000000)>>24);
 
 	/* Write bytes, ensuring memory references are in range. */
-	mem[(ptr & MEM_WORD_MASK)]   = val[0];
-	mem[(ptr & MEM_WORD_MASK)+1] = val[1];
-	mem[(ptr & MEM_WORD_MASK)+2] = val[2];
-	mem[(ptr & MEM_WORD_MASK)+3] = val[3];
+        if (INT(ptr) < INT(ExtMemStart))
+        {
+	        core[(ptr & MEM_WORD_MASK)]   = val[0];
+	        core[(ptr & MEM_WORD_MASK)+1] = val[1];
+	        core[(ptr & MEM_WORD_MASK)+2] = val[2];
+	        core[(ptr & MEM_WORD_MASK)+3] = val[3];
+        }
+        else
+        {
+                ptr -= CORE_SIZE;
+	        mem[(ptr & MEM_WORD_MASK)]   = val[0];
+	        mem[(ptr & MEM_WORD_MASK)+1] = val[1];
+	        mem[(ptr & MEM_WORD_MASK)+2] = val[2];
+	        mem[(ptr & MEM_WORD_MASK)+3] = val[3];
+        }
 #endif
 
         if (emumem)
@@ -2256,9 +2377,14 @@ unsigned char byte (uint32_t ptr)
 {
 	unsigned char result;
 
-
 	/* Get byte, ensuring memory reference is in range. */
-	result = mem[(ptr & MEM_BYTE_MASK)];
+        if (INT(ptr) < INT(ExtMemStart))
+	        result = core[(ptr & MEM_BYTE_MASK)];
+        else
+        {
+                ptr -= CORE_SIZE;
+	        result = mem[(ptr & MEM_BYTE_MASK)];
+        }
 
 	return (result);
 }
@@ -2267,7 +2393,13 @@ unsigned char byte (uint32_t ptr)
 INLINE void writebyte (uint32_t ptr, unsigned char value)
 {
 	/* Write byte, ensuring memory reference is in range. */
-	mem[(ptr & MEM_BYTE_MASK)]   = value;
+        if (INT(ptr) < INT(ExtMemStart))
+                core[(ptr & MEM_BYTE_MASK)] = value;
+        else
+        {
+                ptr -= CORE_SIZE;
+	        mem[(ptr & MEM_BYTE_MASK)] = value;
+        }
 }
 
 /* Add an executing instruction to the profile list. */

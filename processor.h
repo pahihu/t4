@@ -49,6 +49,7 @@
 #define NoneSelected_o	0xffffffff
 #define Ready_p		0x80000003
 #define MemStart	0x80000048
+#define ExtMemStart     0x80000800
 
 #define HiPriority	0x00000000
 #define LoPriority	0x00000001
@@ -77,6 +78,7 @@ void writebyte     (uint32_t, unsigned char);
 void add_profile   (int32_t);
 void print_profile (void);
 void reset_channel (uint32_t);
+void init_memory   (void);
 
 /* Processor definitions. */
 #define Link0Out 0x80000000 /****/

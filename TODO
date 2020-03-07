@@ -23,8 +23,9 @@ BOOT FILES
 +D7205A occam 2 toolset
         200306AP  successfully built hello.occ
 
--Minix demo boot.btl
++Minix demo boot.btl
         200304AP  hangs on Loading boot monitor...
         200306AP  hangs on sizing memory, server reports too short messages
         200307AP  fixed LinkChannel checking, hangs on Loading boot monitor again
+        200307AP  fixed DRAM memory wrapping, server not implemented packet sending, it works!
 

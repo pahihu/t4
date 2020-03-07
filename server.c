@@ -78,7 +78,9 @@ int  FromServerLen = 0;
 int  ToServerLen = 0;
 unsigned char FromServerBuffer[(16*1024)+5];
 unsigned char ToServerBuffer[514];
-void dump_message (char *msg, unsigned char *buffer, int len);
+void dump_message   (char *msg, unsigned char *buffer, int len);
+void notimpl_packet (void);
+void error_packet   (void);
 int DumpMessage;
 
 #define MAX_FD  256
@@ -474,12 +476,32 @@ void message(void)
 		case SP_VERSION:     sp_version();
 				     break;
 
-		default:	printf ("-E-EMUSRV: Error - bad server command %2X.\n", tag);
+		default:        /*	
+                                printf ("-E-EMUSRV: Error - bad server command %02X.\n", tag);
                                 dump_message (0, ToServerBuffer, ToServerLen);
 				handler (-1);
+                                */
+                                notimpl_packet ();
 				break;
 	}
         DumpMessage = TRUE;
+}
+
+
+void notimpl_packet (void)
+{
+	FromServerBuffer[0] = 6;
+	FromServerBuffer[1] = 0;
+
+	FromServerBuffer[2] = SP_NOT_IMPLEMENTED;
+
+	FromServerBuffer[3] = 0;
+	FromServerBuffer[4] = 0;
+	FromServerBuffer[5] = 0;
+	FromServerBuffer[6] = 0;
+	FromServerBuffer[7] = 0;
+
+	FromServerLen = 8;
 }
 
 
@@ -678,6 +700,12 @@ void sp_write (void)
 		        if (ToServerBuffer[pos] == 0x0d)
 			        ToServerBuffer[pos] = 0x00;
 
+        /* Minix demo debug
+        if (strncmp ((char *) &ToServerBuffer[9], "Loading boot monitor", 20) == 0)
+        {
+                emudebug = TRUE; msgdebug = TRUE;
+        }
+        */
 	length = fwrite ((&ToServerBuffer[9]), 1, datalen, fd);
 
 	/* Must flush screen output. Strange standard. */
@@ -1365,11 +1393,11 @@ void sp_commandline (void)
 
 void sp_core (void)
 {
-	int32_t offset;
-	int  length;
+	uint32_t offset, i;
+	uint32_t length;
 	extern int peeksize;
 	extern int analyse;
-	extern unsigned char core[16*1024];
+	extern unsigned char *core;
 
 	offset = ToServerBuffer[3] + (ToServerBuffer[4]<<8);
 	offset = offset + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24);
@@ -1385,7 +1413,8 @@ void sp_core (void)
 	if ((offset+length) > (1024*peeksize))
 		length = (1024*peeksize) - offset;
 
-	memcpy (&FromServerBuffer[5], &core[offset], length);
+        for (i = 0; i < length; i++)
+                FromServerBuffer[5 + i] = core[offset + i];
 
 	FromServerBuffer[2] = SP_OK;
 

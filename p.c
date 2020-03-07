@@ -39,6 +39,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include "processor.h"
 #include "arithmetic.h"
@@ -76,9 +77,6 @@ uint32_t TNextReg0;
 uint32_t TNextReg1;
 uint32_t TPtrLoc0;              /* XXX 0x80000024 */
 uint32_t TPtrLoc1;              /* XXX 0x80000028 */
-
-#define HiTimer                 ClockReg0
-#define LoTimer                 ClockReg1
 
 uint32_t FPtrReg0;
 uint32_t BPtrReg0;
@@ -170,6 +168,25 @@ struct prof *profile_head = NULL;
 
 /* Signal handler. */
 void handler (int);
+
+struct timeval LastTOD;         /* Time-of-day */
+
+/* Update time-of-day. */
+void update_tod (struct timeval *tp)
+{
+        int rc;
+
+        rc = gettimeofday (tp, (void *)0);
+        if (rc < 0)
+        {
+                printf ("-W-EMU414: Failed to get time value.\n");
+
+                *tp = LastTOD;
+                tp->tv_usec++;
+                if (0 == tp->tv_usec)
+                        tp->tv_sec++;
+        }
+}
 
 /* Reset a link channel */
 void reset_channel (uint32_t addr)
@@ -269,6 +286,11 @@ void init_processor (void)
         ClearInterrupt; /* XXX not required ??? */
 
         IntEnabled = TRUE;
+
+        /* Init TOD. */
+        LastTOD.tv_sec  = 0;
+        LastTOD.tv_usec = 0;
+        update_tod (&LastTOD);
 
         /* ErrorFlag is in an indeterminate state on power up. */
 }
@@ -985,11 +1007,11 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   BReg = AReg;
 			   if (ProcPriority == HiPriority)
 			   {
-				AReg = HiTimer;
+				AReg = ClockReg0;
 			   }
 			   else
 			   {
-				AReg = LoTimer;
+				AReg = ClockReg1;
 			   }
 			   IPtr++;
 			   break;
@@ -1017,7 +1039,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   IPtr++;
 			   if (ProcPriority == HiPriority)
 			   {
-				if (INT(HiTimer - AReg) > 0)
+				if (INT(ClockReg0 - AReg) > 0)
 					;
 				else
 				{
@@ -1027,7 +1049,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   }
 			   else
 			   {
-				if (INT(LoTimer - AReg) > 0)
+				if (INT(ClockReg1 - AReg) > 0)
 					;
 				else
 				{
@@ -1048,9 +1070,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            if (emudebug)
 			        printf ("-I-EMUDBG: dist(1): Time=%8X.\n", CReg);
 			   if (ProcPriority == HiPriority)
-				temp = HiTimer;
+				temp = ClockReg0;
 			   else
-				temp = LoTimer;
+				temp = ClockReg1;
 			   if ((BReg==true_t) && (INT(temp-CReg)>=0) && (word(index(WPtr,0))==NoneSelected_o))
 			   {
                                 if (emudebug)
@@ -2081,24 +2103,46 @@ void purge_timer (void)
 	}	
 }
 
+
 /* XXX Update time, check timer queues. */
 INLINE void update_time (void)
 {
         uint32_t temp3;
+        struct timeval tv;
+        unsigned long elapsed_usec;
 
 	/* Move timers on if necessary, and increment timeslice counter. */
 	count1++;
 	if (count1 > 10)
 	{
 		count1 = 0;
-		if (Timers == TimersGo) HiTimer++;
-		count2++;
+
+                /* Check TOD clock, on UNIX ~ 1us resolution. */
+                update_tod (&tv);
+
+                /* Calculate elapsed usecs. */
+                elapsed_usec = (tv.tv_sec  - LastTOD.tv_sec) * 1000000 +
+                               (tv.tv_usec - LastTOD.tv_usec);
+                
+                /* Time not lapsed ? Return. */
+                if (0 == elapsed_usec)
+                        return;
+
+                /* printf ("-I-EMUDBG: Elapsed time %lu.\n", elapsed_usec); */
+
+                /* Update last known TOD clock. */
+                LastTOD = tv;
+
+		if (Timers == TimersGo)
+                        ClockReg0 += elapsed_usec;
+
+		count2 += elapsed_usec;
 
 		/* Check high priority timer queue. */
                 if ((ProcPriority == HiPriority) || IntEnabled)
                 {
 		        temp3 = word (index (TPtrLoc0, Time_s));
-		        while ((INT(HiTimer - temp3) > 0) && (TPtrLoc0 != NotProcess_p))
+		        while ((INT(ClockReg0 - temp3) > 0) && (TPtrLoc0 != NotProcess_p))
 		        {
 			        schedule (TPtrLoc0 | HiPriority);
 
@@ -2109,15 +2153,16 @@ INLINE void update_time (void)
 
 		if (count2 > 64) /* ~ 64us */
 		{
-			count2 = 0;
-			if (Timers == TimersGo) LoTimer++;
-			count3++;
+			if (Timers == TimersGo)
+                                ClockReg1 += (count2 / 64);
+			count3 += (count2 / 64);
+			count2  =  count2 & 63;
 
 			/* Check low priority timer queue. */
                         if ((ProcPriority == HiPriority) || IntEnabled)
                         {
 			        temp3 = word (index (TPtrLoc1, Time_s));
-			        while ((INT(LoTimer - temp3) > 0) && (TPtrLoc1 != NotProcess_p))
+			        while ((INT(ClockReg1 - temp3) > 0) && (TPtrLoc1 != NotProcess_p))
 			        {
 				        schedule (TPtrLoc1 | LoPriority);
 
@@ -2126,10 +2171,10 @@ INLINE void update_time (void)
 			        }
                         }
 
-			if (count3 > 15) /* ~ 960us */
+			if (count3 > 16) /* ~ 1024us */
 			{
-				count3 = 0;
-				timeslice++;
+				timeslice += (count3 / 16);
+				count3     = count3 & 15;
 			}
 				
 #ifdef __MWERKS__

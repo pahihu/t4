@@ -26,4 +26,5 @@ BOOT FILES
 -Minix demo boot.btl
         200304AP  hangs on Loading boot monitor...
         200306AP  hangs on sizing memory, server reports too short messages
+        200307AP  fixed LinkChannel checking, hangs on Loading boot monitor again
 

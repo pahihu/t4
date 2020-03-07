@@ -150,6 +150,7 @@ extern int profiling;
 extern int32_t profile[10];
 extern int emudebug;
 extern int emumem;
+extern int msgdebug;
 
 LinkIface Link[4];
 
@@ -170,22 +171,45 @@ struct prof *profile_head = NULL;
 /* Signal handler. */
 void handler (int);
 
+/* Reset a link channel */
+void reset_channel (uint32_t addr)
+{
+        Channel *chan;
+
+
+        /* Reset channel control word. */
+        writeword (addr, NotProcess_p);
+
+        chan = (Channel *)0;
+        if (addr == Link0In)
+                chan = &Link[0].In;
+        else if (addr == Link0Out)
+                chan = &Link[0].Out;
+        
+        if (chan)
+        {
+                chan->Address = MostNeg;
+                chan->Length  = 0;
+        }
+}
+
+/* Print processor state. */
 void processor_state (void)
 {
         printf ("-I-EMU414: Processor state\n");
-        printf ("\tIptr          #%8X\n", IPtr);
-        printf ("\tWptr          #%8X\n", WPtr);
-        printf ("\tAreg          #%8X\n", AReg);
-        printf ("\tBreg          #%8X\n", BReg);
-        printf ("\tCreg          #%8X\n", CReg);
+        printf ("\tIptr          #%08X\n", IPtr);
+        printf ("\tWptr          #%08X\n", WPtr);
+        printf ("\tAreg          #%08X\n", AReg);
+        printf ("\tBreg          #%08X\n", BReg);
+        printf ("\tCreg          #%08X\n", CReg);
         printf ("\tError         %s\n", ReadError ? "Set" : "Clear");
         printf ("\tHalt on Error %s\n", ReadHaltOnError ? "Set" : "Clear");
-        printf ("\tFptr1 (Low    #%8X\n", FPtrReg1);
-        printf ("\tBptr1  queue) #%8X\n", BPtrReg1);
-        printf ("\tFptr0 (High   #%8X\n", FPtrReg0);
-        printf ("\tBptr0  queue) #%8X\n", BPtrReg0);
-        printf ("\tTptr1 (Timer  #%8X\n", TPtrLoc1);
-        printf ("\tTptr0 (queues #%8X\n", TPtrLoc0);
+        printf ("\tFptr1 (Low    #%08X\n", FPtrReg1);
+        printf ("\tBptr1  queue) #%08X\n", BPtrReg1);
+        printf ("\tFptr0 (High   #%08X\n", FPtrReg0);
+        printf ("\tBptr0  queue) #%08X\n", BPtrReg0);
+        printf ("\tTptr1 (Timer  #%08X\n", TPtrLoc1);
+        printf ("\tTptr0 (queues #%08X\n", TPtrLoc0);
 }
 
 void save_dump (void)
@@ -235,8 +259,8 @@ char *mnemonic(unsigned char icode, uint32_t oreg)
 void init_processor (void)
 {
         /* M.Bruestle 15.2.2012 */
-        writeword (Link0Out, NotProcess_p);
-        writeword (Link0In, NotProcess_p);
+        reset_channel (Link0Out);
+        reset_channel (Link0In);
 
         IPtr = MemStart;
         CReg = Link0In;
@@ -305,7 +329,7 @@ void mainloop (void)
                 {
                         if (0 == asmLines++ % 25)
                                 printf ("-IPtr------Code-----------------------Mnemonic------------HE---AReg-----BReg-----CReg-------WPtr-----WPtr[0]-\n");
-                        printf ("%c%8X: ", HiPriority == ProcPriority ? 'H' : ' ', IPtr);
+                        printf ("%c%08X: ", HiPriority == ProcPriority ? 'H' : ' ', IPtr);
                         printIPtr = FALSE;
                         instrBytes = 0;
                 }
@@ -317,7 +341,7 @@ void mainloop (void)
                         for (; instrBytes < 9; instrBytes++)
                                 printf("   ");
                         printf("%-17s", mnemonic (Icode, OReg));
-	                printf ("   %c%c   %8X %8X %8X   %8X %8X\n", 
+	                printf ("   %c%c   %8X %8X %8X   %08X %8X\n", 
                                 FLAG(ReadHaltOnError, 'H'),
                                 FLAG(      ReadError, 'E'),
                                 AReg, BReg, CReg, WPtr, readword (WPtr));
@@ -512,20 +536,24 @@ void mainloop (void)
 		case 0x07: /* in          */
 OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
                            {
-                                if (emudebug)
+                                if (msgdebug || emudebug)
                                         printf ("-W-EMUDBG: Doing in on Link0Out.\n");
                                 goto OprOut;
                            }
-                           if (emudebug)
-			        printf ("-I-EMUDBG: In(1): Channel=#%8X, to memory at #%8X, length #%X.\n", BReg, CReg, AReg);
+                           if (msgdebug || emudebug)
+			        printf ("-I-EMUDBG: In(1): Channel=#%08X, to memory at #%08X, length #%X.\n", BReg, CReg, AReg);
 			   IPtr++;
 			   if (BReg != Link0In)
 			   {
 				/* Internal communication. */
 				otherWdesc = word (BReg);
+                                if (msgdebug || emudebug)
+                                        printf ("-I-EMUDBG: In(2): Internal communication. Channel word=#%08X.\n", otherWdesc);
 				if (otherWdesc == NotProcess_p)
 				{
 					/* Not ready. */
+                                        if (msgdebug || emudebug)
+                                                printf ("-I-EMUDBG: In(3): Not ready.\n");
 					writeword (BReg, Wdesc);
 					writeword (index (WPtr, Pointer_s), CReg);
                                         deschedule ();
@@ -535,8 +563,8 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 					/* Ready. */
                                         otherWPtr = GetDescWPtr(otherWdesc);
 					otherPtr = word (index (otherWPtr, Pointer_s));
-                                        if (emudebug)
-					        printf ("-I-EMUDBG: In(2): Transferring message from #%8X.\n", otherPtr);
+                                        if (msgdebug || emudebug)
+					        printf ("-I-EMUDBG: In(3): Transferring message from #%08X.\n", otherPtr);
 					for (loop=0;loop<AReg;loop++)
 					{
 						writebyte ((CReg + loop), byte (otherPtr + loop));
@@ -548,6 +576,8 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 			   else
 			   {
 				/* Link communication. */
+                                if (msgdebug || emudebug)
+                                        printf ("-I-EMUDBG: In(2): Link communication. Old channel word=#%08X.\n", word (BReg));
 				writeword (BReg, Wdesc);
 				Link0InDest   = CReg;
 				Link0InLength = AReg;
@@ -579,23 +609,23 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 		case 0x0b: /* out         */
 OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            {
-                                if (emudebug)
+                                if (msgdebug || emudebug)
                                         printf ("-W-EMUDBG: Doing out on Link0In.\n");
                                 goto OprIn;
                            }
-                           if (emudebug)
-			        printf ("-I-EMUDBG: out(1): Channel=#%8X, length #%X, from memory at #%8X.\n", BReg, AReg, CReg);
+                           if (msgdebug || emudebug)
+			        printf ("-I-EMUDBG: out(1): Channel=#%08X, length #%X, from memory at #%08X.\n", BReg, AReg, CReg);
 			   IPtr++;
 			   if (BReg != Link0Out)
 			   {
 				/* Internal communication. */
 				otherWdesc = word (BReg);
-                                if (emudebug)
-                                        printf ("-I-EMUDBG: out(2): Internal communication. Channel word=#%8X.\n", otherWdesc);
+                                if (msgdebug || emudebug)
+                                        printf ("-I-EMUDBG: out(2): Internal communication. Channel word=#%08X.\n", otherWdesc);
 				if (otherWdesc == NotProcess_p)
 				{
 					/* Not ready. */
-                                        if (emudebug)
+                                        if (msgdebug || emudebug)
                                                 printf ("-I-EMUDBG: out(3): Not ready.\n");
 					writeword (BReg, Wdesc);
 					writeword (index (WPtr, Pointer_s), CReg);
@@ -606,12 +636,12 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 					/* Ready. */
                                         otherWPtr  = GetDescWPtr(otherWdesc);
 					altState = otherPtr = word (index (otherWPtr, State_s));
-                                        if (emudebug)
-                                                printf ("-I-EMUDBG: out(3): Memory address/ALT state=#%8X.\n", altState);
+                                        if (msgdebug || emudebug)
+                                                printf ("-I-EMUDBG: out(3): Memory address/ALT state=#%08X.\n", altState);
 					if ((altState & 0xfffffffc) == MostNeg)
 					{
 						/* ALT guard test - not ready to communicate. */
-                                                if (emudebug)
+                                                if (msgdebug || emudebug)
                                                         printf ("-I-EMUDBG: out(4): ALT guard test - not ready to communicate.\n");
 
 						writeword (BReg, Wdesc);
@@ -622,10 +652,10 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 						if (altState != Ready_p)
 						{
 							/* The alt has not already been rescheduled. */
-                                                        if (emudebug)
+                                                        if (msgdebug || emudebug)
                                                         {
                                                                 printf ("-I-EMUDBG: out(5): ALT state=Ready_p.\n");
-                                                                printf ("-I-EMUDBG: out(6): Reschedule ALT process (Wdesc=#%8X, IPtr=#%8X).\n",
+                                                                printf ("-I-EMUDBG: out(6): Reschedule ALT process (Wdesc=#%08X, IPtr=#%08X).\n",
                                                                                                 otherWdesc, word (index (otherWPtr, Iptr_s)));
                                                         }
 							writeword (index (otherWPtr, State_s), Ready_p);
@@ -635,7 +665,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 					else
 					{
 						/* Ready. */
-                                                if (emudebug)
+                                                if (msgdebug || emudebug)
                                                         printf ("-I-EMUDBG: out(4): Ready, communicate.\n");
 						for (loop = 0;loop < AReg; loop++)
 						{
@@ -649,6 +679,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   else
 			   {
 				/* Link communication. */
+                                if (msgdebug || emudebug)
+                                        printf ("-I-EMUDBG: out(2): Link communication. Old channel word=#%08X.\n", word (BReg));
 				writeword (BReg, Wdesc);
 				Link0OutSource = CReg;
 				Link0OutLength = AReg;
@@ -671,12 +703,12 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   schedule (temp | ProcPriority);
 			   break;
 		case 0x0e: /* outbyte     */
-                           if (emudebug)
-			        printf ("-I-EMUDBG: outbyte: Channel=#%8X.\n", BReg);
+                           if (msgdebug || emudebug)
+			        printf ("-I-EMUDBG: outbyte: Channel=#%08X.\n", BReg);
 			   IPtr++;
                            if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            {
-                                if (emudebug)
+                                if (msgdebug || emudebug)
 			                printf ("-W-EMUDBG: Doing outbyte on Link0In.\n");
 				/* Link communication. */
 				writeword (BReg, Wdesc);
@@ -739,13 +771,13 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   }
 			   break;
 		case 0x0f: /* outword     */
-                           if (emudebug)
-			        printf ("-I-EMUDBG: outword: Channel=#%8X.\n", BReg);
+                           if (msgdebug || emudebug)
+			        printf ("-I-EMUDBG: outword(1): Channel=#%08X.\n", BReg);
 			   IPtr++;
                            if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            {
-                                if (emudebug)
-			                printf ("-W-EMUDBG: Doing outword on Link0In.\n");
+                                if (msgdebug || emudebug)
+			                printf ("-W-EMUDBG: outword(2): Doing outword on Link0In. Old channel word=#%08X.\n", word (BReg));
 				/* Link communication. */
 				writeword (BReg, Wdesc);
 				writeword (WPtr, AReg);
@@ -757,8 +789,12 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   {
 				/* Internal communication. */
 				otherWdesc = word (BReg);
+                                if (msgdebug || emudebug)
+                                        printf ("-I-EMUDBG: outword(2): Internal communication. Channel word=#%08X.\n", otherWdesc);
 				if (otherWdesc == NotProcess_p)
 				{
+                                        if (msgdebug || emudebug)
+                                                printf ("-I-EMUDBG: outword(3): Not ready.\n");
 					/* Not ready. */
 					writeword (BReg, Wdesc);
 					writeword (WPtr, AReg);
@@ -773,6 +809,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 					if ((altState & 0xfffffffc) == MostNeg)
 					{
 						/* ALT guard test - not ready to communicate. */
+                                                if (msgdebug || emudebug)
+                                                        printf ("-I-EMUDBG: outword(3): ALT guard test - not ready.\n");
 
 						writeword (BReg, Wdesc);
 						writeword (WPtr, AReg);
@@ -782,6 +820,12 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 						/* The alt is waiting. Rechedule it? */
 						if (altState != Ready_p)
 						{
+                                                        if (msgdebug || emudebug)
+                                                        {
+                                                                printf ("-I-EMUDBG: outword(4): ALT state=Ready_p.\n");
+                                                                printf ("-I-EMUDBG: outword(5): Reschedule ALT process (Wdesc=#%08X, IPtr=#%08X).\n",
+                                                                                                otherWdesc, word (index (otherWPtr, Iptr_s)));
+                                                        }
 							/* The alt has not already been rescheduled. */
 							writeword (index (otherWPtr, State_s), Ready_p);
 							schedule (otherWdesc);
@@ -789,6 +833,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
           				}
 					else
 					{
+                                                if (msgdebug || emudebug)
+                                                        printf ("-I-EMUDBG: outword(3): Ready.\n");
+
 						/* Ready. */
 						writeword (otherPtr, AReg);
 						writeword (BReg, NotProcess_p);
@@ -799,6 +846,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   else
 			   {
 				/* Link communication. */
+                                if (msgdebug || emudebug)
+                                        printf ("-I-EMUDBG: out(2): Link communication. Old channel word=#%08X.\n", word (BReg));
 				writeword (BReg, Wdesc);
 				writeword (WPtr, AReg);
 				Link0OutSource = WPtr;
@@ -814,6 +863,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   temp = AReg;
 			   AReg = word (temp);
 			   writeword (temp, NotProcess_p);
+                           reset_channel (temp);
 			   IPtr++;
 			   break;
 		case 0x13: /* csub0       */
@@ -1018,7 +1068,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   break;
 		case 0x2f: /* XXX: support ALT construct on Link0 disc        */
                            if (emudebug)
-			        printf ("-I-EMUDBG: disc(1): Channel=#%8X.\n", CReg);
+			        printf ("-I-EMUDBG: disc(1): Channel=#%08X.\n", CReg);
           		   if (CReg == Link0In)
           		   {
                                 if (emudebug)
@@ -1034,7 +1084,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
           		   {
                                 otherWdesc = word (CReg);
                                 if (emudebug)
-				        printf ("-I-EMUDBG: disc(2): Internal channel. Channel word=#%8X.\n", otherWdesc);
+				        printf ("-I-EMUDBG: disc(2): Internal channel. Channel word=#%08X.\n", otherWdesc);
 				/* Internal channel. */
           			if (otherWdesc == NotProcess_p)
 				{
@@ -1217,7 +1267,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            if (emudebug)
                            {
 			        printf ("-I-EMUDBG: altwt(1): (W  )=NoneSelected_o\n");
-			        printf ("-I-EMUDBG: altwt(2): (W-3)=#%8X\n", word (index (WPtr, State_s)));
+			        printf ("-I-EMUDBG: altwt(2): (W-3)=#%08X\n", word (index (WPtr, State_s)));
                            }
 			   writeword (index (WPtr, 0), NoneSelected_o);
 			   IPtr++;
@@ -1243,7 +1293,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   break;
 		case 0x47: /* enbt        */
                            if (emudebug)
-			        printf ("-I-EMUDBG: enbt(1): Channel=%8X.\n", BReg);
+			        printf ("-I-EMUDBG: enbt(1): Channel=%08X.\n", BReg);
 			   if ((AReg == true_t) && (word (index (WPtr, TLink_s)) == TimeNotSet_p))
 			   {
                                 if (emudebug)
@@ -1272,7 +1322,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   break;
 		case 0x48: /* XXX: support ALT construct on Link0  enbc        */
                            if (emudebug)
-			        printf ("-I-EMUDBG: enbc(1): Channel=#%8X.\n", BReg);
+			        printf ("-I-EMUDBG: enbc(1): Channel=#%08X.\n", BReg);
 			   if ((AReg == true_t) && (word(BReg) == NotProcess_p))
 			   {
                                 if (emudebug)
@@ -1376,7 +1426,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            if (emudebug)
                            {
 			        printf ("-I-EMUDBG: taltwt(1): (W  )=NoneSelected_o\n");
-			        printf ("-I-EMUDBG: taltwt(2): (W-3)=#%8X\n", word (index (WPtr, State_s)));
+			        printf ("-I-EMUDBG: taltwt(2): (W-3)=#%08X\n", word (index (WPtr, State_s)));
                            }
 			   writeword (index (WPtr, 0), NoneSelected_o);
 			   IPtr++;
@@ -1533,7 +1583,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   IPtr++;
 			   break;
 		default  : printf ("-E-EMU414: Error - bad Icode!.\n");
-	                   printf ("-E-EMU414: IPtr=%8X, Instr=%2X [%6s], OReg=%8X, AReg=%8X, BReg=%8X, CReg=%8X, WPtr=%8X. WPtr[0]=%8X\n", 
+	                   printf ("-E-EMU414: IPtr=%08X, Instr=%2X [%6s], OReg=%8X, AReg=%8X, BReg=%8X, CReg=%8X, WPtr=%08X. WPtr[0]=%8X\n", 
                                         IPtr, Instruction, 
                                         mnemonic (Icode, OReg),
                                         OReg, AReg, BReg, CReg, WPtr,word(WPtr));
@@ -1543,7 +1593,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   OReg = 0;
 			   break;
 		default  : printf ("-E-EMU414: Error - bad Icode!.\n");
-	                   printf ("-E-EMU414: IPtr=%8X, Instr=%2X [%6s], OReg=%8X, AReg=%8X, BReg=%8X, CReg=%8X, WPtr=%8X. WPtr[0]=%8X\n", 
+	                   printf ("-E-EMU414: IPtr=%08X, Instr=%2X [%6s], OReg=%8X, AReg=%8X, BReg=%8X, CReg=%8X, WPtr=%08X. WPtr[0]=%8X\n", 
                                         IPtr, Instruction, 
                                         mnemonic (Icode, OReg),
                                         OReg, AReg, BReg, CReg, WPtr,word(WPtr));
@@ -1589,7 +1639,7 @@ void schedule (uint32_t wdesc)
         pri  = GetDescPriority(wdesc);
 
         if (emudebug)
-                printf ("-I-EMUDBG: Schedule(1): Process = #%8X at priority = %s\n", wptr, pri ? "Lo" : "Hi");
+                printf ("-I-EMUDBG: Schedule(1): Process = #%08X at priority = %s\n", wptr, pri ? "Lo" : "Hi");
 
 	/* Remove from timer queue if a ready alt. */
 	temp = word (index (wptr, State_s));
@@ -1735,7 +1785,7 @@ int run_process (void)
 	}
 
         if (emudebug)
-	        printf ("-I-EMUDBG: RunProcess: ProcPriority = %s, ptr = #%8X. FPtrReg0 (Hi) = #%8X, FPtrReg1 (Lo) = #%8X.\n", 
+	        printf ("-I-EMUDBG: RunProcess: ProcPriority = %s, ptr = #%08X. FPtrReg0 (Hi) = #%08X, FPtrReg1 (Lo) = #%08X.\n", 
                         ProcPriority ? "Lo" : "Hi",
                         ptr, FPtrReg0, FPtrReg1);
 
@@ -1850,7 +1900,7 @@ void start_process (void)
 void deschedule (void)
 {
         if (emudebug)
-                printf ("-I-EMUDBG: Deschedule process #%8X.\n", Wdesc);
+                printf ("-I-EMUDBG: Deschedule process #%08X.\n", Wdesc);
         /* Write Iptr into workspace */
 	writeword (index (WPtr, Iptr_s), IPtr);
 
@@ -1886,7 +1936,7 @@ void D_check (void)
 	if (timeslice > 1)
 	{
                 if (emudebug)
-                        printf ("-I-EMUDBG: Timeslice process #%8X.\n", Wdesc);
+                        printf ("-I-EMUDBG: Timeslice process #%08X.\n", Wdesc);
 
 		/* Must change process! */
 		timeslice = 0;
@@ -2038,7 +2088,7 @@ INLINE void update_time (void)
 
 	/* Move timers on if necessary, and increment timeslice counter. */
 	count1++;
-	if (count1 > 77)
+	if (count1 > 10)
 	{
 		count1 = 0;
 		if (Timers == TimersGo) HiTimer++;
@@ -2096,6 +2146,7 @@ uint32_t readword (uint32_t ptr)
 {
 	uint32_t result;
 #ifdef LITTLE_ENDIAN
+#warning Using little-endian access!
         uint32_t *wptr;
 
         wptr = (uint32_t *)(mem + (MEM_WORD_MASK & ptr));
@@ -2122,7 +2173,7 @@ uint32_t word (uint32_t ptr)
         result = readword (ptr);
 
         if (emumem)
-                printf ("\tRD: Mem[%8X] ? %8X\n", ptr, result);
+                printf ("\tRD: Mem[%08X] ? %08X\n", ptr, result);
 	return (result);
 }
 
@@ -2130,6 +2181,7 @@ uint32_t word (uint32_t ptr)
 void writeword (uint32_t ptr, uint32_t value)
 {
 #ifdef LITTLE_ENDIAN
+#warning Using little-endian access!
         uint32_t *wptr;
 
         wptr = (uint32_t *) (mem + (MEM_WORD_MASK & ptr));
@@ -2150,7 +2202,7 @@ void writeword (uint32_t ptr, uint32_t value)
 #endif
 
         if (emumem)
-                printf ("\tWR: Mem[%8X] ! %8X\n", ptr, value);
+                printf ("\tWR: Mem[%08X] ! %08X\n", ptr, value);
 
 }
 

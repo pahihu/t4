@@ -77,7 +77,7 @@ int  loop2;
 int  FromServerLen = 0;
 int  ToServerLen = 0;
 unsigned char FromServerBuffer[(16*1024)+5];
-unsigned char ToServerBuffer[514];
+unsigned char ToServerBuffer[512];
 void dump_message (char *msg, unsigned char *buffer, int len);
 int DumpMessage;
 
@@ -249,15 +249,20 @@ int server (void)
                 activity++;
 	}
 
-        if (emudebug)
-	        printf ("-I-EMUSRV: To server buffer %d; From server buffer %d.\n", ToServerLen, FromServerLen);
+        if (msgdebug || emudebug)
+        {
+                if (ToServerLen + FromServerLen)
+	                printf ("-I-EMUSRV: To server buffer %d; From server buffer %d.\n", ToServerLen, FromServerLen);
+        }
 
 	if (FromServerLen==0)
 	{
 		/* No messages leaving server, so server can handle the next incoming message. */
                 /* Check Link0Out for a valid process to see if there is a message.       */
+                /* Check the length register, because the channel control word may be written. */
+                /* Example: memory sizing in Minix demo. */
                 LinkWdesc = word (Link0Out);
-		if (LinkWdesc != NotProcess_p)
+		if ((LinkWdesc != NotProcess_p) && Link0OutLength)
 		{
                         activity++;
 			/* Move message to ToServerBuffer. */
@@ -266,19 +271,21 @@ int server (void)
 				ToServerBuffer[ToServerLen] = byte (Link0OutSource);
 				ToServerLen++;
 				Link0OutSource++;
-				/* XXX The C compiler is broken. Hence 514. */
-				if (ToServerLen >= 514)
-					printf ("-W-EMUSRV: Help - overflowing ToServerBuffer!\n");
+				if (ToServerLen == 512)
+                                {
+					printf ("-E-EMUSRV: Help - overflowing ToServerBuffer!\n");
+                                        handler (-1);
+                                }
 			}
 
-                        if (emudebug)
+                        if (msgdebug || emudebug)
 			        printf ("-I-EMUSRV: Satisfied comms request. Rescheduling process #%8X.\n", LinkWdesc);
+
+			/* Reset Link0Out. */
+                        reset_channel (Link0Out);
 
 			/* Reschedule outputting process. */
 			schedule (LinkWdesc);
-
-			/* Reset Link0Out. */
-			writeword (Link0Out, NotProcess_p);
 
 			/* Check if incoming message is all here yet. */
 			if (ToServerLen>=2)
@@ -286,7 +293,7 @@ int server (void)
           			length = ToServerBuffer[0] + (256 * ToServerBuffer[1]);
           			if (length<6)
           			{
-          				printf ("-W-EMUSR: Bad message packet to server - too short! (%d)\n", length);
+          				printf ("-W-EMUSRV: Bad message packet to server - too short! (%d)\n", length);
           			}
                     		else if (length>510)
                     		{
@@ -314,14 +321,15 @@ int server (void)
 	else
 	{
 		/* Can the next byte of outgoing message be transferred? */
+                /* Check the length register too. See notes at Link0Out. */
                 LinkWdesc = word (Link0In);
-		if (LinkWdesc != NotProcess_p)
+		if ((LinkWdesc != NotProcess_p) && Link0InLength)
 		{
                         activity++;
 			/* Move the requested amount of message. */
 			loop1 = 0;
-                        if (emudebug)
-                                printf ("-I-EMUSRV: FromServerLen = #%X", FromServerLen);
+                        if (msgdebug || emudebug)
+                                printf ("-I-EMUSRV: FromServerLen = #%X.\n", FromServerLen);
                         /* XXX */
                         dump_message ("Reply.", FromServerBuffer, FromServerLen);
 			while ((loop1 < Link0InLength) && (FromServerLen > 0))
@@ -336,21 +344,22 @@ int server (void)
 			for (loop2=0; loop2<FromServerLen; loop2++)
 				FromServerBuffer[loop2] = FromServerBuffer[loop2+loop1];
 
-                        if (emudebug)
-                                printf (" Link0InLength = #%X, loop = #%X.\n", Link0InLength, loop1);
+                        if (msgdebug || emudebug)
+                                printf ("-I-EMUSRV: Link0InLength = #%X, loop = #%X.\n", Link0InLength, loop1);
 
 			/* If message request was fully satisfied, reset channel. */
 			Link0InLength = Link0InLength - loop1;
 			if (Link0InLength == 0)
 			{
-                                if (emudebug)
+                                if (msgdebug || emudebug)
 				        printf ("-I-EMUSRV: Comms request satisfied. Reschedule process #%8X.\n", LinkWdesc);
+
+				/* Reset channel. */
+                                reset_channel (Link0In);
 
 				/* Reschedule outputting process. */
 				schedule (LinkWdesc);
 
-				/* Reset channel. */
-				writeword (Link0In, NotProcess_p);
 			}
 		}
 	}
@@ -364,7 +373,7 @@ int printable (int ch)
 
 void dump_message (char *msg, unsigned char *buffer, int len)
 {
-        int temp, i, ch;
+        int temp, i;
 
         if (!msgdebug)
                 return;
@@ -379,14 +388,16 @@ void dump_message (char *msg, unsigned char *buffer, int len)
         {
                 for (i = 0; i < 16; i++)
                 {
-                        ch = temp + i < len ? buffer[temp + i] : 0;
-                        printf ("%02X ", ch);
+                        if (temp + i < len)
+                                printf ("%02X ", buffer[temp + i]);
+                        else
+                                printf ("   ");
                 }
                 printf ("    ");
                 for (i = 0; i < 16; i++)
                 {
-                        ch = temp + i < len ? buffer[temp + i] : 0;
-                        printf ("%c", printable (ch));
+                        if (temp + i < len)
+                                printf ("%c", printable (buffer[temp + i]));
                 }
                 printf ("\n");
         }

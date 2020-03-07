@@ -76,6 +76,7 @@ INLINE
 void writebyte     (uint32_t, unsigned char);
 void add_profile   (int32_t);
 void print_profile (void);
+void reset_channel (uint32_t);
 
 /* Processor definitions. */
 #define Link0Out 0x80000000 /****/

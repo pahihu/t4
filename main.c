@@ -71,6 +71,11 @@ int emudebug    = FALSE;
 int emumem      = FALSE;
 int msgdebug    = FALSE;
 
+int Txxx = 414;
+uint32_t CoreSize    = 2 * 1024;
+uint32_t MemStart    = 0x80000048;
+uint32_t ExtMemStart = 0x80000800;
+
 extern int32_t quit;
 extern int32_t quitstatus;
 
@@ -79,6 +84,7 @@ char CommandLineMost[256] = "\0";
 
 FILE *CopyIn;
 
+extern unsigned char *core;
 extern unsigned char *mem;
 extern uint32_t WPtr;
 extern uint32_t ProcPriority;
@@ -130,7 +136,7 @@ int main (int argc, char **argv)
 	mem = malloc (2*1024*1024);
 	if (mem == NULL)
 	{
-		printf ("\nFailed to allocate memory!\n");
+		printf ("\nFailed to allocate external memory!\n");
 		exit (-1);
 	}
 #endif
@@ -141,6 +147,8 @@ int main (int argc, char **argv)
 		printf("Usage : t4 [options] [program arguments]\n\n");
 		printf("t4 V1.2   3/3/2020\n\n");
 		printf("Options:\n");
+                printf("    -s4                  Select T414 mode.\n");
+                printf("    -s8                  Select T800 mode.\n");
 		printf("    -sa                  Analyse transputer.\n");
 		printf("    -sb filename         Boot program \"filename\".\n");
 		printf("    -sc filename         Copy file \"filename\" to transputer.\n");
@@ -173,6 +181,32 @@ int main (int argc, char **argv)
 		{
 			switch (argv[arg][2])
 			{
+				case '4': if (argv[arg][3]!='\0')
+					  {
+						strcat (CommandLineMost, argv[arg]);
+						strcat (CommandLineMost, " ");
+					  }
+					  else
+                                          {
+                                                Txxx=414;
+                                                CoreSize    = 2 * 1024;
+                                                MemStart    = 0x80000048;
+                                                ExtMemStart = 0x80000800;
+                                          }
+					  break;
+				case '8': if (argv[arg][3]!='\0')
+					  {
+						strcat (CommandLineMost, argv[arg]);
+						strcat (CommandLineMost, " ");
+					  }
+					  else
+                                          {
+                                                Txxx=800;
+                                                CoreSize    = 4 * 1024;
+                                                MemStart    = 0x80000070;
+                                                ExtMemStart = 0x80001000;
+                                          }
+					  break;
 				case 'a': if (argv[arg][3]!='\0')
 					  {
 						strcat (CommandLineMost, argv[arg]);
@@ -297,10 +331,17 @@ int main (int argc, char **argv)
 	}
 	CommandLineMost[strlen(CommandLineMost)-1] = '\0';
 
+	core = malloc (CoreSize);
+	if (core == NULL)
+	{
+		printf ("\nFailed to allocate internal memory!\n");
+		exit (-1);
+	}
+
         if (emudebug)
         {
 	        printf("Most command line is : %s\n", CommandLineMost);
-	        printf("analyse %d; copy %d; exit %d; verbose %d; reset %d; peek %d; serve %d\n", analyse,copy,exitonerror,verbose,reset,peeksize,serve);
+	        printf("T%d; analyse %d; copy %d; exit %d; verbose %d; reset %d; peek %d; serve %d\n", Txxx,analyse,copy,exitonerror,verbose,reset,peeksize,serve);
         }
 
         /* Initialize memory with 'random' values. */

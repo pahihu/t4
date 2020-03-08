@@ -1,0 +1,167 @@
+00      rev              1      reverse
+01      lb               5      load byte
+01  s   fpusqrtfirst  27/29 27/29  fp square root first step    F
+02      bsub             1      byte subs
+02  s   fpusqrtstep   42/42 42/42  fp square root step
+03      endp            13      end proc                        D
+03  s   fpusqrtlast    8/ 9  8/ 9  fp square root end
+04      diff             1      difference
+04  s   fpurp           1       set rounding mode to round positive
+05      add              1      add                             E
+05  s   fpurm           1       set rounding mode to round minus
+06      gcall            4      general call
+06  s   fpurz           1       set rounding mode to round zero
+07      in              2w+19   input msg                       D
+07  s   fpur32tor64     3/4     real32 to real64                F
+08      prod            b+4     product for positive Areg
+08  s   fpur64tor32     6/9     real64 to real32                F
+09      gt               2      greater than
+09  s   fpuexpdec32    6/ 9  6/ 9  divide by 2^32               F
+0A      wsub             2      words subs
+0A  s   fpuexpinc32    6/ 9  6/ 9  multiply by 2^32             F
+0B      out             2w+19   output msg                      D
+0B  s   fpuabs         2/ 2  2/ 2  fp absolute                  F
+0C      sub              1      subtract                        E
+0D      startp          12      start proc                      D
+0D  s   fpunoround      2/ 2    real64 to real32, no round
+0E      outbyte         23      output byte                     D
+0E  s   fpuchki32       3/4     check in range of type int32    F
+0F      outword         23      output word                     D
+0F  s   fpuchki64       3/4     check in range of type int64    F
+0x      j                3      jump                            D
+10      seterr          1       set error                       E
+11  s   fpudivby2      6/ 9  6/ 9  divide by 2.0                F
+12      resetch          3      reset chan
+12  s   fpumulby2      6/ 9  6/ 9  multiply by 2.0              F
+13      csub0           2       chk subs from 0                 E
+15      stopp           11      stop proc
+16      ladd             2      long add                        E
+17      stlb            1       store LoPri back ptr
+18      sthf            1       store HiPri front ptr
+19      norm            n+5     normalise (n<32)
+1A      ldiv            35      long divide                     E
+1B      ldpi             2      load ptr to instr
+1C      stlf            1       store LoPri front ptr
+1D      xdble            2      extend to double
+1E      ldpri            1      load current pri
+1F      rem             37      remainder                       E
+1x      ldlp             1      load local ptr
+20      ret              5      return
+21      lend            10      loop end (loop)                 D
+22      ldtimer          2      load timer
+22  s   fpurn           1       set rounding mode to round nearest
+23  s   fpuseterror     1       set fp error                    F
+29      testerr         2       test error false and clr (no error)
+2A      testpranal      2       test processor analysing
+2B      tin             30      timer input (time future)       D
+2C      div             39      divide                          E
+2E      dist            23      disble timer
+2F      disc             8      disable chan
+2x      pfix             1      prefix
+30      diss             4      disable skip
+31      lmul            33      long multiply
+32      not              1      bitwise not
+33      xor              1      exclusive or
+34      bcnt             2      byte cnt
+35      lshr            n+3     long shift right (n<32)
+36      lshl            n+3     long shift left (n<32)
+37      lsum             2      long sum
+38      lsub             2      long subtract                   E
+39      runp            10      run proc
+3A      xword            4      extend to word
+3B      sb               4      store byte
+3C      gajw             2      general adjust wksp
+3D      savel           4       save LoPriQ regs
+3E      saveh           4       save HiPriQ regs
+3F      wcnt             5      word cnt
+3x      ldnl             2      load non-local
+40      shr             n+2     shift right
+41      shl             n+2     shift left
+42      mint             1      min int
+43      alt              2      alt start
+44      altwt            5      alt wait (chan rdy)             D
+45      altend           4      alt end
+46      and              1      and
+47      enbt             8      enable timer
+48      enbc             7      enable chan (rdy)
+49      enbs             3      enable skip
+4A      move            2w+8    move msg
+4B      or               1      or
+4C      csngl            3      chk single                      E
+4D      ccnt1           3       chk count from 1                E
+4E      talt             4      timer alt start
+4F      ldiff            2      long diff
+4x      ldc              1      load constant
+50      sthb            1       store HiPri back ptr
+51      taltwt          15      timer alt wait (time past)      D
+52      sum              1      sum
+53      mul             40      multiply                        E
+54      sttimer         1       store timer
+55      stoperr         2       stop on error (no error)        D
+56      cword            5      chk word                        E
+57      clrhalterr      1       clear halt-on-error
+58      sethalterr      1       set halt-on-error
+59      testhalterr     2       test halt-on-error
+5A      dup              1      T800: duplicate top of stack
+5B      move2dinit       8      initialise data for 2D block move
+5C      move2dall     (2p+23)*r 2D block copy
+5D      move2dnonzero (2p+23)*r 2D block copy non-zero bytes
+5E      move2dzero    (2p+23)*r 2D block copy zero bytes
+5x      ldnlp            1      load non-local ptr
+63      unpacksn        15      unpack SF num
+6C      postnormsn       5/30   post-normalise correction of
+6D      roundsn         12/15   round SF num
+6x      nfix             1      negative prefix
+71      ldinf            1      load SF Inf
+72      fmul            38      frac multiply (no rounding)     E
+73      cflerr           3      chk FP error                    E
+74      crcword         35      calculate crc on word
+75      crcbyte         11      calculate crc on byte
+76      bitcnt         b+2      count bits set in word
+77      bitrevword      36      reverse bits in word
+78      bitrevnbits    n+4      reverse bottom n bits in byte
+7x      ldl              2      load local
+81      wsubdb           3      T800: form double word subscript
+82      fpldnldbi       6       fp load non-local indexed double
+83      fpchkerror      1       check fp error                  E
+84      fpstnldb        3       fp store non-local double
+86      fpldnlsni       4       fp load non-local indexed single
+87      fpadd          6/ 9  6/ 9  fp add                       F
+88      fpstnlsn        2       fp store non-local single
+89      fpsub          6/ 9  6/ 9  fp subtract                  F
+8A      fpldnldb        3       fp load non-local double
+8B      fpmul         11/ 8 18/27  fp multiply                  F
+8C      fpdiv         16/28 31/43  fp divide                    F
+8E      fpldnlsn        2       fp load non-local single
+8F      fpremfirst    36/46 36/46  fp remainder first step      F
+8x      adc              1      add constant                    E
+90      fpremstep     32/36 32/36  fp remainder iteration
+91      fpnan           2/3     fp NaN
+92      fpordered       3/4     fp orderability
+93      fpnotfinite     2/2     fp not finite
+94      fpgt            4/6     fp greater than                 F
+95      fpeq            3/5     fp equality                     F
+96      fpi32tor32      8/10    int32 to real32
+98      fpi32tor64      8/10    int32 to real64
+9A      fpb32tor64      8/ 8    bit32 to real64
+9C      fptesterror     2       test fp error false and clear   F
+9C  s   fpuclearerror   1       clear fp error                  F
+9D      fprtoi32        7/9     real to int32                   F
+9E      fpstnli32       4       store non-local int32
+9F      fpldzerosn      2       load zero single
+9x      call             7      call
+A0      fpldzerodb      2       load zero double
+A1      fpint           5/ 6    round to floating integer       F
+A3      fpdup           1       fp duplicate
+A4      fprev           1       fp reverse
+A6      fpldnladddb     9/12    fp load non-local & add double  F
+A8      fpldnlmuldb    21/30    fp load non-local & multiply double     F
+AA      fpldnladdsn     8/11    fp load non-local & add single  F
+AB      fpentry         1       fp unit entry
+AC      fpldnlmulsn    13/20    fp load non-local & multiply single     F
+Ax      cj               2      cond jump (not taken)
+Bx      ajw              1      adjust wksp
+Cx      eqc              2      equals constant
+Dx      stl              1      store local
+Ex      stnl             2      store non-local
+Fx      ior              -      operate

@@ -1,6 +1,31 @@
 #include <fenv.h>
 man fegetenv
 
+Not-a-Number Arithmetic
+  If only one arg is NaN then it is returned, if both args are NaNs the one
+  with the larger fractional part is returned. All other cases return a
+  (different) NaN.
+
+Division by zero
+  If a finite non-zero number is divided by zero then the error flag is set
+  and a correctly signed infinity is returned. The error flag is set.
+
+Overflow
+  T800 conforms to the IEEE 754 standard, the error flag is set.
+
+Infinity
+  All arithmetic involving an Inf arg will set the error flag.
+
+Underflow and inexact
+  These exceptions are not implemented in the T800.
+
+At the end of all FP operations the rounding mode is reset to Round-To-Nearest,
+except the rounding mode setting operations.
+
+In arithmetic the fp error flag is set in circumstances in which the invalid
+operation, division by zero or overflow exceptions would be flagged. In addition
+the flag is set if an input to a fp operation is infinite.
+
 
 Efficiency of encoding
 ----------------------

@@ -48,8 +48,14 @@
 #define TimeNotSet_p	0x80000002
 #define NoneSelected_o	0xffffffff
 #define Ready_p		0x80000003
-#define MemStart	0x80000048
-#define ExtMemStart     0x80000800
+
+extern int Txxx;
+extern uint32_t CoreSize;
+extern uint32_t MemStart;
+extern uint32_t ExtMemStart;
+
+#define IsT800  (Txxx == 800)
+#define IsT414  (Txxx == 414)
 
 #define HiPriority	0x00000000
 #define LoPriority	0x00000001

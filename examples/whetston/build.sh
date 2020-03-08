@@ -1,0 +1,1 @@
+make -f whetston.mak

@@ -9,6 +9,7 @@ Non-goals
 =========
 
 * cycle accurate emulation
+* support undefined behavior (DReg/EReg)
 * emulate multiple transputers
 * to be efficient
 

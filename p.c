@@ -158,6 +158,7 @@ int  Timers;
 uint32_t t4_overflow;
 uint32_t t4_carry;
 uint32_t t4_normlen;
+uint32_t t4_carry64;            /* shl64 shifted out bit */
 uint32_t ProcPriority;
 #define TimersGo   1
 #define TimersStop 0
@@ -364,6 +365,9 @@ void mainloop (void)
         uint32_t temp, temp2;
         uint32_t otherWdesc, otherWPtr, otherPtr, altState;
         uint32_t PrevError;
+        uint32_t m2dSourceStride,  m2dDestStride,  m2dLength;
+        uint32_t m2dSourceAddress, m2dDestAddress, m2dWidth;
+        unsigned char pixel;
 
         int printIPtr, instrBytes;
         int asmLines;
@@ -372,6 +376,7 @@ void mainloop (void)
         printIPtr  = TRUE;
         instrBytes = 0;
         asmLines   = 0;
+        m2dSourceStride = m2dDestStride = m2dLength = 0xdeadbeef;
 
         init_processor ();
 
@@ -387,6 +392,7 @@ void mainloop (void)
 #ifndef NDEBUG
                 temp = temp2 = 0xdeadbeef;
                 otherWdesc = otherWPtr = otherPtr = altState = 0xdeadbeef;
+                m2dSourceAddress = m2dDestAddress = m2dWidth = 0xdeadbeef;
 #endif
                 /* Save current value of Error flag */
                 PrevError = ReadError;
@@ -950,7 +956,6 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x12: /* XXX resetch     */
 			   temp = AReg;
 			   AReg = word (temp);
-			   writeword (temp, NotProcess_p);
                            reset_channel (temp);
 			   IPtr++;
 			   break;
@@ -1614,6 +1619,96 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   }
 			   IPtr++;
 			   break;
+		case 0x5a: /* XXX dup    */
+		           if (IsT414)
+		               goto BadCode;
+                           CReg = BReg;
+                           BReg = AReg;
+		           IPtr++;
+		           printf ("-W-EMU414: T800 instruction.\n");
+		           break;
+		case 0x5b: /* XXX move2dinit    */
+		           if (IsT414)
+		               goto BadCode;
+                           m2dLength = AReg;
+                           m2dDestStride = BReg;
+                           m2dSourceStride = CReg;
+		           IPtr++;
+		           break;
+		case 0x5c: /* XXX move2dall    */
+		           if (IsT414)
+		               goto BadCode;
+                           m2dWidth = AReg;
+                           m2dDestAddress = BReg;
+                           m2dSourceAddress = CReg;
+                           if (INT(m2dWidth) >= 0 && INT(m2dLength) >= 0)
+                           {
+                                for (temp = 0; temp < m2dLength; temp++)
+                                {
+                                        for (temp2 = 0; temp2 < m2dWidth; temp2++)
+                                        {
+                                                pixel = byte (m2dSourceAddress++);
+                                                writebyte (m2dDestAddress++, pixel);
+                                        }
+                                        m2dSourceAddress += m2dSourceStride;
+                                        m2dDestAddress   += m2dDestStride;
+                                }
+                           }
+#ifndef NDEBUG
+                           m2dSourceStride = m2dDestStride = m2dLength = 0xdeadbeef;
+#endif
+		           IPtr++;
+		           break;
+		case 0x5d: /* XXX move2dnonzero    */
+		           if (IsT414)
+		               goto BadCode;
+                           m2dWidth = AReg;
+                           m2dDestAddress = BReg;
+                           m2dSourceAddress = CReg;
+                           if (INT(m2dWidth) >= 0 && INT(m2dLength) >= 0)
+                           {
+                                for (temp = 0; temp < m2dLength; temp++)
+                                {
+                                        for (temp2 = 0; temp2 < m2dWidth; temp2++)
+                                        {
+                                                pixel = byte (m2dSourceAddress++);
+                                                if (pixel)
+                                                        writebyte (m2dDestAddress++, pixel);
+                                        }
+                                        m2dSourceAddress += m2dSourceStride;
+                                        m2dDestAddress   += m2dDestStride;
+                                }
+                           }
+#ifndef NDEBUG
+                           m2dSourceStride = m2dDestStride = m2dLength = 0xdeadbeef;
+#endif
+		           IPtr++;
+		           break;
+		case 0x5e: /* XXX move2dzero    */
+		           if (IsT414)
+		               goto BadCode;
+                           m2dWidth = AReg;
+                           m2dDestAddress = BReg;
+                           m2dSourceAddress = CReg;
+                           if (INT(m2dWidth) >= 0 && INT(m2dLength) >= 0)
+                           {
+                                for (temp = 0; temp < m2dLength; temp++)
+                                {
+                                        for (temp2 = 0; temp2 < m2dWidth; temp2++)
+                                        {
+                                                pixel = byte (m2dSourceAddress++);
+                                                if (0 == pixel)
+                                                        writebyte (m2dDestAddress++, pixel);
+                                        }
+                                        m2dSourceAddress += m2dSourceStride;
+                                        m2dDestAddress   += m2dDestStride;
+                                }
+                           }
+#ifndef NDEBUG
+                           m2dSourceStride = m2dDestStride = m2dLength = 0xdeadbeef;
+#endif
+		           IPtr++;
+		           break;
 		case 0x63: /* XXX unpacksn    */
                            if (IsT800)
                                 goto BadCode;
@@ -1702,6 +1797,67 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				SetError;
 			   IPtr++;
 			   break;
+		case 0x74: /* XXX crcword    */
+		           if (IsT414)
+		               goto BadCode;
+                           for (temp = 0; temp < 32; temp++)
+                           {
+			        AReg = t4_shl64 (BReg, AReg, 1);
+                                BReg = t4_carry;
+                                if (t4_carry64)
+                                        BReg ^= CReg;
+                           }
+                           AReg = BReg;
+                           BReg = CReg;
+		           IPtr++;
+		           break;
+		case 0x75: /* XXX crcbyte    */
+		           if (IsT414)
+		               goto BadCode;
+                           /* Data must be in the most significant byte of the word. */
+                           for (temp = 0; temp < 8; temp++)
+                           {
+			        AReg = t4_shl64 (BReg, AReg, 1);
+                                BReg = t4_carry;
+                                if (t4_carry64)
+                                        BReg ^= CReg;
+                           }
+                           AReg = BReg;
+                           BReg = CReg;
+		           IPtr++;
+		           break;
+		case 0x76: /* XXX bitcnt    */
+		           if (IsT414)
+		               goto BadCode;
+                           temp = __builtin_popcount (AReg);
+                           AReg = temp + BReg;
+                           BReg = CReg;
+		           IPtr++;
+		           printf ("-W-EMU414: T800 instruction.\n");
+		           break;
+		case 0x77: /* XXX bitrevword    */
+		           if (IsT414)
+		               goto BadCode;
+                           AReg = __builtin_bitreverse32 (AReg);
+		           IPtr++;
+		           break;
+		case 0x78: /* XXX bitrevnbits    */
+		           if (IsT414)
+		               goto BadCode;
+                           if (AReg < 32)
+                                AReg = __builtin_bitreverse32 (BReg) >> (32 - AReg);
+                           else
+                                AReg = 0;
+                           BReg = CReg;
+		           IPtr++;
+		           break;
+		case 0x81: /* XXXX wsubdb    */
+		           if (IsT414)
+		               goto BadCode;
+			   AReg = index (AReg, 2*BReg);
+			   BReg = CReg;
+		           IPtr++;
+		           break;
 		case 0x82: /* fpldnldbi    */
 		           if (IsT414)
 		               goto BadCode;
@@ -1744,31 +1900,31 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x8A: /* fpldnldb    */
+		case 0x8a: /* fpldnldb    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x8B: /* fpmul    */
+		case 0x8b: /* fpmul    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x8C: /* fpdiv    */
+		case 0x8c: /* fpdiv    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x8E: /* fpldnlsn    */
+		case 0x8e: /* fpldnlsn    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x8F: /* fpremfirst    */
+		case 0x8f: /* fpremfirst    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
@@ -1822,79 +1978,79 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x9A: /* fpb32tor64    */
+		case 0x9a: /* fpb32tor64    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x9C: /* fptesterror    */
+		case 0x9c: /* fptesterror    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x9D: /* fprtoi32    */
+		case 0x9d: /* fprtoi32    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x9E: /* fpstnli32    */
+		case 0x9e: /* fpstnli32    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x9F: /* fpldzerosn    */
+		case 0x9f: /* fpldzerosn    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0xA0: /* fpldzerodb    */
+		case 0xa0: /* fpldzerodb    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0xA1: /* fpint    */
+		case 0xa1: /* fpint    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0xA3: /* fpdup    */
+		case 0xa3: /* fpdup    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0xA4: /* fprev    */
+		case 0xa4: /* fprev    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0xA6: /* fpldnladddb    */
+		case 0xa6: /* fpldnladddb    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0xA8: /* fpldnlmuldb    */
+		case 0xa8: /* fpldnlmuldb    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0xAA: /* fpldnladdsn    */
+		case 0xaa: /* fpldnladdsn    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0xAB: /* fpentry    */
+		case 0xab: /* fpentry    */
 		           if (IsT414)
 		               goto BadCode;
                            temp = AReg;
@@ -1919,19 +2075,19 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			              printf ("-W-EMU414: FPU instruction.\n");
                                       RoundingMode = ROUND_P;
                                       /* Do not reset rounding mode. */
-			              continue;
+			              OReg = 0; continue;
 			   case 0x05: /* fpurm    */
 			              IPtr++;
 			              printf ("-W-EMU414: FPU instruction.\n");
                                       RoundingMode = ROUND_M;
                                       /* Do not reset rounding mode. */
-			              continue;
+			              OReg = 0; continue;
 			   case 0x06: /* fpurz    */
 			              IPtr++;
 			              printf ("-W-EMU414: FPU instruction.\n");
                                       RoundingMode = ROUND_Z;
                                       /* Do not reset rounding mode. */
-			              continue;
+			              OReg = 0; continue;
 			   case 0x07: /* fpur32tor64    */
 			              IPtr++;
 			              printf ("-W-EMU414: FPU instruction.\n");
@@ -1944,23 +2100,23 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			              IPtr++;
 			              printf ("-W-EMU414: FPU instruction.\n");
 			              break;
-			   case 0x0A: /* fpuexpinc32    */
+			   case 0x0a: /* fpuexpinc32    */
 			              IPtr++;
 			              printf ("-W-EMU414: FPU instruction.\n");
 			              break;
-			   case 0x0B: /* fpuabs    */
+			   case 0x0b: /* fpuabs    */
 			              IPtr++;
 			              printf ("-W-EMU414: FPU instruction.\n");
 			              break;
-			   case 0x0D: /* fpunoround    */
+			   case 0x0d: /* fpunoround    */
 			              IPtr++;
 			              printf ("-W-EMU414: FPU instruction.\n");
 			              break;
-			   case 0x0E: /* fpuchki32    */
+			   case 0x0e: /* fpuchki32    */
 			              IPtr++;
 			              printf ("-W-EMU414: FPU instruction.\n");
 			              break;
-			   case 0x0F: /* fpuchki64    */
+			   case 0x0f: /* fpuchki64    */
 			              IPtr++;
 			              printf ("-W-EMU414: FPU instruction.\n");
 			              break;
@@ -1977,12 +2133,12 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			              printf ("-W-EMU414: FPU instruction.\n");
                                       RoundingMode = ROUND_N;
                                       /* Do not reset rounding mode. */
-			              continue;
+			              OReg = 0; continue;
 			   case 0x23: /* fpuseterror    */
 			              IPtr++;
 			              printf ("-W-EMU414: FPU instruction.\n");
 			              break;
-			   case 0x9C: /* fpuclearerror    */
+			   case 0x9c: /* fpuclearerror    */
 			              IPtr++;
 			              printf ("-W-EMU414: FPU instruction.\n");
 			              break;
@@ -1993,7 +2149,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			             break;
                            }
 		           break;
-		case 0xAC: /* fpldnlmulsn    */
+		case 0xac: /* fpldnlmulsn    */
 		           if (IsT414)
 		               goto BadCode;
 		           IPtr++;
@@ -2005,7 +2161,7 @@ BadCode:
                            processor_state ();
 			   handler (-1);
 			   break;
-	}
+	} /* switch OReg */
 			   OReg = 0;
 			   break;
 		default  : 
@@ -2013,7 +2169,7 @@ BadCode:
                            processor_state ();
 			   handler (-1);
 			   break;
-	}
+	} /* switch (Icode) */
                 /* Reset rounding mode to round nearest. */
                 if (IsT800 && (RoundingMode != ROUND_N))
                         RoundingMode = ROUND_N;

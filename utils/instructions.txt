@@ -102,11 +102,11 @@
 57      clrhalterr      1       clear halt-on-error
 58      sethalterr      1       set halt-on-error
 59      testhalterr     2       test halt-on-error
-5A      dup              1      T800: duplicate top of stack
-5B      move2dinit       8      initialise data for 2D block move
-5C      move2dall     (2p+23)*r 2D block copy
-5D      move2dnonzero (2p+23)*r 2D block copy non-zero bytes
-5E      move2dzero    (2p+23)*r 2D block copy zero bytes
+5A      dup              1      duplicate top of stack                  T800
+5B      move2dinit       8      initialise data for 2D block move       T800
+5C      move2dall     (2p+23)*r 2D block copy                           T800
+5D      move2dnonzero (2p+23)*r 2D block copy non-zero bytes            T800
+5E      move2dzero    (2p+23)*r 2D block copy zero bytes                T800
 5x      ldnlp            1      load non-local ptr
 63      unpacksn        15      unpack SF num
 6C      postnormsn       5/30   post-normalise correction of
@@ -115,13 +115,13 @@
 71      ldinf            1      load SF Inf
 72      fmul            38      frac multiply (no rounding)     E
 73      cflerr           3      chk FP error                    E
-74      crcword         35      calculate crc on word
-75      crcbyte         11      calculate crc on byte
-76      bitcnt         b+2      count bits set in word
-77      bitrevword      36      reverse bits in word
-78      bitrevnbits    n+4      reverse bottom n bits in byte
+74      crcword         35      calculate crc on word                   T800
+75      crcbyte         11      calculate crc on byte                   T800
+76      bitcnt         b+2      count bits set in word                  T800
+77      bitrevword      36      reverse bits in word                    T800
+78      bitrevnbits    n+4      reverse bottom n bits in byte           T800
 7x      ldl              2      load local
-81      wsubdb           3      T800: form double word subscript
+81      wsubdb           3      form double word subscript              T800
 82      fpldnldbi       6       fp load non-local indexed double
 83      fpchkerror      1       check fp error                  E
 84      fpstnldb        3       fp store non-local double

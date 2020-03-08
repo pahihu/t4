@@ -49,6 +49,7 @@ void handler (int);
 extern uint32_t t4_carry;
 extern uint32_t t4_overflow;
 extern uint32_t t4_normlen;
+extern uint32_t t4_carry64;
 
 uint32_t t4_add16 (uint32_t A, uint32_t B)
 {
@@ -377,6 +378,8 @@ uint32_t t4_shl64 (uint32_t A, uint32_t B, uint32_t C)
 	uint32_t bit;
 	int loop;
 
+        t4_carry64 = 0;
+
 	/* Reduce C to <= 64. */
 	if (C > 64)
 		C = 64;
@@ -389,6 +392,8 @@ uint32_t t4_shl64 (uint32_t A, uint32_t B, uint32_t C)
 			bit = 1;
 
 		B = B << 1;
+                if (A & 0x80000000)
+                        t4_carry64 = 1;
 		A = A << 1;
 
 		A = A | bit;

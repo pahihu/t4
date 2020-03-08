@@ -157,28 +157,28 @@ General operation codes
 42      mint             1      min int
 
 
-T800 block move operation codes
+T800 Block move operation codes
 -------------------------------
-5B      move2dinit       8      initialise data for 2D block move
-5C      move2dall     (2p+23)*r 2D block copy
-5D      move2dnonzero (2p+23)*r 2D block copy non-zero bytes
-5E      move2dzero    (2p+23)*r 2D block copy zero bytes
+5B      move2dinit       8      initialise data for 2D block move       T800
+5C      move2dall     (2p+23)*r 2D block copy                           T800
+5D      move2dnonzero (2p+23)*r 2D block copy non-zero bytes            T800
+5E      move2dzero    (2p+23)*r 2D block copy zero bytes                T800
 
 
 T800 CRC and bit operation codes
 --------------------------------
-74      crcword         35      calculate crc on word
-75      crcbyte         11      calculate crc on byte
-76      bitcnt         b+2      count bits set in word
-77      bitrevword      36      reverse bits in word
-78      bitrevnbits    n+4      reverse bottom n bits in byte
+74      crcword         35      calculate crc on word                   T800
+75      crcbyte         11      calculate crc on byte                   T800
+76      bitcnt         b+2      count bits set in word                  T800
+77      bitrevword      36      reverse bits in word                    T800
+78      bitrevnbits    n+4      reverse bottom n bits in byte           T800
 
 
 Indexing/array operation codes
 ------------------------------
 02      bsub             1      byte subs
 0A      wsub             2      words subs
-81      wsubdb           3      T800: form double word subscript
+81      wsubdb           3      form double word subscript              T800
 34      bcnt             2      byte cnt
 3F      wcnt             5      word cnt
 01      lb               5      load byte
@@ -221,7 +221,7 @@ Control operation codes
 20      ret              5      return
 1B      ldpi             2      load ptr to instr
 3C      gajw             2      general adjust wksp
-5A      dup              1      T800: duplicate top of stack
+5A      dup              1      duplicate top of stack                  T800
 06      gcall            4      general call
 21      lend            10      loop end (loop)                 D
                          5      loop end (exit)                 D

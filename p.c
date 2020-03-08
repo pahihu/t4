@@ -364,10 +364,6 @@ void init_processor (void)
 
 #define FLAG(x,y)       ((x) ? (y) : '-')
 
-#define m2dWidth                AReg
-#define m2dDestAddress          BReg
-#define m2dSourceAddress        CReg
-
 void mainloop (void)
 {
         uint32_t temp, temp2;
@@ -398,7 +394,6 @@ void mainloop (void)
 #ifndef NDEBUG
                 temp = temp2 = 0xdeadbeef;
                 otherWdesc = otherWPtr = otherPtr = altState = 0xdeadbeef;
-                m2dSourceAddress = m2dDestAddress = m2dWidth = 0xdeadbeef;
 #endif
                 /* Save current value of Error flag */
                 PrevError = ReadError;

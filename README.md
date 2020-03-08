@@ -1,3 +1,5 @@
+I would like to say thanks to Julian Highfield writing his [Transputer Emulator](https://web.archive.org/web/20130515034826/http://spirit.lboro.ac.uk/emulator.html), Mike's [transputer.net](http://www.transputer.net/welcome.asp) for invaluable documentation, although I've read the Compiler Writer's Guide several times back in 1992, and to Gavin Crate [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) for the email conversation about the Portakit.
+
 Goals
 =====
 

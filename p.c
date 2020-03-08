@@ -74,6 +74,15 @@ uint32_t BReg;
 uint32_t CReg;
 uint32_t OReg;
 
+typedef union {
+        float sn;
+        float db;
+} fpnum_t;
+
+fpnum_t  FAReg;
+fpnum_t  FBReg;
+fpnum_t  FCReg;
+
 /* Other registers. */
 uint32_t ClockReg0;
 uint32_t ClockReg1;
@@ -96,6 +105,7 @@ uint32_t IntEnabled;            /* Interrupt enabled */
 #define GotoSNPBit              0x00000001
 #define HaltOnErrorFlag         0x00000080
 #define ErrorFlag               0x80000000
+#define FPErrorFlag             0x00000100
 
 #define SetGotoSNP              STATUSReg |= GotoSNPBit
 #define ClearGotoSNP            STATUSReg &= ~GotoSNPBit
@@ -104,6 +114,10 @@ uint32_t IntEnabled;            /* Interrupt enabled */
 #define SetError                STATUSReg |= ErrorFlag
 #define ClearError              STATUSReg &= ~ErrorFlag
 #define ReadError               (STATUSReg & ErrorFlag)
+
+#define SetFPError              STATUSReg |= FPErrorFlag
+#define ClearFPError            STATUSReg &= ~FPErrorFlag
+#define ReadFPError             (STATUSReg & FPErrorFlag)
 
 #define SetHaltOnError          STATUSReg |= HaltOnErrorFlag
 #define ClearHaltOnError        STATUSReg &= ~HaltOnErrorFlag

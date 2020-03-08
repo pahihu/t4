@@ -1,3 +1,7 @@
+#include <fenv.h>
+man fegetenv
+
+
 Efficiency of encoding
 ----------------------
 
@@ -40,6 +44,12 @@ w       Number of words in the message. Part words are counted as full
         message.
 
 
+In the Floating Point Operation Codes a selector sequence code (ldc + 
+fpentry) is indicated in the Memory Code column by s. The code given 
+in the Operation Code column is the indirection code, the operand for 
+the ldc instruction.
+
+
 Function codes
 --------------
 0x      j                3      jump                            D
@@ -79,7 +89,8 @@ Arithmetic/logical operation codes
 09      gt               2      greater than
 04      diff             1      difference
 52      sum              1      sum
-08      prod            b+4     product
+08      prod            b+4     product for positive Areg
+                        m+5     T800: product for negative Areg
 
 
 Long arithmetic operation codes
@@ -90,7 +101,7 @@ Long arithmetic operation codes
 4F      ldiff            2      long diff
 31      lmul            33      long multiply
 1A      ldiv            35      long divide                     E
-36      lshl            n+3     long shift left (n>32)
+36      lshl            n+3     long shift left (n<32)
                         n-28    (n>=32)
 35      lshr            n+3     long shift right (n<32)
                         n-28    (n>=32)
@@ -99,8 +110,8 @@ Long arithmetic operation codes
                          3      (n=64)
 
 
-Floating-point support operation codes
---------------------------------------
+T414 Floating-point support operation codes
+-------------------------------------------
 73      cflerr           3      chk FP error                    E
 63      unpacksn        15      unpack SF num
 6D      roundsn         12/15   round SF num
@@ -108,7 +119,7 @@ Floating-point support operation codes
                                 SF num
 71      ldinf            1      load SF Inf
 
-NB. Typical/Maximum cycles.
+Typical/Maximum cycles.
 
 
 General operation codes
@@ -121,10 +132,28 @@ General operation codes
 42      mint             1      min int
 
 
+T800 block move operation codes
+-------------------------------
+5B      move2dinit       8      initialise data for 2D block move
+5C      move2dall     (2p+23)*r 2D block copy
+5D      move2dnonzero (2p+23)*r 2D block copy non-zero bytes
+5E      move2dzero    (2p+23)*r 2D block copy zero bytes
+
+
+T800 CRC and bit operation codes
+--------------------------------
+74      crcword         35      calculate crc on word
+75      crcbyte         11      calculate crc on byte
+76      bitcnt         b+2      count bits set in word
+77      bitrevword      36      reverse bits in word
+78      bitrevnbits    n+4      reverse bottom n bits in byte
+
+
 Indexing/array operation codes
 ------------------------------
 02      bsub             1      byte subs
 0A      wsub             2      words subs
+81      wsubdb           3      T800: form double word subscript
 34      bcnt             2      byte cnt
 3F      wcnt             5      word cnt
 01      lb               5      load byte
@@ -167,9 +196,11 @@ Control operation codes
 20      ret              5      return
 1B      ldpi             2      load ptr to instr
 3C      gajw             2      general adjust wksp
+5A      dup              1      T800: duplicate top of stack
 06      gcall            4      general call
 21      lend            10      loop end (loop)                 D
                          5      loop end (exit)                 D
+
 
 Scheduling operation codes
 --------------------------
@@ -203,3 +234,92 @@ Processor initialisation operation codes
 1C      stlf            1       store LoPri front ptr
 17      stlb            1       store LoPri back ptr
 54      sttimer         1       store timer
+
+
+T800 Floating point load/store operation codes
+----------------------------------------------
+8E      fpldnlsn        2       fp load non-local single
+8A      fpldnldb        3       fp load non-local double
+86      fpldnlsni       4       fp load non-local indexed single
+82      fpldnldbi       6       fp load non-local indexed double
+9F      fpldzerosn      2       load zero single
+A0      fpldzerodb      2       load zero double
+AA      fpldnladdsn     8/11    fp load non-local & add single  F
+A6      fpldnladddb     9/12    fp load non-local & add double  F
+AC      fpldnlmulsn    13/20    fp load non-local & multiply single     F
+A8      fpldnlmuldb    21/30    fp load non-local & multiply double     F
+88      fpstnlsn        2       fp store non-local single
+84      fpstnldb        3       fp store non-local double
+9E      fpstnli32       4       store non-local int32
+
+Typical/Maximum cycles.
+
+
+T800 Floating point general operation codes
+-------------------------------------------
+AB      fpentry         1       fp unit entry
+A4      fprev           1       fp reverse
+A3      fpdup           1       fp duplicate
+
+
+T800 Floating point rounding operation codes
+--------------------------------------------
+22  s   fpurn           1       set rounding mode to round nearest
+06  s   fpurz           1       set rounding mode to round zero
+04  s   fpurp           1       set rounding mode to round positive
+05  s   fpurm           1       set rounding mode to round minus
+
+
+T800 Floating point error operation codes
+-----------------------------------------
+83      fpchkerror      1       check fp error                  E
+9C      fptesterror     2       test fp error false and clear   F
+23  s   fpuseterror     1       set fp error                    F
+9C  s   fpuclearerror   1       clear fp error                  F
+
+
+T800 Floating point comparison operation codes
+----------------------------------------------
+94      fpgt            4/6     fp greater than                 F
+95      fpeq            3/5     fp equality                     F
+92      fpordered       3/4     fp orderability
+91      fpnan           2/3     fp NaN
+93      fpnotfinite     2/2     fp not finite
+0E  s   fpuchki32       3/4     check in range of type int32    F
+0F  s   fpuchki64       3/4     check in range of type int64    F
+
+Typical/Maximum cycles.
+
+
+T800 Floating point conversion operation codes
+----------------------------------------------
+07  s   fpur32tor64     3/4     real32 to real64                F
+08  s   fpur64tor32     6/9     real64 to real32                F
+9D      fprtoi32        7/9     real to int32                   F
+96      fpi32tor32      8/10    int32 to real32
+98      fpi32tor64      8/10    int32 to real64
+9A      fpb32tor64      8/ 8    bit32 to real64
+0D  s   fpunoround      2/ 2    real64 to real32, no round
+A1      fpint           5/ 6    round to floating integer       F
+
+Typical/Maximum cycles.
+
+
+T800 Floating point arithmetic operation codes
+----------------------------------------------
+87      fpadd          6/ 9  6/ 9  fp add                       F
+89      fpsub          6/ 9  6/ 9  fp subtract                  F
+8B      fpmul         11/ 8 18/27  fp multiply                  F
+8C      fpdiv         16/28 31/43  fp divide                    F
+0B  s   fpuabs         2/ 2  2/ 2  fp absolute                  F
+8F      fpremfirst    36/46 36/46  fp remainder first step      F
+90      fpremstep     32/36 32/36  fp remainder iteration
+01  s   fpusqrtfirst  27/29 27/29  fp square root first step    F
+02  s   fpusqrtstep   42/42 42/42  fp square root step
+03  s   fpusqrtlast    8/ 9  8/ 9  fp square root end
+0A  s   fpuexpinc32    6/ 9  6/ 9  multiply by 2^32             F
+09  s   fpuexpdec32    6/ 9  6/ 9  divide by 2^32               F
+12  s   fpumulby2      6/ 9  6/ 9  multiply by 2.0              F
+11  s   fpudivby2      6/ 9  6/ 9  divide by 2.0                F
+
+Typical/Maximum cycles.

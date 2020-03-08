@@ -16,7 +16,7 @@ Non-goals
 Changes
 =======
 
-* working Minix demo
+* runs the Minix demo (does NOT need a microcode emulator or an iserver supporting block operations)
 * D7205A occam 2 toolset successfully built hello example
 * itools directory contains D7205A environment setup and some tool scripts
 * `-sx` flag enables instruction execution tracing
@@ -27,8 +27,44 @@ Changes
 **NOTE**: There is the excellent [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) from Gavin Crate. Otherwise here is the code. Good luck!
 
 
-pahihu,  7 / 3 / 2020
+pahihu,  8 / 3 / 2020
 
+
+Running the Minix demo:
+
+        Secondary bootstrap entered.
+        Free mem starts at 800007bc
+        Sizing memory finished.
+        Found 00200800 bytes.
+        Loading boot monitor ok.
+
+        Minix boot monitor : Version 0.06 (built Apr 11 1994 17:44:04)
+
+        Creating new module
+        Creating new module
+        Creating new module
+        Creating new module
+        > boot
+        Booting
+        Module kernel text size 00004f70 data size 00009bf4
+        Loaded from 80009d00 to 8000ec70
+        Module mm text size 00002cc0 data size 000069d0
+        Loaded from 8000ed00 to 800119c0
+        Module fs text size 0000682c data size 0005a29c
+        Loaded from 80018400 to 8001ec2c
+        Module init text size 0000120c data size 0000166c
+        Loaded from 80079000 to 8007a20c
+        Booting MINIX 1.5.  Copyright 1990 Prentice-Hall, Inc.
+        Memory size = 2050K     MINIX = 495K     RAM disk =    0K     Available = 1555K
+
+        Using a 1.0 iserver. Max packet size 470. No block operstions.
+        Welcome to transputer MINIX
+        Root file system built Wed Oct 20 16:37:24 BST 1993
+        login: root
+        Welcome to Transputer MINIX
+        # ls
+        .profile   bin        dev        etc        usr        
+        # 
 
 
 Example output from the instruction tracing:

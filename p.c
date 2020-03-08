@@ -99,6 +99,10 @@ fpnum_t  FCRegSave;
 int32_t  FP_Error;              /* not preserved over descheduling */
 int      RoundingMode;          /* current rounding mode */
 
+uint32_t m2dSourceStride;       /* move2d source stride */
+uint32_t m2dDestStride;         /* move2d destination stride */
+uint32_t m2dLength;             /* move2d length (no. of rows) */
+
 /* Other registers. */
 uint32_t ClockReg0;
 uint32_t ClockReg1;
@@ -360,13 +364,15 @@ void init_processor (void)
 
 #define FLAG(x,y)       ((x) ? (y) : '-')
 
+#define m2dWidth                AReg
+#define m2dDestAddress          BReg
+#define m2dSourceAddress        CReg
+
 void mainloop (void)
 {
         uint32_t temp, temp2;
         uint32_t otherWdesc, otherWPtr, otherPtr, altState;
         uint32_t PrevError;
-        uint32_t m2dSourceStride,  m2dDestStride,  m2dLength;
-        uint32_t m2dSourceAddress, m2dDestAddress, m2dWidth;
         unsigned char pixel;
 
         int printIPtr, instrBytes;
@@ -1635,12 +1641,14 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            m2dSourceStride = CReg;
 		           IPtr++;
 		           break;
+
+#define m2dWidth                AReg
+#define m2dDestAddress          BReg
+#define m2dSourceAddress        CReg
+
 		case 0x5c: /* XXX move2dall    */
 		           if (IsT414)
 		               goto BadCode;
-                           m2dWidth = AReg;
-                           m2dDestAddress = BReg;
-                           m2dSourceAddress = CReg;
                            if (INT(m2dWidth) >= 0 && INT(m2dLength) >= 0)
                            {
                                 for (temp = 0; temp < m2dLength; temp++)
@@ -1662,9 +1670,6 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x5d: /* XXX move2dnonzero    */
 		           if (IsT414)
 		               goto BadCode;
-                           m2dWidth = AReg;
-                           m2dDestAddress = BReg;
-                           m2dSourceAddress = CReg;
                            if (INT(m2dWidth) >= 0 && INT(m2dLength) >= 0)
                            {
                                 for (temp = 0; temp < m2dLength; temp++)
@@ -1673,7 +1678,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                         {
                                                 pixel = byte (m2dSourceAddress++);
                                                 if (pixel)
-                                                        writebyte (m2dDestAddress++, pixel);
+                                                        writebyte (m2dDestAddress, pixel);
+                                                m2dDestAddress++;
                                         }
                                         m2dSourceAddress += m2dSourceStride;
                                         m2dDestAddress   += m2dDestStride;
@@ -1687,9 +1693,6 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x5e: /* XXX move2dzero    */
 		           if (IsT414)
 		               goto BadCode;
-                           m2dWidth = AReg;
-                           m2dDestAddress = BReg;
-                           m2dSourceAddress = CReg;
                            if (INT(m2dWidth) >= 0 && INT(m2dLength) >= 0)
                            {
                                 for (temp = 0; temp < m2dLength; temp++)
@@ -1698,7 +1701,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                         {
                                                 pixel = byte (m2dSourceAddress++);
                                                 if (0 == pixel)
-                                                        writebyte (m2dDestAddress++, pixel);
+                                                        writebyte (m2dDestAddress, pixel);
+                                                m2dDestAddress++;
                                         }
                                         m2dSourceAddress += m2dSourceStride;
                                         m2dDestAddress   += m2dDestStride;
@@ -1709,6 +1713,11 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 #endif
 		           IPtr++;
 		           break;
+
+#undef m2dWidth
+#undef m2dDestAddress
+#undef m2dSourceAddress
+
 		case 0x63: /* XXX unpacksn    */
                            if (IsT800)
                                 goto BadCode;

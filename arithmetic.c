@@ -531,12 +531,12 @@ uint32_t t4_longdiv (uint32_t A, uint32_t B, uint32_t C)
 
 uint32_t t4_infinity (void)
 {
-	return (INFINITY);
+	return (PINFINITY32);
 }
 
 uint32_t t4_isinf (uint32_t number)
 {
-	if ((number & 0x7fffffff) == INFINITY)
+	if ((number & 0x7fffffff) == PINFINITY32)
 		return (TRUE);
 	else
 		return (FALSE);
@@ -544,7 +544,7 @@ uint32_t t4_isinf (uint32_t number)
 
 uint32_t t4_iszero (uint32_t number)
 {
-	if ((number & 0x7fffffff) == ZERO)
+	if ((number & 0x7fffffff) == ZERO32)
 		return (TRUE);
 	else
 		return (FALSE);
@@ -552,7 +552,7 @@ uint32_t t4_iszero (uint32_t number)
 
 uint32_t t4_isnan (uint32_t number)
 {
-	if (((number & 0x7f800000) == INFINITY) && ((number & 0x7fffffff) != INFINITY))
+	if (((number & 0x7f800000) == PINFINITY32) && ((number & 0x7fffffff) != PINFINITY32))
 		return (TRUE);
 	else
 		return (FALSE);

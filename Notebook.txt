@@ -6,7 +6,7 @@ Not-a-Number Arithmetic
   with the larger fractional part is returned. All other cases return a
   (different) NaN.
 
-Division by zero
+Division by zero (OK)
   If a finite non-zero number is divided by zero then the error flag is set
   and a correctly signed infinity is returned. The error flag is set.
 

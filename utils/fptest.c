@@ -7,29 +7,31 @@
 
 #define onoff(x)        (x ? "on" : "off")
 
-void decode_except (int expc)
-{
-        printf ("fpexcept       = %d\n", expc);
-        printf ("FE_INVALID     %s\n", onoff (expc & FE_INVALID));
-        printf ("FE_DIVBYZERO   %s\n", onoff (expc & FE_DIVBYZERO));
-        printf ("FE_OVERFLOW    %s\n", onoff (expc & FE_OVERFLOW));
-        printf ("FE_UNDERFLOW   %s\n", onoff (expc & FE_UNDERFLOW));
-        printf ("FE_INEXACT     %s\n", onoff (expc & FE_INEXACT));
-}
+uint32_t FP_Error;
+
+#define FALSE   0
+#define TRUE    1
 
 int main(int argc, char*argv[])
 {
-        double fa, fb;
+        REAL64 fa, fb, result;
         long b;
-        int rc, fpexc;
 
+        FP_Error = FALSE;
+        fb = atof (argv[1]);
+        fa = atof (argv[2]);
 
-        fa = atof (argv[1]);
-        b = atol (argv[2]);
-        if (b == 0) fb = FP_NAN; else fb = (double) b;
-        rc = fa < fb;
-        printf ("rc = %d\n", rc);
-        fpexc = fetestexcept (FE_ALL_EXCEPT);
-        decode_except (fpexc);
+        fp_dumpdb ("fb", fb);
+        fp_dumpdb ("fa", fa);
+
+        result = fp_adddb (fb, fa, fp_addop_db);
+        fp_dumpdb ("b + a", result);
+        result = fp_subdb (fb, fa, fp_subop_db);
+        fp_dumpdb ("b - a", result);
+        result = fp_muldb (fb, fa, fp_mulop_db);
+        fp_dumpdb ("b * a", result);
+        result = fp_divdb (fb, fa, fp_divop_db);
+        fp_dumpdb ("b / a", result);
+
         return 0;
 }

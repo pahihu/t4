@@ -36,11 +36,12 @@
  *
  */
 
-#define INFINITY      ((uint32_t)0x7f800000)
-#define NAN_UNDEFINED ((uint32_t)0x7f800010)
-#define NAN_UNSTABLE  ((uint32_t)0x7f800008)
-#define NAN_INEXACT   ((uint32_t)0x7f800004)
-#define ZERO          ((uint32_t)0x00000000)
+#define PINFINITY32     ((uint32_t)0x7f800000)
+#define NINFINITY32     ((uint32_t)0xff800000)
+#define NAN32_UNDEFINED ((uint32_t)0x7f800010)
+#define NAN32_UNSTABLE  ((uint32_t)0x7f800008)
+#define NAN32_INEXACT   ((uint32_t)0x7f800004)
+#define ZERO32          ((uint32_t)0x00000000)
 
 uint32_t t4_add16    (uint32_t, uint32_t);
 uint32_t t4_eadd16   (uint32_t, uint32_t);

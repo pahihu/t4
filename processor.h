@@ -30,6 +30,7 @@
 #define INLINE
 
 #include <stdint.h>
+#include "fparithmetic.h"
 
 /*
  * processor.h
@@ -77,8 +78,12 @@ void insert        (uint32_t);
 void purge_timer   (void);
 INLINE void update_time   (void);
 uint32_t word (uint32_t);
-void writeword     (uint32_t, uint32_t);
+void     writeword     (uint32_t, uint32_t);
 unsigned char byte (uint32_t);
+REAL32 real32 (uint32_t);
+void   writereal32 (uint32_t, REAL32);
+REAL64 real64 (uint32_t);
+void   writereal64 (uint32_t, REAL64);
 INLINE
 void writebyte     (uint32_t, unsigned char);
 void add_profile   (int32_t);

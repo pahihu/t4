@@ -206,6 +206,22 @@ struct prof *profile_head = NULL;
 /* Signal handler. */
 void handler (int);
 
+#ifdef __clang__
+#define t4_bitreverse(x)        __builtin_bitreverse32 (x)
+#else
+uint32_t t4_bitreverse (uint32_t x)
+{
+	unsigned int s = 32;
+	uint32_t mask = ~0;
+	while ((s >>= 1) > 0)
+	{
+		mask ^= mask << s;
+		x = ((x >> s) & mask) | ((x << s) & ~mask);
+	}
+	return x;
+}
+#endif
+
 struct timeval LastTOD;         /* Time-of-day */
 
 /* Update time-of-day. */
@@ -1842,14 +1858,14 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x77: /* XXX bitrevword    */
 		           if (IsT414)
 		               goto BadCode;
-                           AReg = __builtin_bitreverse32 (AReg);
+                           AReg = t4_bitreverse (AReg);
 		           IPtr++;
 		           break;
 		case 0x78: /* XXX bitrevnbits    */
 		           if (IsT414)
 		               goto BadCode;
                            if (AReg < 32)
-                                AReg = __builtin_bitreverse32 (BReg) >> (32 - AReg);
+                                AReg = t4_bitreverse (BReg) >> (32 - AReg);
                            else
                                 AReg = 0;
                            BReg = CReg;

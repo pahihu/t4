@@ -30,7 +30,7 @@
 
 #undef TRUE
 #undef FALSE
-#define FLASE   0x0000
+#define FALSE   0x0000
 #define TRUE    0x0001
 
 extern int FP_Error;
@@ -68,12 +68,17 @@ void fp_setrounding (int mode)
                 printf ("-W-EMU414: Warning - cannot set rounding mode! (%d)\n", mode);
 }
 
+int db_sign (uint64_t fpbits)
+{
+        return (REAL64_SIGN & fpbits) ? 1 : 0;
+}
+
 int fp_signdb(REAL64 fp)
 {
         fpreal64_t x;
 
         x.fp = fp;
-        return (REAL64_SIGN & x.bits) ? 1 : 0;
+        return db_sign (x.bits);
 }
 
 int fp_expdb(REAL64 fp)
@@ -102,14 +107,22 @@ int fp_nandb(REAL64 fp)
         return (2047 == fp_expdb (fp)) && (0LL != fp_fracdb (fp));
 }
 
+int fp_notfinitedb(REAL64 fp)
+{
+        return (2047 == fp_expdb (fp));
+}
 
+int sn_sign (uint32_t fpbits)
+{
+        return (REAL32_SIGN & fpbits) ? 1 : 0;
+}
 
 int fp_signsn(REAL32 fp)
 {
         fpreal32_t x;
 
         x.fp = fp;
-        return (REAL32_SIGN & x.bits) ? 1 : 0;
+        return sn_sign (x.bits);
 }
 
 int fp_expsn(REAL32 fp)
@@ -136,6 +149,11 @@ int fp_infsn(REAL32 fp)
 int fp_nansn(REAL32 fp)
 {
         return (255 == fp_expsn (fp)) && (0L != fp_fracsn (fp));
+}
+
+int fp_notfinitesn(REAL32 fp)
+{
+        return (255 == fp_expsn (fp));
 }
 
 void db_dump (char *msg, REAL64 fp)
@@ -176,6 +194,7 @@ void decode_except (int expc)
         printf ("FE_INEXACT     %s\n", onoff (expc & FE_INEXACT));
 }
 
+/* Do a binary REAL64 operation, return REAL64 result. */
 REAL64 db_binary (REAL64 fb, REAL64 fa, REAL64 (*opr)(REAL64, REAL64))
 {
         REAL64 result;
@@ -211,6 +230,30 @@ REAL64 db_binary (REAL64 fb, REAL64 fa, REAL64 (*opr)(REAL64, REAL64))
         return result;
 }
 
+/* Do a binary operation on two REAL64 numbers, return the result flag. */
+int db_binary2word (REAL64 fb, REAL64 fa, int (*opr)(REAL64, REAL64))
+{
+        int result;
+
+        int exc;
+
+        if (fp_notfinitedb (fb) || fp_notfinitedb (fa))
+        {
+                FP_Error = TRUE;
+        }
+
+        result = opr(fb, fa);
+
+        exc = fetestexcept (FE_T800_EXCEPT);
+        if (exc)
+        {
+                decode_except (exc);
+                FP_Error = TRUE;
+        }
+        return result;
+}
+
+/* Do an unary REAL64 operation, return REAL64 result. */
 REAL64 db_unary (REAL64 fa, REAL64 (*opr)(REAL64))
 {
         REAL64 result;
@@ -233,6 +276,7 @@ REAL64 db_unary (REAL64 fa, REAL64 (*opr)(REAL64))
         return result;
 }
 
+/* Do a binary REAL64 operation, return REAL64 result. */
 REAL32 sn_binary (REAL32 fb, REAL32 fa, REAL32 (*opr)(REAL32, REAL32))
 {
         REAL32 result;
@@ -268,6 +312,30 @@ REAL32 sn_binary (REAL32 fb, REAL32 fa, REAL32 (*opr)(REAL32, REAL32))
         return result;
 }
 
+/* Do a binary operation on two REAL32 numbers, return the result flag. */
+int sn_binary2word (REAL32 fb, REAL32 fa, int (*opr)(REAL32, REAL32))
+{
+        int result;
+
+        int exc;
+
+        if (fp_notfinitesn (fb) || fp_notfinitesn (fa))
+        {
+                FP_Error = TRUE;
+        }
+
+        result = opr(fb, fa);
+
+        exc = fetestexcept (FE_T800_EXCEPT);
+        if (exc)
+        {
+                decode_except (exc);
+                FP_Error = TRUE;
+        }
+        return result;
+}
+
+/* Do an unary REAL32 operation, return REAL32 result. */
 REAL32 sn_unary (REAL32 fa, REAL32 (*opr)(REAL32))
 {
         REAL32 result;
@@ -290,36 +358,52 @@ REAL32 sn_unary (REAL32 fa, REAL32 (*opr)(REAL32))
         return result;
 }
 
-REAL64 db_add(REAL64 fb, REAL64 fa) { return fb + fa; }
-REAL64 db_sub(REAL64 fb, REAL64 fa) { return fb - fa; }
-REAL64 db_mul(REAL64 fb, REAL64 fa) { return fb * fa; }
-REAL64 db_div(REAL64 fb, REAL64 fa) { return fb / fa; }
-REAL64 db_mulby2 (REAL64 fa)   { return ldexp (fa,  1); }
-REAL64 db_divby2 (REAL64 fa)   { return ldexp (fa, -1); }
-REAL64 db_expinc32 (REAL64 fa) { return ldexp (fa,  32); }
-REAL64 db_expdec32 (REAL64 fa) { return ldexp (fa, -32); }
-REAL64 db_sqrt (REAL64 fa)     { return  sqrt (fa); }
+
+/* 
+ * REAL64 basic operations.
+ */
+REAL64 db_add(REAL64 fb, REAL64 fa)      { return fb + fa; }
+REAL64 db_sub(REAL64 fb, REAL64 fa)      { return fb - fa; }
+REAL64 db_mul(REAL64 fb, REAL64 fa)      { return fb * fa; }
+REAL64 db_div(REAL64 fb, REAL64 fa)      { return fb / fa; }
+REAL64 db_mulby2 (REAL64 fa)             { return ldexp (fa,  1); }
+REAL64 db_divby2 (REAL64 fa)             { return ldexp (fa, -1); }
+REAL64 db_expinc32 (REAL64 fa)           { return ldexp (fa,  32); }
+REAL64 db_expdec32 (REAL64 fa)           { return ldexp (fa, -32); }
+REAL64 db_sqrt (REAL64 fa)               { return  sqrt (fa); }
 REAL64 db_remfirst(REAL64 fb, REAL64 fa) { return fmod (fb, fa); }
+int    db_gt (REAL64 fb, REAL64 fa)      { return fb  > fa; }
+int    db_eq (REAL64 fb, REAL64 fa)      { return fb == fa; }
 
-REAL32 sn_add(REAL32 fb, REAL32 fa) { return fb + fa; }
-REAL32 sn_sub(REAL32 fb, REAL32 fa) { return fb - fa; }
-REAL32 sn_mul(REAL32 fb, REAL32 fa) { return fb * fa; }
-REAL32 sn_div(REAL32 fb, REAL32 fa) { return fb / fa; }
-REAL32 sn_mulby2 (REAL32 fa)   { return ldexpf (fa,   1); }
-REAL32 sn_divby2 (REAL32 fa)   { return ldexpf (fa,  -1); }
-REAL32 sn_expinc32 (REAL32 fa) { return ldexpf (fa,  32); }
-REAL32 sn_expdec32 (REAL32 fa) { return ldexpf (fa, -32); }
-REAL32 sn_sqrt (REAL32 fa)     { return  sqrtf (fa); }
-REAL32 sn_remfirst(REAL32 fb, REAL32 fa) { return fmodf (fb, fa); }
 
-REAL64 fp_adddb (REAL64 fb, REAL64 fa) { return db_binary (fb, fa, db_add); }
-REAL64 fp_subdb (REAL64 fb, REAL64 fa) { return db_binary (fb, fa, db_sub); }
-REAL64 fp_muldb (REAL64 fb, REAL64 fa) { return db_binary (fb, fa, db_mul); }
-REAL64 fp_divdb (REAL64 fb, REAL64 fa) { return db_binary (fb, fa, db_div); }
-REAL64 fp_mulby2db (REAL64 fa) { return db_unary (fa, db_mulby2); }
-REAL64 fp_divby2db (REAL64 fa) { return db_unary (fa, db_divby2); }
-REAL64 fp_expinc32db (REAL64 fa) { return db_unary (fa, db_expinc32); }
-REAL64 fp_expdec32db (REAL64 fa) { return db_unary (fa, db_expdec32); }
+/* 
+ * REAL32 basic operations.
+ */
+REAL32 sn_add (REAL32 fb, REAL32 fa)     { return fb + fa; }
+REAL32 sn_sub (REAL32 fb, REAL32 fa)     { return fb - fa; }
+REAL32 sn_mul (REAL32 fb, REAL32 fa)     { return fb * fa; }
+REAL32 sn_div (REAL32 fb, REAL32 fa)     { return fb / fa; }
+REAL32 sn_mulby2 (REAL32 fa)             { return ldexpf (fa,   1); }
+REAL32 sn_divby2 (REAL32 fa)             { return ldexpf (fa,  -1); }
+REAL32 sn_expinc32 (REAL32 fa)           { return ldexpf (fa,  32); }
+REAL32 sn_expdec32 (REAL32 fa)           { return ldexpf (fa, -32); }
+REAL32 sn_sqrt (REAL32 fa)               { return  sqrtf (fa); }
+REAL32 sn_remfirst (REAL32 fb, REAL32 fa){ return fmodf (fb, fa); }
+int    sn_gt (REAL32 fb, REAL32 fa)      { return fb  > fa; }
+int    sn_eq (REAL32 fb, REAL32 fa)      { return fb == fa; }
+
+
+/*
+ * Checked REAL64 operations.
+ */
+REAL64 fp_adddb (REAL64 fb, REAL64 fa)   { return db_binary (fb, fa, db_add); }
+REAL64 fp_subdb (REAL64 fb, REAL64 fa)   { return db_binary (fb, fa, db_sub); }
+REAL64 fp_muldb (REAL64 fb, REAL64 fa)   { return db_binary (fb, fa, db_mul); }
+REAL64 fp_divdb (REAL64 fb, REAL64 fa)   { return db_binary (fb, fa, db_div); }
+REAL64 fp_mulby2db (REAL64 fa)           { return db_unary (fa, db_mulby2); }
+REAL64 fp_divby2db (REAL64 fa)           { return db_unary (fa, db_divby2); }
+REAL64 fp_expinc32db (REAL64 fa)         { return db_unary (fa, db_expinc32); }
+REAL64 fp_expdec32db (REAL64 fa)         { return db_unary (fa, db_expdec32); }
 REAL64 fp_absdb (REAL64 fa)
 {
         fpreal64_t x;
@@ -327,7 +411,8 @@ REAL64 fp_absdb (REAL64 fa)
         if (fp_nandb (fa))
         {
                 x.fp = fa;
-                x.bits ^= REAL64_SIGN;
+                if (db_sign (x.bits))
+                        x.bits ^= REAL64_SIGN;
                 FP_Error = TRUE;
                 return x.fp;
         }
@@ -335,18 +420,29 @@ REAL64 fp_absdb (REAL64 fa)
                 FP_Error = TRUE;
         return fabs (fa);
 }
-REAL64 fp_sqrtdb (REAL64 fa) { return db_unary (fa, db_sqrt); }
+REAL64 fp_sqrtdb (REAL64 fa)             { return db_unary (fa, db_sqrt); }
 REAL64 fp_remfirstdb (REAL64 fb, REAL64 fa) { return db_binary (fb, fa, db_remfirst); }
+int    fp_gtdb (REAL64 fb, REAL64 fa)    { return db_binary2word (fb, fa, db_gt); }
+int    fp_eqdb (REAL64 fb, REAL64 fa)    { return db_binary2word (fb, fa, db_eq); }
+int    fp_ordereddb (REAL64 fb, REAL64 fa)
+{
+        if (fp_nandb (fb) || fp_nandb (fa))
+                return FALSE;
+        return TRUE;
+}
 
 
-REAL32 fp_addsn (REAL32 fb, REAL32 fa) { return sn_binary (fb, fa, sn_add); }
-REAL32 fp_subsn (REAL32 fb, REAL32 fa) { return sn_binary (fb, fa, sn_sub); }
-REAL32 fp_mulsn (REAL32 fb, REAL32 fa) { return sn_binary (fb, fa, sn_mul); }
-REAL32 fp_divsn (REAL32 fb, REAL32 fa) { return sn_binary (fb, fa, sn_div); }
-REAL32 fp_mulby2sn (REAL32 fa) { return sn_unary (fa, sn_mulby2); }
-REAL32 fp_divby2sn (REAL32 fa) { return sn_unary (fa, sn_divby2); }
-REAL32 fp_expinc32sn (REAL32 fa) { return sn_unary (fa, sn_expinc32); }
-REAL32 fp_expdec32sn (REAL32 fa) { return sn_unary (fa, sn_expdec32); }
+/*
+ * Checked REAL32 operations.
+ */
+REAL32 fp_addsn (REAL32 fb, REAL32 fa)   { return sn_binary (fb, fa, sn_add); }
+REAL32 fp_subsn (REAL32 fb, REAL32 fa)   { return sn_binary (fb, fa, sn_sub); }
+REAL32 fp_mulsn (REAL32 fb, REAL32 fa)   { return sn_binary (fb, fa, sn_mul); }
+REAL32 fp_divsn (REAL32 fb, REAL32 fa)   { return sn_binary (fb, fa, sn_div); }
+REAL32 fp_mulby2sn (REAL32 fa)           { return sn_unary (fa, sn_mulby2); }
+REAL32 fp_divby2sn (REAL32 fa)           { return sn_unary (fa, sn_divby2); }
+REAL32 fp_expinc32sn (REAL32 fa)         { return sn_unary (fa, sn_expinc32); }
+REAL32 fp_expdec32sn (REAL32 fa)         { return sn_unary (fa, sn_expdec32); }
 REAL32 fp_abssn (REAL32 fa)
 {
         fpreal32_t x;
@@ -354,7 +450,8 @@ REAL32 fp_abssn (REAL32 fa)
         if (fp_nansn (fa))
         {
                 x.fp = fa;
-                x.bits ^= REAL32_SIGN;
+                if (sn_sign (x.bits))
+                        x.bits ^= REAL32_SIGN;
                 FP_Error = TRUE;
                 return x.fp;
         }
@@ -362,6 +459,14 @@ REAL32 fp_abssn (REAL32 fa)
                 FP_Error = TRUE;
         return fabsf (fa);
 }
-REAL32 fp_sqrtsn (REAL32 fa) { return sn_unary (fa, sn_sqrt); }
+REAL32 fp_sqrtsn (REAL32 fa)             { return sn_unary (fa, sn_sqrt); }
 REAL32 fp_remfirstsn (REAL32 fb, REAL32 fa) { return sn_binary (fb, fa, sn_remfirst); }
+int    fp_gtsn (REAL32 fb, REAL32 fa)    { return sn_binary2word (fb, fa, sn_gt); }
+int    fp_eqsn (REAL32 fb, REAL32 fa)    { return sn_binary2word (fb, fa, sn_eq); }
+int    fp_orderedsn (REAL32 fb, REAL32 fa)
+{
+        if (fp_nansn (fb) || fp_nansn (fa))
+                return FALSE;
+        return TRUE;
+}
 

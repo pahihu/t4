@@ -233,8 +233,8 @@ void fp_popdb (REAL64 *fp)
 }
 
 
-/* Pop two REAL64s from the floating point stack. */
-void fp_pop2db (REAL64 *fb, REAL64 *fa)
+/* Peek two REAL64s on the floating point stack. */
+void fp_peek2db (REAL64 *fb, REAL64 *fa)
 {
         if (FBReg.type == FP_REAL64 && FAReg.type == FP_REAL64)
         {
@@ -246,6 +246,13 @@ void fp_pop2db (REAL64 *fb, REAL64 *fa)
                 *fb = 0.0;
                 *fa = 0.0;
         }
+}
+
+
+/* Pop two REAL64s from the floating point stack. */
+void fp_pop2db (REAL64 *fb, REAL64 *fa)
+{
+        fp_peek2db (fb, fa);
         FAReg = FCReg;
         FBReg.type = FP_UNKNOWN;
         FCReg.type = FP_UNKNOWN;
@@ -275,8 +282,8 @@ void fp_popsn (REAL32 *fp)
 }
 
 
-/* Pop two REAL32s from the floating point stack. */
-void fp_pop2sn (REAL32 *fb, REAL32 *fa)
+/* Peek two REAL32s on the floating point stack. */
+void fp_peek2sn (REAL32 *fb, REAL32 *fa)
 {
         if (FBReg.type == FP_REAL32 && FAReg.type == FP_REAL32)
         {
@@ -288,6 +295,13 @@ void fp_pop2sn (REAL32 *fb, REAL32 *fa)
                 *fb = 0.0F;
                 *fa = 0.0F;
         }
+}
+
+
+/* Pop two REAL32s from the floating point stack. */
+void fp_pop2sn (REAL32 *fb, REAL32 *fa)
+{
+        fp_peek2sn (fb, fa);
         FAReg = FCReg;
         FBReg.type = FP_UNKNOWN;
         FCReg.type = FP_UNKNOWN;
@@ -327,6 +341,33 @@ void fp_dobinary (REAL64 (*dbop)(REAL64,REAL64), REAL32 (*snop)(REAL32,REAL32))
                         FAReg.type = FP_UNKNOWN;
                         break;
         }
+}
+
+
+/* Do a binary floating point operation. */
+int fp_binary2word (int (*dbop)(REAL64,REAL64), int (*snop)(REAL32,REAL32))
+{
+        REAL64 dbtemp1, dbtemp2;
+        REAL32 sntemp1, sntemp2;
+        int result;
+
+        switch (FAReg.type)
+        {
+                case FP_REAL64:
+                        fp_pop2db (&dbtemp1, &dbtemp2);
+                        result = dbop (dbtemp1, dbtemp2);
+                        break;
+                case FP_REAL32:
+                        fp_pop2sn (&sntemp1, &sntemp2);
+                        result = snop (sntemp1, sntemp2);
+                        break;
+                default       :
+                        /* Just pop 2 items and set FAReg to unknown. */
+                        fp_pop2db (&dbtemp1, &dbtemp2);
+                        result = FALSE;
+                        break;
+        }
+        return result;
 }
 
 
@@ -528,6 +569,8 @@ void mainloop (void)
         uint32_t otherWdesc, otherWPtr, otherPtr, altState;
         uint32_t PrevError;
         unsigned char pixel;
+        REAL32 sntemp1, sntemp2;
+        REAL64 dbtemp1, dbtemp2;
 
         int printIPtr, instrBytes;
         int asmLines;
@@ -2122,34 +2165,54 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            AReg = temp ? true_t : false_t;
 		           IPtr++;
 		           break;
-		case 0x92: /* fpordered    */
+		case 0x92: /* XXX fpordered    */
 		           if (IsT414)
 		               goto BadCode;
+                           temp = false_t;
+                           if (FAReg.type == FP_REAL64)
+                           {
+                                fp_peek2db (&dbtemp1, &dbtemp2);
+                                temp = fp_ordereddb (dbtemp1, dbtemp2);
+                           }
+                           else if (FAReg.type == FP_REAL32)
+                           {
+                                fp_peek2sn (&sntemp1, &sntemp2);
+                                temp = fp_orderedsn (sntemp1, sntemp2);
+                           }
+                           CReg = BReg;
+                           BReg = AReg;
+                           AReg = temp;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
 		case 0x93: /* XXX fpnotfinite    */
 		           if (IsT414)
 		               goto BadCode;
                            temp = true_t;
                            if (FAReg.type == FP_REAL64)
-                                temp = fp_nandb (FAReg.u.db) || fp_infdb (FAReg.u.db);
+                                temp = fp_notfinitedb (FAReg.u.db);
                            else if (FAReg.type == FP_REAL32)
-                                temp = fp_nansn (FAReg.u.sn) || fp_infsn (FAReg.u.sn);
+                                temp = fp_notfinitesn (FAReg.u.sn);
                            CReg = BReg;
                            BReg = AReg;
                            AReg = temp ? true_t : false_t;
 		           IPtr++;
 		           break;
-		case 0x94: /* fpgt    */
+		case 0x94: /* XXX fpgt    */
 		           if (IsT414)
 		               goto BadCode;
+                           temp = fp_binary2word (fp_gtdb, fp_gtsn);
+                           CReg = BReg;
+                           BReg = AReg;
+                           AReg = temp;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x95: /* fpeq    */
+		case 0x95: /* XXX fpeq    */
 		           if (IsT414)
 		               goto BadCode;
+                           temp = fp_binary2word (fp_eqdb, fp_eqsn);
+                           CReg = BReg;
+                           BReg = AReg;
+                           AReg = temp;
 		           IPtr++;
 		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;

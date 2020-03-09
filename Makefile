@@ -12,8 +12,8 @@ CFLAGS = -O2 -Wall
 # Put any additional libraries here.
 LFLAGS	= -lm
 
-SRC	= arithmetic.c server.c p.c main.c
-OBJ	= arithmetic.o server.o p.o main.o
+SRC	= arithmetic.c fparithmetic.c server.c p.c main.c
+OBJ	= arithmetic.o fparithmetic.o server.o p.o main.o
 
 $(BIN)/jserver : $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) $(LFLAGS) -o t4

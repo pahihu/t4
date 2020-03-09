@@ -59,6 +59,10 @@ REAL64 fp_expdec32db (REAL64);
 REAL64 fp_absdb (REAL64);
 REAL64 fp_sqrtdb (REAL64);
 REAL64 fp_remfirstdb (REAL64, REAL64);
+int    fp_notfinitedb (REAL64);
+int    fp_gtdb (REAL64, REAL64);
+int    fp_eqdb (REAL64, REAL64);
+int    fp_ordereddb (REAL64, REAL64);
 
 
 /*
@@ -81,4 +85,8 @@ REAL32 fp_expdec32sn (REAL32);
 REAL32 fp_abssn (REAL32);
 REAL32 fp_sqrtsn (REAL32);
 REAL32 fp_remfirstsn (REAL32, REAL32);
+int    fp_notfinitesn (REAL32);
+int    fp_gtsn (REAL32, REAL32);
+int    fp_eqsn (REAL32, REAL32);
+int    fp_orderedsn (REAL32, REAL32);
 

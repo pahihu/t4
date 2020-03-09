@@ -12,10 +12,6 @@ typedef double  REAL64;
 typedef union {
         REAL64   fp;
         uint64_t bits;
-        struct {
-                uint32_t hibits;
-                uint32_t lobits;
-        } hilo;
 } fpreal64_t;
 
 typedef union {

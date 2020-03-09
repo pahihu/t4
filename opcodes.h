@@ -52,6 +52,17 @@ char           *Secondaries[] = {"REV", "LB", "BSUB", "ENDP",
 			     "DEVSB", "DEVLS", "DEVSS", "DEVLW", "DEVSW",
 			     "DEVXSWORD", "LSX", "CS" "CSU"};
 
+
+char            *FpuEntries[] = {"--FPU00--", "FPUSQRTFIRST", "FPUSQRTSTEP", "FPUSQRTLAST",
+                                 "FPURP",     "FPURM",        "FPURZ",       "FPUR32TOR64",
+                                 "FPUR64TOR32", "FPUEXPDEC32","FPUEXPINC32", "FPUABS",
+                                 "--FPU0C--", "FPUNOROUND",   "FPUCHKI32",   "FPUCHKI64",
+                                 "--FPU10--", "FPUDIVBY2",    "FPUMULBY2",   "--FPU13--",
+                                 "--FPU14--", "--FPU15--",    "--FPU16--",   "--FPU17--",
+                                 "--FPU18--", "--FPU19--",    "--FPU1A--",   "--FPU1B--",
+                                 "--FPU1C--", "--FPU1D--",    "--FPU1E--",   "--FPU1F--",
+                                 "--FPU20--", "--FPU21--",    "FPURN",       "FPUSETERR"};
+
 char           *Negatives[] = {"--00--", "FPSTALL", "FPLDALL", "STSHADOW",
 		"LDSHADOW", "TRET", "GOPROT", "SELTH", "SYSCALL", "=60F7=",
 		"=60F6=", "WAIT",

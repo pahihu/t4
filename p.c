@@ -496,19 +496,33 @@ void save_dump (void)
         fclose (fout);
 }
 
-char *mnemonic(unsigned char icode, uint32_t oreg)
+char *mnemonic(unsigned char icode, uint32_t oreg, uint32_t fpuentry)
 {
         char *mnemo;
         char bad[16];
         static char str[32];
 
+        mnemo = 0;
         if (icode > 239)
         {
-                if (oreg < 0xFA)
-                        mnemo = Secondaries[oreg];
-                else
+                if (oreg == 0xab)
                 {
-                        sprintf (bad, "--%X--", oreg);
+                        if (fpuentry == 0x9c)
+                                mnemo = "FPUCLRERR";
+                        else if (fpuentry < 0x24)
+                                mnemo = FpuEntries[fpuentry];
+                        else
+                        {
+                                sprintf (bad, "--FPU%02X--", fpuentry);
+                                mnemo = bad;
+                        }
+                }
+                else if (oreg < 0xfa)
+                        mnemo = Secondaries[oreg];
+
+                if (mnemo == NULL)
+                {
+                        sprintf (bad, "--%02X--", oreg);
                         mnemo = bad;
                 }
                 sprintf (str, "%s", mnemo);
@@ -632,7 +646,7 @@ void mainloop (void)
                 {
                         for (; instrBytes < 9; instrBytes++)
                                 printf("   ");
-                        printf("%-17s", mnemonic (Icode, OReg));
+                        printf("%-17s", mnemonic (Icode, OReg, AReg));
 	                printf ("   %c%c   %8X %8X %8X   %08X %8X\n", 
                                 FLAG(ReadHaltOnError, 'H'),
                                 FLAG(      ReadError, 'E'),
@@ -2400,7 +2414,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			              IPtr++;
 			              break;
                            default  :  
-                                      printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg));
+                                      printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg, AReg));
                                      processor_state ();
 			             handler (-1);
 			             break;
@@ -2414,7 +2428,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		           break;
 		default  : 
 BadCode:
-                           printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg));
+                           printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg, AReg));
                            processor_state ();
 			   handler (-1);
 			   break;
@@ -2422,7 +2436,7 @@ BadCode:
 			   OReg = 0;
 			   break;
 		default  : 
-                           printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg));
+                           printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg, AReg));
                            processor_state ();
 			   handler (-1);
 			   break;
@@ -3160,10 +3174,12 @@ void writereal32 (uint32_t ptr, REAL32 value)
 REAL64 real64 (uint32_t ptr)
 {
         fpreal64_t x;
+        uint32_t lobits, hibits;
 
-        x.hilo.lobits = word (ptr);
-        x.hilo.hibits = word (ptr + 4);
+        lobits = word (ptr);
+        hibits = word (ptr + 4);
 
+        x.bits = ((uint64_t)(hibits) << 32) | lobits;
         return x.fp;
 }
 
@@ -3173,8 +3189,8 @@ void writereal64 (uint32_t ptr, REAL64 value)
         fpreal64_t x;
 
         x.fp = value;
-        writeword (ptr,     x.hilo.lobits);
-        writeword (ptr + 4, x.hilo.hibits);
+        writeword (ptr,     x.bits & 0xffffffff);
+        writeword (ptr + 4, (x.bits >> 32) & 0xffffffff);
 }
 
 /* Add an executing instruction to the profile list. */

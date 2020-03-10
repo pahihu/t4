@@ -20,7 +20,7 @@ typedef union {
 } fpreal32_t;
 
 #define PINFINITY64             ((uint64_t)0x7ff0000000000000LL)
-#define NINFINITY64             ((uint64_t)0xfff0000000000000LL)
+#define MINFINITY64             ((uint64_t)0xfff0000000000000LL)
 #define NAN64_UNDEFINED         ((uint64_t)0x7ff0000000000010LL)
 #define NAN64_UNSTABLE          ((uint64_t)0x7ff0000000000008LL)
 #define NAN64_INEXACT           ((uint64_t)0x7ff0000000000004LL)
@@ -28,16 +28,48 @@ typedef union {
 #define NAN32_CONVERSION64      ((uint32_t)0x7f800002)
 
 
+/*
+ * REAL32 constants.
+ */
+extern REAL32 Real32PlusInf;
+extern REAL32 Real32MinusInf;
+extern REAL32 Real32UndefinedNaN;
+extern REAL32 Real32UnstableNaN;
+extern REAL32 Real32InexactNaN;
+extern REAL32 Real32Zero;
+
+
+/*
+ * REAL64 constants.
+ */
+extern REAL64 Real64PlusInf;
+extern REAL64 Real64MinusInf;
+extern REAL64 Real64UndefinedNaN;
+extern REAL64 Real64UnstableNaN;
+extern REAL64 Real64InexactNaN;
+extern REAL64 Real64Zero;
+extern REAL32 Real32ConversionNaN;
+
+
+/*
+ * Floating point initialization and exception handling.
+ */
+void fp_init (void);
+void fp_chkexcept (char *msg);
+void fp_clrexcept (void);
+
+
+/*
+ * Rounding mode.
+ */
 #define ROUND_P         1
 #define ROUND_M         2
 #define ROUND_Z         3
 #define ROUND_N         4
 
-
-void fp_init (void);
 void fp_setrounding (int mode);
-void fp_chkexcept (char *msg);
-void fp_clrexcept (void);
+
+
 
 /*
  * REAL64 operations.

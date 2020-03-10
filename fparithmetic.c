@@ -9,13 +9,14 @@
 #include <stdlib.h>
 #include <math.h>
 #include <fenv.h>
+#include "arithmetic.h"
 #include "fparithmetic.h"
 
 #pragma STDC FENV_ACCESS ON
 
 #define __INT32_MIN__   ((-__INT32_MAX__)-1)
 
-#define FE_T800_EXCEPT  (FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW)
+#define FE_T800_EXCEPT  (FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW | FE_INEXACT)
 
 #define REAL64_SIGN     0x8000000000000000LL
 #define REAL64_EXP      0x7FF0000000000000LL
@@ -39,6 +40,21 @@
 #define FALSE   0x0000
 #define TRUE    0x0001
 
+REAL32 Real32PlusInf;
+REAL32 Real32MinusInf;
+REAL32 Real32UndefinedNaN;
+REAL32 Real32UnstableNaN;
+REAL32 Real32InexactNaN;
+REAL32 Real32Zero;
+
+REAL64 Real64PlusInf;
+REAL64 Real64MinusInf;
+REAL64 Real64UndefinedNaN;
+REAL64 Real64UnstableNaN;
+REAL64 Real64InexactNaN;
+REAL64 Real64Zero;
+REAL32 Real32ConversionNaN;
+
 extern int FP_Error;
 extern int RoundingMode;
 extern void handler (int);
@@ -47,6 +63,8 @@ REAL32 BargSN, AargSN, ResultSN;
 REAL64 BargDB, AargDB, ResultDB;
 void db_dump (char*, REAL64);
 void sn_dump (char*, REAL32);
+void sn_setbits (REAL32*, uint32_t);
+void db_setbits (REAL64*, uint64_t);
 
 void fp_init (void)
 {
@@ -57,6 +75,20 @@ void fp_init (void)
         if (rc)
                 printf ("-W-EMU414: Warning - cannot initialize FP environment!\n");
 
+        sn_setbits (&Real32PlusInf,      PINFINITY32);
+        sn_setbits (&Real32MinusInf,     MINFINITY32);
+        sn_setbits (&Real32UndefinedNaN, NAN32_UNDEFINED);
+        sn_setbits (&Real32UnstableNaN,  NAN32_UNSTABLE);
+        sn_setbits (&Real32InexactNaN,   NAN32_INEXACT);
+        sn_setbits (&Real32Zero,         ZERO32);
+
+        db_setbits (&Real64PlusInf,      PINFINITY64);
+        db_setbits (&Real64MinusInf,     MINFINITY64);
+        db_setbits (&Real64UndefinedNaN, NAN64_UNDEFINED);
+        db_setbits (&Real64UnstableNaN,  NAN64_UNSTABLE);
+        db_setbits (&Real64InexactNaN,   NAN64_INEXACT);
+        db_setbits (&Real64Zero,         ZERO64);
+        sn_setbits (&Real32ConversionNaN, NAN32_CONVERSION64);
 }
 
 void db_setbits (REAL64 *ptr, uint64_t bits)
@@ -222,39 +254,7 @@ void sn_dump (char *msg, REAL32 fp)
                 fp_fracsn(fp));
 }
 
-#define setclear(x)        (x ? "Set" : "Clear")
-
-void decode_except (int expc, int typeDB)
-{
-        if (0 == expc)
-                return;
-
-        printf ("-W-EMU414: Native FPU exception!\n");
-        if (1 == typeDB)
-        {
-                printf  ("-W-EMU414: Operation arguments.\n");
-                db_dump ("-W-EMU414:   Barg", BargDB);
-                db_dump ("-W-EMU414:   Aarg", AargDB);
-                db_dump ("-W-EMU414: Result", ResultDB);
-        }
-        else if (0 == typeDB)
-        {
-                printf  ("-W-EMU414: Operation arguments.\n");
-                sn_dump ("-W-EMU414:   Barg", BargSN);
-                sn_dump ("-W-EMU414:   Aarg", AargSN);
-                sn_dump ("-W-EMU414: Result", ResultSN);
-        }
-
-        printf ("-W-EMU414: FPExceptFlag   = %d\n", expc);
-        printf ("-W-EMU414:   Invalid      %s\n", setclear (expc & FE_INVALID));
-        printf ("-W-EMU414:   DivideByZero %s\n", setclear (expc & FE_DIVBYZERO));
-        printf ("-W-EMU414:   Overflow     %s\n", setclear (expc & FE_OVERFLOW));
-        printf ("-W-EMU414:   Underflow    %s\n", setclear (expc & FE_UNDERFLOW));
-        printf ("-W-EMU414:   Inexact      %s\n", setclear (expc & FE_INEXACT));
-
-        fp_clrexcept ();
-}
-
+/* Clear native FPU exceptions. */
 void fp_clrexcept (void)
 {
         int rc;
@@ -264,6 +264,7 @@ void fp_clrexcept (void)
                 printf ("-W-EMU414: Warning - cannot clear native FPU exceptions!\n");
 }
 
+/* Check native FPU exceptions. */
 void fp_chkexcept (char *msg)
 {
         int exc;
@@ -272,8 +273,71 @@ void fp_chkexcept (char *msg)
         if (exc)
         {
                 printf ("-W-EMU414: Warning - FPU exception flags are set! (%s)\n", msg);
-                decode_except (exc, -1);
         }
+}
+
+#define setclear(x)        (x ? "Set" : "Clear")
+
+/* Translate native FPU exception to FP_Error. */
+void translate_except (int excp)
+{
+        printf ("-W-EMU414: FPExceptFlag   = %d\n", excp);
+        printf ("-W-EMU414:   Invalid      %s\n", setclear (excp & FE_INVALID));
+        printf ("-W-EMU414:   DivideByZero %s\n", setclear (excp & FE_DIVBYZERO));
+        printf ("-W-EMU414:   Overflow     %s\n", setclear (excp & FE_OVERFLOW));
+        printf ("-W-EMU414:   Underflow    %s\n", setclear (excp & FE_UNDERFLOW));
+        printf ("-W-EMU414:   Inexact      %s\n", setclear (excp & FE_INEXACT));
+
+        if (excp & FE_INVALID)
+                FP_Error = TRUE;
+        else if (excp & FE_DIVBYZERO)
+                FP_Error = TRUE;
+        else if (excp & FE_OVERFLOW)
+                FP_Error = TRUE;
+}
+
+REAL64 db_decode_except (REAL64 result)
+{
+        int excp;
+
+        excp = fetestexcept (FE_T800_EXCEPT);
+        if (0 == excp)
+                return result;
+
+        printf  ("-W-EMU414: Native FPU exception!\n");
+        printf  ("-W-EMU414: Operation arguments.\n");
+        db_dump ("-W-EMU414:   Barg", BargDB);
+        db_dump ("-W-EMU414:   Aarg", AargDB);
+        db_dump ("-W-EMU414: Result", ResultDB);
+
+        translate_except (excp);
+        if (excp & FE_INEXACT)
+                result = Real64InexactNaN;
+        fp_clrexcept ();
+
+        return result;
+}
+
+REAL32 sn_decode_except (REAL32 result)
+{
+        int excp;
+
+        excp = fetestexcept (FE_T800_EXCEPT);
+        if (0 == excp)
+                return result;
+
+        printf  ("-W-EMU414: Native FPU exception!\n");
+        printf  ("-W-EMU414: Operation arguments.\n");
+        sn_dump ("-W-EMU414:   Barg", BargSN);
+        sn_dump ("-W-EMU414:   Aarg", AargSN);
+        sn_dump ("-W-EMU414: Result", ResultSN);
+
+        translate_except (excp);
+        if (excp & FE_INEXACT)
+                result = Real32InexactNaN;
+        fp_clrexcept ();
+
+        return result;
 }
 
 /* Do a binary REAL64 operation, return REAL64 result. */
@@ -281,8 +345,6 @@ REAL64 db_binary (REAL64 fb, REAL64 fa, REAL64 (*opr)(REAL64, REAL64))
 {
         REAL64 result;
         uint64_t fracb, fraca;
-
-        int exc;
 
         fp_chkexcept ("Enter db_binary ()");
 
@@ -313,12 +375,7 @@ REAL64 db_binary (REAL64 fb, REAL64 fa, REAL64 (*opr)(REAL64, REAL64))
         ResultDB = result;
 #endif
 
-        exc = fetestexcept (FE_T800_EXCEPT);
-        if (exc)
-        {
-                decode_except (exc, 1);
-                FP_Error = TRUE;
-        }
+        result = db_decode_except (result);
         return result;
 }
 
@@ -326,7 +383,6 @@ REAL64 db_binary (REAL64 fb, REAL64 fa, REAL64 (*opr)(REAL64, REAL64))
 int db_binary2word (REAL64 fb, REAL64 fa, int (*opr)(REAL64, REAL64))
 {
         int result;
-        int exc;
 
 #ifndef NDEBUG
         BargDB = fb; AargDB = fa; db_setbits (&ResultDB, NAN64_UNKNOWN);
@@ -343,12 +399,7 @@ int db_binary2word (REAL64 fb, REAL64 fa, int (*opr)(REAL64, REAL64))
         ResultDB = result;
 #endif
 
-        exc = fetestexcept (FE_T800_EXCEPT);
-        if (exc)
-        {
-                decode_except (exc, 1);
-                FP_Error = TRUE;
-        }
+        db_decode_except (0.0);
         return result;
 }
 
@@ -356,7 +407,6 @@ int db_binary2word (REAL64 fb, REAL64 fa, int (*opr)(REAL64, REAL64))
 REAL64 db_unary (REAL64 fa, REAL64 (*opr)(REAL64))
 {
         REAL64 result;
-        int exc;
 
 #ifndef NDEBUG
         AargDB = fa; db_setbits (&ResultDB, NAN64_UNKNOWN);
@@ -373,12 +423,7 @@ REAL64 db_unary (REAL64 fa, REAL64 (*opr)(REAL64))
         ResultDB = result;
 #endif
 
-        exc = fetestexcept (FE_T800_EXCEPT);
-        if (exc)
-        {
-                decode_except (exc, 1);
-                FP_Error = TRUE;
-        }
+        result = db_decode_except (result);
         return result;
 }
 
@@ -387,7 +432,6 @@ REAL32 sn_binary (REAL32 fb, REAL32 fa, REAL32 (*opr)(REAL32, REAL32))
 {
         REAL32 result;
         uint32_t fracb, fraca;
-        int exc;
 
         fp_chkexcept ("Enter sn_binary ()");
 
@@ -418,12 +462,7 @@ REAL32 sn_binary (REAL32 fb, REAL32 fa, REAL32 (*opr)(REAL32, REAL32))
         ResultSN = result;
 #endif
 
-        exc = fetestexcept (FE_T800_EXCEPT);
-        if (exc)
-        {
-                decode_except (exc, 0);
-                FP_Error = TRUE;
-        }
+        result = sn_decode_except (result);
         return result;
 }
 
@@ -431,7 +470,6 @@ REAL32 sn_binary (REAL32 fb, REAL32 fa, REAL32 (*opr)(REAL32, REAL32))
 int sn_binary2word (REAL32 fb, REAL32 fa, int (*opr)(REAL32, REAL32))
 {
         int result;
-        int exc;
 
 #ifndef NDEBUG
         BargSN = fb; AargSN = fa; sn_setbits (&ResultSN, NAN32_UNKNOWN);
@@ -448,12 +486,7 @@ int sn_binary2word (REAL32 fb, REAL32 fa, int (*opr)(REAL32, REAL32))
         ResultSN = result;
 #endif
 
-        exc = fetestexcept (FE_T800_EXCEPT);
-        if (exc)
-        {
-                decode_except (exc, 0);
-                FP_Error = TRUE;
-        }
+        sn_decode_except (0.0F);
         return result;
 }
 
@@ -461,7 +494,6 @@ int sn_binary2word (REAL32 fb, REAL32 fa, int (*opr)(REAL32, REAL32))
 REAL32 sn_unary (REAL32 fa, REAL32 (*opr)(REAL32))
 {
         REAL32 result;
-        int exc;
 
 #ifndef NDEBUG
         AargSN = fa; sn_setbits (&ResultSN, NAN32_UNKNOWN);
@@ -479,12 +511,7 @@ REAL32 sn_unary (REAL32 fa, REAL32 (*opr)(REAL32))
         ResultSN = result;
 #endif
 
-        exc = fetestexcept (FE_T800_EXCEPT);
-        if (exc)
-        {
-                decode_except (exc, 0);
-                FP_Error = TRUE;
-        }
+        result = sn_decode_except (result);
         return result;
 }
 
@@ -564,7 +591,6 @@ REAL32  fp_r64tor32 (REAL64 fp)
 {
         fpreal32_t r32;
         REAL32     result;
-        int        exc;
 
 #ifndef NDEBUG
         AargDB = fp; sn_setbits (&ResultSN, NAN32_UNKNOWN);
@@ -585,19 +611,12 @@ REAL32  fp_r64tor32 (REAL64 fp)
         ResultSN = result;
 #endif
 
-        exc = fetestexcept (FE_T800_EXCEPT);
-        if (exc)
-        {
-                decode_except (exc, 0);
-                FP_Error = TRUE;
-        }
-
+        result = sn_decode_except (result);
         return result;
 }
 REAL64 fp_intdb (REAL64 fp)
 {
         REAL64 result;
-        int    exc;
 
 #ifndef NDEBUG
         AargDB = fp; db_setbits (&ResultDB, NAN64_UNKNOWN);
@@ -612,18 +631,12 @@ REAL64 fp_intdb (REAL64 fp)
         ResultDB = result;
 #endif
 
-        exc = fetestexcept (FE_T800_EXCEPT);
-        if (exc)
-        {
-                decode_except (exc, 1);
-                FP_Error = TRUE;
-        }
+        result = db_decode_except (result);
         return result;
 }
 int fp_chki32db (REAL64 fp)
 {
         long result;
-        int  exc;
 
 #ifndef NDEBUG
         AargDB = fp; db_setbits (&ResultDB, NAN64_UNKNOWN);
@@ -635,19 +648,15 @@ int fp_chki32db (REAL64 fp)
         ResultDB = result;
 #endif
 
-        exc = fetestexcept (FE_T800_EXCEPT);
-        if (exc)
-        {
-                decode_except (exc, 1);
-                FP_Error = TRUE;
+        db_decode_except (0.0);
+        if (FP_Error)
                 return FALSE;
-        }
+
         return (__INT32_MIN__ < result) && (result < __INT32_MAX__);
 }
 int fp_chki64db (REAL64 fp)
 {
         long long result;
-        int       exc;
 
 #ifndef NDEBUG
         AargDB = fp; db_setbits (&ResultDB, NAN64_UNKNOWN);
@@ -659,13 +668,9 @@ int fp_chki64db (REAL64 fp)
         ResultDB = result;
 #endif
 
-        exc = fetestexcept (FE_T800_EXCEPT);
-        if (exc)
-        {
-                decode_except (exc, 1);
-                FP_Error = TRUE;
+        db_decode_except (0.0);
+        if (FP_Error)
                 return FALSE;
-        }
         return TRUE;
 }
 REAL64 fp_rtoi32db (REAL64 fp)
@@ -739,7 +744,6 @@ int    fp_orderedsn (REAL32 fb, REAL32 fa)
 REAL64  fp_r32tor64 (REAL32 fp)
 {
         REAL64 result;
-        int exc;
 
 #ifndef NDEBUG
         AargDB = fp; db_setbits (&ResultDB, NAN64_UNKNOWN);
@@ -754,18 +758,12 @@ REAL64  fp_r32tor64 (REAL32 fp)
         ResultDB = result;
 #endif
 
-        exc = fetestexcept (FE_T800_EXCEPT);
-        if (exc)
-        {
-                decode_except (exc, 1);
-                FP_Error = TRUE;
-        }
+        result = db_decode_except (result);
         return result;
 }
 REAL32 fp_intsn (REAL32 fp)
 {
         REAL32 result;
-        int    exc;
 
 #ifndef NDEBUG
         AargSN = fp; sn_setbits (&ResultSN, NAN32_UNKNOWN);
@@ -780,18 +778,12 @@ REAL32 fp_intsn (REAL32 fp)
         ResultSN = result;
 #endif
 
-        exc = fetestexcept (FE_T800_EXCEPT);
-        if (exc)
-        {
-                decode_except (exc, 0);
-                FP_Error = TRUE;
-        }
+        result = sn_decode_except (result);
         return result;
 }
 int fp_chki32sn (REAL32 fp)
 {
         long result;
-        int  exc;
 
 #ifndef NDEBUG
         AargSN = fp; sn_setbits (&ResultSN, NAN32_UNKNOWN);
@@ -803,19 +795,14 @@ int fp_chki32sn (REAL32 fp)
         ResultSN = result;
 #endif
 
-        exc = fetestexcept (FE_T800_EXCEPT);
-        if (exc)
-        {
-                decode_except (exc, 0);
-                FP_Error = TRUE;
+        sn_decode_except (0.0F);
+        if (FP_Error)
                 return FALSE;
-        }
         return (__INT32_MIN__ < result) && (result < __INT32_MAX__);
 }
 int fp_chki64sn (REAL32 fp)
 {
         long long result;
-        int       exc;
 
 #ifndef NDEBUG
         AargSN = fp; sn_setbits (&ResultSN, NAN32_UNKNOWN);
@@ -827,13 +814,9 @@ int fp_chki64sn (REAL32 fp)
         ResultSN = result;
 #endif
 
-        exc = fetestexcept (FE_T800_EXCEPT);
-        if (exc)
-        {
-                decode_except (exc, 0);
-                FP_Error = TRUE;
+        sn_decode_except (0.0F);
+        if (FP_Error)
                 return FALSE;
-        }
         return TRUE;
 }
 REAL32 fp_rtoi32sn (REAL32 fp)

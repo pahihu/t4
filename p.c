@@ -2521,17 +2521,17 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			              IPtr++;
 			              break;
 			   case 0x0e: /* XXX fpuchki32    */
-                                      if (FAReg.type == FP_REAL32)
-                                          fp_chki32sn (FAReg.u.sn);
-                                      else
+                                      if (FAReg.type == FP_REAL64)
                                           fp_chki32db (FAReg.u.db);
+                                      else
+                                          fp_chki32sn (FAReg.u.sn);
 			              IPtr++;
 			              break;
 			   case 0x0f: /* XXX fpuchki64    */
-                                      if (FAReg.type == FP_REAL32)
-                                          fp_chki64sn (FAReg.u.sn);
-                                      else
+                                      if (FAReg.type == FP_REAL64)
                                           fp_chki64db (FAReg.u.db);
+                                      else
+                                          fp_chki64sn (FAReg.u.sn);
 			              IPtr++;
 			              break;
 			   case 0x11: /* XXX fpudivby2    */
@@ -2565,14 +2565,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0xac: /* XXX fpldnlmulsn    */
 		           if (IsT414)
 		               goto BadCode;
-                           fp_chkexcept ("Before real32 ()");
                            sntemp1 = real32 (AReg);
-                           fp_chkexcept ("After real32 ()");
                            if (FAReg.type == FP_REAL32)
-                           {
-                                fp_chkexcept ("Before fp_mulsn ()");
                                 FAReg.u.sn = fp_mulsn (FAReg.u.sn, sntemp1);
-                           }
                            else
                            {
                                 FAReg.type = FP_UNKNOWN;

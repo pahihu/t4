@@ -51,9 +51,13 @@
 #define Ready_p		0x80000003
 
 extern int Txxx;
-extern uint32_t CoreSize;
+extern uint32_t MemSize;
+extern uint32_t MemWordMask;
+extern uint32_t MemByteMask;
 extern uint32_t MemStart;
 extern uint32_t ExtMemStart;
+
+extern uint32_t CoreSize;
 
 #define IsT800  (Txxx == 800)
 #define IsT414  (Txxx == 414)

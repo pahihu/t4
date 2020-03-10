@@ -18,6 +18,7 @@ Non-goals
 Changes
 =======
 
+* changed program arguments, memory size can be changed from the command line
 * runs the Minix demo (does NOT need a microcode emulator or an iserver supporting block operations)
 * D7205A occam 2 toolset successfully built hello example
 * itools directory contains D7205A environment setup and some tool scripts
@@ -30,6 +31,29 @@ Changes
 
 
 pahihu,  8 / 3 / 2020
+
+
+
+
+Command line arguments:
+        Usage : t4 [options] [program arguments]
+
+        t4 V1.3   10/3/2020
+
+        Options:
+            -s4                  Select T414 mode. (default)
+            -s8                  Select T800 mode.
+            -sa                  Analyse transputer.
+            -sb filename         Boot program "filename".
+            -sc filename         Copy file "filename" to transputer.
+            -se                  Terminate on transputer error.
+            -si                  Output progress messages.
+            -sm #bits            Memory size in address bits (default 21, 2Mbyte).
+            -sr                  Reset transputer.
+            -sp number           Peek "number" kilobytes on analyse.
+            -ss                  Provide host services to transputer.
+            -sx [number]         Execution trace (4 - mem ld/st, 2 - iserver, 1 - instructions).
+
 
 
 Running the Minix demo:
@@ -67,6 +91,7 @@ Running the Minix demo:
         # ls
         .profile   bin        dev        etc        usr        
         # 
+
 
 
 Example output from the instruction tracing:

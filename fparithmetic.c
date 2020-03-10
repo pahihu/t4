@@ -13,12 +13,16 @@
 
 #pragma STDC FENV_ACCESS ON
 
+#define __INT32_MIN__   ((-__INT32_MAX__)-1)
+
 #define FE_T800_EXCEPT  (FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW)
 
 #define REAL64_SIGN     0x8000000000000000LL
 #define REAL64_EXP      0x7FF0000000000000LL
 #define REAL64_FRAC_MSB 0x0010000000000000LL
 #define REAL64_FRAC     0x000FFFFFFFFFFFFFLL
+
+#define NAN64_UNKNOWN   ((uint64_t)0x7ffbadbadbadbadbLL)
 
 #define INT64(x)        ((int64_t)(x))
 #define INT32(x)        ((int32_t)(x))
@@ -28,6 +32,8 @@
 #define REAL32_FRAC     0x007FFFFFL
 #define REAL32_FRAC_MSB 0x00800000L
 
+#define NAN32_UNKNOWN   ((uint32_t)0x7f8badba)
+
 #undef TRUE
 #undef FALSE
 #define FALSE   0x0000
@@ -36,6 +42,38 @@
 extern int FP_Error;
 extern int RoundingMode;
 extern void handler (int);
+
+REAL32 BargSN, AargSN, ResultSN;
+REAL64 BargDB, AargDB, ResultDB;
+void db_dump (char*, REAL64);
+void sn_dump (char*, REAL32);
+
+void fp_init (void)
+{
+        fenv_t fpenv;
+        int rc;
+
+        rc = feholdexcept (&fpenv);
+        if (rc)
+                printf ("-W-EMU414: Warning - cannot initialize FP environment!\n");
+
+}
+
+void db_setbits (REAL64 *ptr, uint64_t bits)
+{
+        uint64_t *rawPtr;
+
+        rawPtr  = (uint64_t *) ptr;
+        *rawPtr = bits;
+}
+
+void sn_setbits (REAL32 *ptr, uint32_t bits)
+{
+        uint32_t *rawPtr;
+
+        rawPtr  = (uint32_t *) ptr;
+        *rawPtr = bits;
+}
 
 void fp_setrounding (int mode)
 {
@@ -59,10 +97,14 @@ void fp_setrounding (int mode)
                         break;
                 default     :
                         printf ("-E-EMU414: Error - unknown rounding mode! (%d)\n", mode);
+#ifndef FPA_STANDALONE
                         handler (-1);
+#endif
         }
         
+#ifndef FPA_STANDALONE
         RoundingMode = mode;
+#endif
         rc = fesetround (fpu_mode);
         if (rc != 0)
                 printf ("-W-EMU414: Warning - cannot set rounding mode! (%d)\n", mode);
@@ -130,7 +172,7 @@ int fp_expsn(REAL32 fp)
         fpreal32_t x;
 
         x.fp = fp;
-        return (REAL32_EXP & x.bits) >> 52;
+        return (REAL32_EXP & x.bits) >> 23;
 }
 
 uint32_t fp_fracsn(REAL32 fp)
@@ -166,7 +208,6 @@ void db_dump (char *msg, REAL64 fp)
                 fp_signdb(fp) ? 1 : 0,
                 fp_expdb(fp),
                 fp_fracdb(fp));
-        printf ("FP_Error    %s\n", FP_Error ? "Set" : "Clear");
 }
 
 void sn_dump (char *msg, REAL32 fp)
@@ -179,19 +220,56 @@ void sn_dump (char *msg, REAL32 fp)
                 fp_signsn(fp) ? 1 : 0,
                 fp_expsn(fp),
                 fp_fracsn(fp));
-        printf ("FP_Error    %s\n", FP_Error ? "Set" : "Clear");
 }
 
 #define onoff(x)        (x ? "on" : "off")
 
-void decode_except (int expc)
+void decode_except (int expc, int typeDB)
 {
-        printf ("fpexcept       = %d\n", expc);
-        printf ("FE_INVALID     %s\n", onoff (expc & FE_INVALID));
-        printf ("FE_DIVBYZERO   %s\n", onoff (expc & FE_DIVBYZERO));
-        printf ("FE_OVERFLOW    %s\n", onoff (expc & FE_OVERFLOW));
-        printf ("FE_UNDERFLOW   %s\n", onoff (expc & FE_UNDERFLOW));
-        printf ("FE_INEXACT     %s\n", onoff (expc & FE_INEXACT));
+        if (0 == expc)
+                return;
+
+        if (1 == typeDB)
+        {
+                db_dump ("  Barg", BargDB);
+                db_dump ("  Aarg", AargDB);
+                db_dump ("Result", ResultDB);
+        }
+        else if (0 == typeDB)
+        {
+                sn_dump ("  Barg", BargSN);
+                sn_dump ("  Aarg", AargSN);
+                sn_dump ("Result", ResultSN);
+        }
+
+        printf ("-W-EMU414: Native FPU exception!\n");
+        printf ("-W-EMU414: fpexcept       = %d\n", expc);
+        printf ("-W-EMU414: FE_INVALID     %s\n", onoff (expc & FE_INVALID));
+        printf ("-W-EMU414: FE_DIVBYZERO   %s\n", onoff (expc & FE_DIVBYZERO));
+        printf ("-W-EMU414: FE_OVERFLOW    %s\n", onoff (expc & FE_OVERFLOW));
+        printf ("-W-EMU414: FE_UNDERFLOW   %s\n", onoff (expc & FE_UNDERFLOW));
+        printf ("-W-EMU414: FE_INEXACT     %s\n", onoff (expc & FE_INEXACT));
+}
+
+void fp_clrexcept (void)
+{
+        int rc;
+
+        rc = feclearexcept (FE_T800_EXCEPT);
+        if (rc)
+                printf ("-W-EMU414: Warning - cannot clear native FPU exceptions!\n");
+}
+
+void fp_chkexcept (char *msg)
+{
+        int exc;
+
+        exc = fetestexcept (FE_T800_EXCEPT);
+        if (exc)
+        {
+                printf ("-W-EMU414: Warning - FPU exception flags are set! (%s)\n", msg);
+                decode_except (exc, -1);
+        }
 }
 
 /* Do a binary REAL64 operation, return REAL64 result. */
@@ -201,6 +279,12 @@ REAL64 db_binary (REAL64 fb, REAL64 fa, REAL64 (*opr)(REAL64, REAL64))
         uint64_t fracb, fraca;
 
         int exc;
+
+        fp_chkexcept ("Enter db_binary ()");
+
+#ifndef NDEBUG
+        BargDB = fb; AargDB = fa; db_setbits (&ResultDB, NAN64_UNKNOWN);
+#endif
 
         if (fp_nandb (fb) && fp_nandb (fb))
         {
@@ -221,10 +305,14 @@ REAL64 db_binary (REAL64 fb, REAL64 fa, REAL64 (*opr)(REAL64, REAL64))
 
         result = opr(fb, fa);
 
+#ifndef NDEBUG
+        ResultDB = result;
+#endif
+
         exc = fetestexcept (FE_T800_EXCEPT);
         if (exc)
         {
-                decode_except (exc);
+                decode_except (exc, 1);
                 FP_Error = TRUE;
         }
         return result;
@@ -234,8 +322,11 @@ REAL64 db_binary (REAL64 fb, REAL64 fa, REAL64 (*opr)(REAL64, REAL64))
 int db_binary2word (REAL64 fb, REAL64 fa, int (*opr)(REAL64, REAL64))
 {
         int result;
-
         int exc;
+
+#ifndef NDEBUG
+        BargDB = fb; AargDB = fa; db_setbits (&ResultDB, NAN64_UNKNOWN);
+#endif
 
         if (fp_notfinitedb (fb) || fp_notfinitedb (fa))
         {
@@ -244,10 +335,14 @@ int db_binary2word (REAL64 fb, REAL64 fa, int (*opr)(REAL64, REAL64))
 
         result = opr(fb, fa);
 
+#ifndef NDEBUG
+        ResultDB = result;
+#endif
+
         exc = fetestexcept (FE_T800_EXCEPT);
         if (exc)
         {
-                decode_except (exc);
+                decode_except (exc, 1);
                 FP_Error = TRUE;
         }
         return result;
@@ -259,6 +354,9 @@ REAL64 db_unary (REAL64 fa, REAL64 (*opr)(REAL64))
         REAL64 result;
         int exc;
 
+#ifndef NDEBUG
+        AargDB = fa; db_setbits (&ResultDB, NAN64_UNKNOWN);
+#endif
         if (fp_nandb (fa))
                 return fa;
 
@@ -267,10 +365,14 @@ REAL64 db_unary (REAL64 fa, REAL64 (*opr)(REAL64))
 
         result = opr(fa);
 
+#ifndef NDEBUG
+        ResultDB = result;
+#endif
+
         exc = fetestexcept (FE_T800_EXCEPT);
         if (exc)
         {
-                decode_except (exc);
+                decode_except (exc, 1);
                 FP_Error = TRUE;
         }
         return result;
@@ -281,8 +383,13 @@ REAL32 sn_binary (REAL32 fb, REAL32 fa, REAL32 (*opr)(REAL32, REAL32))
 {
         REAL32 result;
         uint32_t fracb, fraca;
-
         int exc;
+
+        fp_chkexcept ("Enter sn_binary ()");
+
+#ifndef NDEBUG
+        BargSN = fb; AargSN = fa; sn_setbits (&ResultSN, NAN32_UNKNOWN);
+#endif
 
         if (fp_nansn (fb) && fp_nansn (fb))
         {
@@ -303,10 +410,14 @@ REAL32 sn_binary (REAL32 fb, REAL32 fa, REAL32 (*opr)(REAL32, REAL32))
 
         result = opr(fb, fa);
 
+#ifndef NDEBUG
+        ResultSN = result;
+#endif
+
         exc = fetestexcept (FE_T800_EXCEPT);
         if (exc)
         {
-                decode_except (exc);
+                decode_except (exc, 0);
                 FP_Error = TRUE;
         }
         return result;
@@ -316,8 +427,11 @@ REAL32 sn_binary (REAL32 fb, REAL32 fa, REAL32 (*opr)(REAL32, REAL32))
 int sn_binary2word (REAL32 fb, REAL32 fa, int (*opr)(REAL32, REAL32))
 {
         int result;
-
         int exc;
+
+#ifndef NDEBUG
+        BargSN = fb; AargSN = fa; sn_setbits (&ResultSN, NAN32_UNKNOWN);
+#endif
 
         if (fp_notfinitesn (fb) || fp_notfinitesn (fa))
         {
@@ -326,10 +440,14 @@ int sn_binary2word (REAL32 fb, REAL32 fa, int (*opr)(REAL32, REAL32))
 
         result = opr(fb, fa);
 
+#ifndef NDEBUG
+        ResultSN = result;
+#endif
+
         exc = fetestexcept (FE_T800_EXCEPT);
         if (exc)
         {
-                decode_except (exc);
+                decode_except (exc, 0);
                 FP_Error = TRUE;
         }
         return result;
@@ -341,6 +459,10 @@ REAL32 sn_unary (REAL32 fa, REAL32 (*opr)(REAL32))
         REAL32 result;
         int exc;
 
+#ifndef NDEBUG
+        AargSN = fa; sn_setbits (&ResultSN, NAN32_UNKNOWN);
+#endif
+
         if (fp_nandb (fa))
                 return fa;
 
@@ -349,10 +471,14 @@ REAL32 sn_unary (REAL32 fa, REAL32 (*opr)(REAL32))
 
         result = opr(fa);
 
+#ifndef NDEBUG
+        ResultSN = result;
+#endif
+
         exc = fetestexcept (FE_T800_EXCEPT);
         if (exc)
         {
-                decode_except (exc);
+                decode_except (exc, 0);
                 FP_Error = TRUE;
         }
         return result;
@@ -430,6 +556,143 @@ int    fp_ordereddb (REAL64 fb, REAL64 fa)
                 return FALSE;
         return TRUE;
 }
+REAL32  fp_r64tor32 (REAL64 fp)
+{
+        fpreal32_t r32;
+        REAL32     result;
+        int        exc;
+
+#ifndef NDEBUG
+        AargDB = fp; sn_setbits (&ResultSN, NAN32_UNKNOWN);
+#endif
+
+        if (fp_nandb (fp))
+        {
+                r32.bits = NAN32_CONVERSION64;
+                return r32.fp;
+        }
+
+        if (fp_infdb (fp))
+                FP_Error = TRUE;
+
+        result = (REAL32) fp;
+
+#ifndef NDEBUG
+        ResultSN = result;
+#endif
+
+        exc = fetestexcept (FE_T800_EXCEPT);
+        if (exc)
+        {
+                decode_except (exc, 0);
+                FP_Error = TRUE;
+        }
+
+        return result;
+}
+REAL64 fp_intdb (REAL64 fp)
+{
+        REAL64 result;
+        int    exc;
+
+#ifndef NDEBUG
+        AargDB = fp; db_setbits (&ResultDB, NAN64_UNKNOWN);
+#endif
+
+        if (fp_notfinitedb (fp))
+                FP_Error = TRUE;
+
+        result = rint (fp);
+
+#ifndef NDEBUG
+        ResultDB = result;
+#endif
+
+        exc = fetestexcept (FE_T800_EXCEPT);
+        if (exc)
+        {
+                decode_except (exc, 1);
+                FP_Error = TRUE;
+        }
+        return result;
+}
+int fp_chki32db (REAL64 fp)
+{
+        long result;
+        int  exc;
+
+#ifndef NDEBUG
+        AargDB = fp; db_setbits (&ResultDB, NAN64_UNKNOWN);
+#endif
+
+        result = lrint (fp);
+
+#ifndef NDEBUG
+        ResultDB = result;
+#endif
+
+        exc = fetestexcept (FE_T800_EXCEPT);
+        if (exc)
+        {
+                decode_except (exc, 1);
+                FP_Error = TRUE;
+                return FALSE;
+        }
+        return (__INT32_MIN__ < result) && (result < __INT32_MAX__);
+}
+int fp_chki64db (REAL64 fp)
+{
+        long long result;
+        int       exc;
+
+#ifndef NDEBUG
+        AargDB = fp; db_setbits (&ResultDB, NAN64_UNKNOWN);
+#endif
+
+        result = llrintf (fp);
+
+#ifndef NDEBUG
+        ResultDB = result;
+#endif
+
+        exc = fetestexcept (FE_T800_EXCEPT);
+        if (exc)
+        {
+                decode_except (exc, 1);
+                FP_Error = TRUE;
+                return FALSE;
+        }
+        return TRUE;
+}
+REAL64 fp_rtoi32db (REAL64 fp)
+{
+        fp_chki32db (fp);
+        return fp_intdb (fp);
+}
+REAL32 fp_norounddb (REAL64 fp)
+{
+        fpreal32_t r32;
+        int exp;
+        int sign;
+        uint64_t frac;
+
+        sign = fp_signdb (fp);
+        exp  = fp_expdb (fp);
+        frac = fp_fracdb (fp);
+
+        if (exp > 1024) exp -= 2048;
+        if ((exp < -126) || (exp > 127))
+        {
+                exp = 127;
+                frac = 0;
+        }
+        exp = (exp + 128) & 0xff;;
+        r32.bits = (sign ? REAL32_SIGN : 0) + 
+                   (REAL32_EXP  & (exp  << 23)) +
+                   (REAL32_FRAC & (frac >> 29));
+        return r32.fp;
+}
+
 
 
 /*
@@ -469,4 +732,108 @@ int    fp_orderedsn (REAL32 fb, REAL32 fa)
                 return FALSE;
         return TRUE;
 }
+REAL64  fp_r32tor64 (REAL32 fp)
+{
+        REAL64 result;
+        int exc;
 
+#ifndef NDEBUG
+        AargDB = fp; db_setbits (&ResultDB, NAN64_UNKNOWN);
+#endif
+
+        if (fp_notfinitesn (fp))
+                FP_Error = TRUE;
+
+        result = (REAL64) fp;
+
+#ifndef NDEBUG
+        ResultDB = result;
+#endif
+
+        exc = fetestexcept (FE_T800_EXCEPT);
+        if (exc)
+        {
+                decode_except (exc, 1);
+                FP_Error = TRUE;
+        }
+        return result;
+}
+REAL32 fp_intsn (REAL32 fp)
+{
+        REAL32 result;
+        int    exc;
+
+#ifndef NDEBUG
+        AargSN = fp; sn_setbits (&ResultSN, NAN32_UNKNOWN);
+#endif
+
+        if (fp_notfinitesn (fp))
+                FP_Error = TRUE;
+
+        result = rintf (fp);
+
+#ifndef NDEBUG
+        ResultSN = result;
+#endif
+
+        exc = fetestexcept (FE_T800_EXCEPT);
+        if (exc)
+        {
+                decode_except (exc, 0);
+                FP_Error = TRUE;
+        }
+        return result;
+}
+int fp_chki32sn (REAL32 fp)
+{
+        long result;
+        int  exc;
+
+#ifndef NDEBUG
+        AargSN = fp; sn_setbits (&ResultSN, NAN32_UNKNOWN);
+#endif
+
+        result = lrintf (fp);
+
+#ifndef NDEBUG
+        ResultSN = result;
+#endif
+
+        exc = fetestexcept (FE_T800_EXCEPT);
+        if (exc)
+        {
+                decode_except (exc, 0);
+                FP_Error = TRUE;
+                return FALSE;
+        }
+        return (__INT32_MIN__ < result) && (result < __INT32_MAX__);
+}
+int fp_chki64sn (REAL32 fp)
+{
+        long long result;
+        int       exc;
+
+#ifndef NDEBUG
+        AargSN = fp; sn_setbits (&ResultSN, NAN32_UNKNOWN);
+#endif
+
+        result = llrintf (fp);
+
+#ifndef NDEBUG
+        ResultSN = result;
+#endif
+
+        exc = fetestexcept (FE_T800_EXCEPT);
+        if (exc)
+        {
+                decode_except (exc, 0);
+                FP_Error = TRUE;
+                return FALSE;
+        }
+        return TRUE;
+}
+REAL32 fp_rtoi32sn (REAL32 fp)
+{
+        fp_chki32sn (fp);
+        return fp_intsn (fp);
+}

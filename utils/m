@@ -1,0 +1,1 @@
+cc -DFPA_STANDALONE -I.. -o fptest fptest.c ../fparithmetic.c

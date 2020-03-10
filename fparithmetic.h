@@ -24,8 +24,8 @@ typedef union {
 #define NAN64_UNDEFINED         ((uint64_t)0x7ff0000000000010LL)
 #define NAN64_UNSTABLE          ((uint64_t)0x7ff0000000000008LL)
 #define NAN64_INEXACT           ((uint64_t)0x7ff0000000000004LL)
-#define NAN64_CONVERSION        ((uint64_t)0x7ff0000000000002LL)
 #define ZERO64                  ((uint64_t)0x0000000000000000LL)
+#define NAN32_CONVERSION64      ((uint32_t)0x7f800002)
 
 
 #define ROUND_P         1
@@ -33,7 +33,11 @@ typedef union {
 #define ROUND_Z         3
 #define ROUND_N         4
 
+
+void fp_init (void);
 void fp_setrounding (int mode);
+void fp_chkexcept (char *msg);
+void fp_clrexcept (void);
 
 /*
  * REAL64 operations.
@@ -59,6 +63,12 @@ int    fp_notfinitedb (REAL64);
 int    fp_gtdb (REAL64, REAL64);
 int    fp_eqdb (REAL64, REAL64);
 int    fp_ordereddb (REAL64, REAL64);
+REAL64 fp_r32tor64 (REAL32);
+REAL64 fp_intdb (REAL64);
+int    fp_chki32db (REAL64);
+int    fp_chki64db (REAL64);
+REAL64 fp_rtoi32db (REAL64);
+REAL32 fp_norounddb (REAL64);
 
 
 /*
@@ -85,4 +95,9 @@ int    fp_notfinitesn (REAL32);
 int    fp_gtsn (REAL32, REAL32);
 int    fp_eqsn (REAL32, REAL32);
 int    fp_orderedsn (REAL32, REAL32);
+REAL32 fp_r64tor32 (REAL64);
+REAL32 fp_intsn (REAL32);
+int    fp_chki32sn (REAL32);
+int    fp_chki64sn (REAL32);
+REAL32 fp_rtoi32sn (REAL32);
 

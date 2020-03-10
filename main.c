@@ -67,14 +67,13 @@ int analyse     = FALSE;
 int copy        = FALSE;
 int exitonerror = false;
 int peeksize    = 8;
-int emudebug    = FALSE;
-int emumem      = FALSE;
-int msgdebug    = FALSE;
 
-int Txxx = 414;
-uint32_t CoreSize    = 2 * 1024;
-uint32_t MemStart    = 0x80000048;
-uint32_t ExtMemStart = 0x80000800;
+int membits     = 0;
+
+int tracing     = 0;
+int emudebug    = FALSE;
+int memdebug    = FALSE;
+int msgdebug    = FALSE;
 
 extern int32_t quit;
 extern int32_t quitstatus;
@@ -120,6 +119,7 @@ int main (int argc, char **argv)
 #endif
 {
 	static char CopyFileName[256];
+        char IBoardSize[32];
 	int verbose     = FALSE;
 	int reset       = FALSE;
 	int serve       = FALSE;
@@ -132,33 +132,25 @@ int main (int argc, char **argv)
 #ifdef __MWERKS__
 	/* Create some menus, etc. */
 	menu ();
-#else
-	mem = malloc (2*1024*1024);
-	if (mem == NULL)
-	{
-		printf ("\nFailed to allocate external memory!\n");
-		exit (-1);
-	}
 #endif
-
 	if (argc<2)
 	{
 		printf("\n");
 		printf("Usage : t4 [options] [program arguments]\n\n");
-		printf("t4 V1.2   3/3/2020\n\n");
+		printf("t4 V1.3   10/3/2020\n\n");
 		printf("Options:\n");
-                printf("    -s4                  Select T414 mode.\n");
+                printf("    -s4                  Select T414 mode. (default)\n");
                 printf("    -s8                  Select T800 mode.\n");
 		printf("    -sa                  Analyse transputer.\n");
 		printf("    -sb filename         Boot program \"filename\".\n");
 		printf("    -sc filename         Copy file \"filename\" to transputer.\n");
 		printf("    -se                  Terminate on transputer error.\n");
 		printf("    -si                  Output progress messages.\n");
-                printf("    -sm                  Trace memory references.\n");
+                printf("    -sm #bits            Memory size in address bits (default 21, 2Mbyte).\n");
 		printf("    -sr                  Reset transputer.\n");
 		printf("    -sp number           Peek \"number\" kilobytes on analyse.\n");
 		printf("    -ss                  Provide host services to transputer.\n");
-                printf("    -sx                  Trace instruction execution.\n");
+                printf("    -sx [number]         Execution trace (4 - mem ld/st, 2 - iserver, 1 - instructions).\n");
 		printf("\n");
 		handler (-1);
 	}
@@ -270,7 +262,25 @@ int main (int argc, char **argv)
 						strcat (CommandLineMost, argv[arg]);
 						strcat (CommandLineMost, " ");
 					  }
-					  else emumem=true;
+                                          else
+                                          {
+						arg++;
+						if (arg>=argc)
+						{
+							printf ("\nMissing number after -sm\n");
+							handler (-1);
+						}
+						if (sscanf(argv[arg], "%d", &membits)!=1)
+						{
+							printf ("\nBad number after -sm\n");
+							handler (-1);
+						}
+						if ((membits < 16) || (membits > 30))
+						{
+							printf ("\nMemory bits should be in [16,30] range!\n");
+							handler (-1);
+						}
+                                          }
 					  break;
 				case 'r': if (argv[arg][3]!='\0')
 					  {
@@ -316,7 +326,28 @@ int main (int argc, char **argv)
 						strcat (CommandLineMost, argv[arg]);
 						strcat (CommandLineMost, " ");
 					  }
-					  else emudebug=true;
+					  else
+					  {
+						arg++;
+						if (arg >= argc)
+                                                        tracing = 1;
+                                                else if (argv[arg][0] == '-')
+                                                {
+                                                        tracing = 1;
+                                                        arg--;
+                                                }
+						else 
+						{
+                                                        if (sscanf(argv[arg], "%d", &tracing)!=1)
+                                                        {
+							        printf("\nBad number after -sx\n");
+							        handler (-1);
+                                                        }
+						}
+                                                emudebug = (tracing & 1) ? TRUE : FALSE;
+                                                msgdebug = (tracing & 2) ? TRUE : FALSE;
+                                                memdebug = (tracing & 4) ? TRUE : FALSE;
+					  }
 					  break;
 				default : strcat(CommandLineMost, argv[arg]);
 					  strcat (CommandLineMost, " ");
@@ -331,6 +362,7 @@ int main (int argc, char **argv)
 	}
 	CommandLineMost[strlen(CommandLineMost)-1] = '\0';
 
+        /* Allocate internal memory. */
 	core = malloc (CoreSize);
 	if (core == NULL)
 	{
@@ -338,10 +370,31 @@ int main (int argc, char **argv)
 		exit (-1);
 	}
 
+        /* Recalculate external memory settings, when membits set. */
+        if (membits)
+        {
+                MemSize     = 1U << membits;
+                MemByteMask = MemSize - 1;
+                MemWordMask = MemByteMask & (~3U);
+        }
+
+        /* Set IBOARDSIZE to MemSize. */
+        sprintf (IBoardSize, "IBOARDSIZE=#%X", MemSize);
+        putenv (IBoardSize);
+
+        /* Allocate external memory. */
+	mem = malloc (MemSize);
+	if (mem == NULL)
+	{
+		printf ("\nFailed to allocate %dK of external memory!\n", MemSize / 1024);
+		exit (-1);
+	}
+
         if (emudebug)
         {
 	        printf("Most command line is : %s\n", CommandLineMost);
-	        printf("T%d; analyse %d; copy %d; exit %d; verbose %d; reset %d; peek %d; serve %d\n", Txxx,analyse,copy,exitonerror,verbose,reset,peeksize,serve);
+	        printf("T%d (%d/%dKB); analyse %d; copy %d; exit %d; verbose %d; reset %d; peek %d; serve %d\n",
+                        Txxx,CoreSize/1024,MemSize/1024,analyse,copy,exitonerror,verbose,reset,peeksize,serve);
         }
 
         /* Initialize memory with 'random' values. */

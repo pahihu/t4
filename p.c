@@ -39,8 +39,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <math.h>
 #include "processor.h"
 #include "arithmetic.h"
 #include "server.h"
@@ -55,13 +57,20 @@
 
 #define INT(x)          ((int32_t)(x))
 
+
+/* Processor specific parameters. */
+int Txxx = 414;
+uint32_t MemStart    = 0x80000048;
+
 /* Memory space. */
 unsigned char *core;
+uint32_t CoreSize    = 2 * 1024;
+uint32_t ExtMemStart = 0x80000800;
 
-#define MEM_SIZE        (2*1024*1024)
-#define MEM_WORD_MASK   ((uint32_t)0x001ffffc)
-#define MEM_BYTE_MASK   ((uint32_t)0x001fffff)
 unsigned char *mem;
+uint32_t MemSize     = 1 << 21;
+uint32_t MemWordMask = ((uint32_t)0x001ffffc);
+uint32_t MemByteMask = ((uint32_t)0x001fffff);
 
 uint32_t readword (uint32_t);
 
@@ -77,23 +86,23 @@ uint32_t OReg;
 #define FP_REAL32       32
 #define FP_REAL64       64
 
-typedef struct _fpnum_t {
+typedef struct _REAL {
         uint32_t type;          /* FP_REAL32 or FP_REAL64 */
         uint32_t rsvd;
         union {
                 REAL32  sn;
                 REAL64  db;
         } u;
-} fpnum_t;
+} REAL;
 
-fpnum_t  FAReg;
-fpnum_t  FBReg;
-fpnum_t  FCReg;
-fpnum_t  FARegSave;
-fpnum_t  FBRegSave;
-fpnum_t  FCRegSave;
-int      FP_Error;              /* not preserved over descheduling */
-int      RoundingMode;          /* current rounding mode */
+REAL  FAReg;
+REAL  FBReg;
+REAL  FCReg;
+REAL  FARegSave;
+REAL  FBRegSave;
+REAL  FCRegSave;
+int   FP_Error;                 /* not preserved over descheduling */
+int   RoundingMode;             /* current rounding mode */
 
 uint32_t m2dSourceStride;       /* move2d source stride */
 uint32_t m2dDestStride;         /* move2d destination stride */
@@ -180,7 +189,7 @@ extern int FromServerLen;
 extern int profiling;
 extern int32_t profile[10];
 extern int emudebug;
-extern int emumem;
+extern int memdebug;
 extern int msgdebug;
 
 LinkIface Link[4];
@@ -438,40 +447,54 @@ void reset_channel (uint32_t addr)
         }
 }
 
-void print_fpreg (char name, fpnum_t *fpreg)
+void print_fpreg (char *ident, char name, REAL *fpreg)
 {
+        fpreal64_t r64;
+        fpreal32_t r32;
+
         if (fpreg->type == FP_REAL64)
-                printf ("\tF%creg         %lf\n", name, fpreg->u.db);
+        {
+                r64.fp = fpreg->u.db;
+                printf ("%sF%cReg          #%016llX   (%lf)\n", ident, name, r64.bits, fpreg->u.db);
+        }
         else if (fpreg->type == FP_REAL32)
-                printf ("\tF%creg         %f\n", name, fpreg->u.sn);
+        {
+                r32.fp = fpreg->u.sn;
+                printf ("%sF%cReg                  #%08X   (%f)\n", ident, name, r32.bits, fpreg->u.sn);
+        } 
         else
-                printf ("\tF%creg         Empty\n", name);
+        {
+                r64.fp = fpreg->u.db;
+                printf ("%sF%cReg          #%016llX   (Empty)\n", ident, name, r64.bits);
+        }
+
+        fp_clrexcept ();
 }
 
 /* Print processor state. */
 void processor_state (void)
 {
         printf ("-I-EMU414: Processor state\n");
-        printf ("\tIptr          #%08X\n", IPtr);
-        printf ("\tWptr          #%08X\n", WPtr);
-        printf ("\tAreg          #%08X\n", AReg);
-        printf ("\tBreg          #%08X\n", BReg);
-        printf ("\tCreg          #%08X\n", CReg);
-        printf ("\tError         %s\n", ReadError ? "Set" : "Clear");
-        printf ("\tHalt on Error %s\n", ReadHaltOnError ? "Set" : "Clear");
+        printf ("\tIPtr           #%08X\n", IPtr);
+        printf ("\tWPtr           #%08X\n", WPtr);
+        printf ("\tAReg           #%08X\n", AReg);
+        printf ("\tBReg           #%08X\n", BReg);
+        printf ("\tCReg           #%08X\n", CReg);
+        printf ("\tError          %s\n", ReadError ? "Set" : "Clear");
+        printf ("\tHalt on Error  %s\n", ReadHaltOnError ? "Set" : "Clear");
         if (IsT800)
         {
-                print_fpreg ('A', &FAReg);
-                print_fpreg ('B', &FBReg);
-                print_fpreg ('C', &FCReg);
-                printf ("\tFP_Error      %s\n", FP_Error ? "Set" : "Clear");
+                print_fpreg ("\t", 'A', &FAReg);
+                print_fpreg ("\t", 'B', &FBReg);
+                print_fpreg ("\t", 'C', &FCReg);
+                printf ("\tFP_Error       %s\n", FP_Error ? "Set" : "Clear");
         }
-        printf ("\tFptr1 (Low    #%08X\n", FPtrReg1);
-        printf ("\tBptr1  queue) #%08X\n", BPtrReg1);
-        printf ("\tFptr0 (High   #%08X\n", FPtrReg0);
-        printf ("\tBptr0  queue) #%08X\n", BPtrReg0);
-        printf ("\tTptr1 (Timer  #%08X\n", TPtrLoc1);
-        printf ("\tTptr0 (queues #%08X\n", TPtrLoc0);
+        printf ("\tFPtr1 (Low     #%08X\n", FPtrReg1);
+        printf ("\tBPtr1  queue)  #%08X\n", BPtrReg1);
+        printf ("\tFPtr0 (High    #%08X\n", FPtrReg0);
+        printf ("\tBPtr0  queue)  #%08X\n", BPtrReg0);
+        printf ("\tTPtr1 (Timer   #%08X\n", TPtrLoc1);
+        printf ("\tTPtr0  queues) #%08X\n", TPtrLoc0);
 }
 
 void save_dump (void)
@@ -485,8 +508,8 @@ void save_dump (void)
                 printf ("-E-EMU404: Error - failed to open dump file.\n");
                 handler (-1);
         }
-        bytesWritten = fwrite (mem, sizeof (unsigned char), MEM_SIZE, fout);
-        if (bytesWritten != MEM_SIZE)
+        bytesWritten = fwrite (mem, sizeof (unsigned char), MemSize, fout);
+        if (bytesWritten != MemSize)
         {
                 printf ("-E-EMU414: Error - failed to write dump file.\n");
                 fclose (fout);
@@ -540,7 +563,7 @@ void init_memory (void)
         for (i = 0; i < CoreSize; i += 4)
                 writeword (MostNeg + i, 0x2ffa2ffa);
 
-        for (i = 0; i < MEM_SIZE; i += 4)
+        for (i = 0; i < MemSize; i += 4)
                 writeword (ExtMemStart + i, 0x2ffa2ffa);
 #endif
 }
@@ -567,6 +590,7 @@ void init_processor (void)
 
         if (IsT800)
         {
+                fp_init ();
                 FAReg.type = FP_UNKNOWN;
                 FBReg.type = FP_UNKNOWN;
                 FCReg.type = FP_UNKNOWN;
@@ -585,9 +609,13 @@ void mainloop (void)
         unsigned char pixel;
         REAL32 sntemp1, sntemp2;
         REAL64 dbtemp1, dbtemp2;
+        REAL   fptemp;
+        fpreal32_t temp32;
+        fpreal64_t temp64;
 
-        int printIPtr, instrBytes;
-        int asmLines;
+        int   printIPtr, instrBytes;
+        int   asmLines;
+        char *mnemo;
 
 
         printIPtr  = TRUE;
@@ -634,7 +662,12 @@ void mainloop (void)
                 if (printIPtr)
                 {
                         if (0 == asmLines++ % 25)
-                                printf ("-IPtr------Code-----------------------Mnemonic------------HE---AReg-----BReg-----CReg-------WPtr-----WPtr[0]-\n");
+                        {
+                                if (IsT414)
+                                        printf ("-IPtr------Code-----------------------Mnemonic------------HE---AReg-----BReg-----CReg-------WPtr-----WPtr[0]-\n");
+                                else
+                                        printf ("-IPtr------Code-----------------------Mnemonic------------HEF---AReg-----BReg-----CReg-------WPtr-----WPtr[0]-\n");
+                        }
                         printf ("%c%08X: ", HiPriority == ProcPriority ? 'H' : ' ', IPtr);
                         printIPtr = FALSE;
                         instrBytes = 0;
@@ -646,11 +679,19 @@ void mainloop (void)
                 {
                         for (; instrBytes < 9; instrBytes++)
                                 printf("   ");
-                        printf("%-17s", mnemonic (Icode, OReg, AReg));
-	                printf ("   %c%c   %8X %8X %8X   %08X %8X\n", 
-                                FLAG(ReadHaltOnError, 'H'),
-                                FLAG(      ReadError, 'E'),
+                        mnemo = mnemonic (Icode, OReg, AReg);
+                        printf("%-17s", mnemo);
+	                printf ("   %c%c", FLAG(ReadHaltOnError, 'H'), FLAG(      ReadError, 'E'));
+                        if (IsT800)
+	                        printf ("%c", FLAG(FP_Error, 'F'));
+                        printf ("   %8X %8X %8X   %08X %8X\n", 
                                 AReg, BReg, CReg, WPtr, readword (WPtr));
+                        if (IsT800)
+                        {
+                                print_fpreg("\t\t\t\t\t\t\t  ", 'A', &FAReg);
+                                print_fpreg("\t\t\t\t\t\t\t  ", 'B', &FBReg);
+                                print_fpreg("\t\t\t\t\t\t\t  ", 'C', &FCReg);
+                        }
                         printIPtr = TRUE;
                 }
         }
@@ -1841,7 +1882,6 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            CReg = BReg;
                            BReg = AReg;
 		           IPtr++;
-		           printf ("-W-EMU414: T800 instruction.\n");
 		           break;
 		case 0x5b: /* XXX move2dinit    */
 		           if (IsT414)
@@ -2052,7 +2092,6 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            AReg = temp + BReg;
                            BReg = CReg;
 		           IPtr++;
-		           printf ("-W-EMU414: T800 instruction.\n");
 		           break;
 		case 0x77: /* XXX bitrevword    */
 		           if (IsT414)
@@ -2077,11 +2116,12 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   BReg = CReg;
 		           IPtr++;
 		           break;
-		case 0x82: /* fpldnldbi    */
+		case 0x82: /* XXX fpldnldbi    */
 		           if (IsT414)
 		               goto BadCode;
+                           fp_pushdb (real64 (index (AReg, BReg)));
+                           AReg = CReg;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
 		case 0x83: /* XXX fpchkerr    */
 		           if (IsT414)
@@ -2092,48 +2132,56 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            }
 		           IPtr++;
 		           break;
-		case 0x84: /* fpstnldb    */
+		case 0x84: /* XXX fpstnldb    */
 		           if (IsT414)
 		               goto BadCode;
+                           fp_popdb (&dbtemp1);
+                           writereal64 (AReg, dbtemp1);
+                           AReg = BReg;
+                           BReg = CReg;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x86: /* fpldnlsni    */
+		case 0x86: /* XXX fpldnlsni    */
 		           if (IsT414)
 		               goto BadCode;
+                           fp_pushsn (real32 (index (AReg, BReg)));
+                           AReg = CReg;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x87: /* fpadd    */
+		case 0x87: /* XXX fpadd    */
 		           if (IsT414)
 		               goto BadCode;
                            fp_dobinary (fp_adddb, fp_addsn);
 		           IPtr++;
 		           break;
-		case 0x88: /* fpstnlsn    */
+		case 0x88: /* XXX fpstnlsn    */
 		           if (IsT414)
 		               goto BadCode;
+                           fp_popsn (&sntemp1);
+                           writereal32 (AReg, sntemp1);
+                           AReg = BReg;
+                           BReg = CReg;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x89: /* fpsub    */
+		case 0x89: /* XXX fpsub    */
 		           if (IsT414)
 		               goto BadCode;
                            fp_dobinary (fp_subdb, fp_subsn);
 		           IPtr++;
 		           break;
-		case 0x8a: /* fpldnldb    */
+		case 0x8a: /* XXX fpldnldb    */
 		           if (IsT414)
 		               goto BadCode;
+                           fp_pushdb (real64 (AReg));
+                           AReg = BReg;
+                           BReg = CReg;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x8b: /* fpmul    */
+		case 0x8b: /* XXX fpmul    */
 		           if (IsT414)
 		               goto BadCode;
                            fp_dobinary (fp_muldb, fp_mulsn);
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
 		case 0x8c: /* fpdiv    */
 		           if (IsT414)
@@ -2141,11 +2189,13 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            fp_dobinary (fp_divdb, fp_divsn);
 		           IPtr++;
 		           break;
-		case 0x8e: /* fpldnlsn    */
+		case 0x8e: /* XXX fpldnlsn    */
 		           if (IsT414)
 		               goto BadCode;
+                           fp_pushsn (real32 (AReg));
+                           AReg = BReg;
+                           BReg = CReg;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
 		case 0x8f: /* XXX fpremfirst    */
 		           if (IsT414)
@@ -2228,25 +2278,33 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            BReg = AReg;
                            AReg = temp;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x96: /* fpi32tor32    */
+		case 0x96: /* XXX fpi32tor32    */
 		           if (IsT414)
 		               goto BadCode;
+                           temp = word (AReg);
+                           fp_pushsn ((REAL32) INT(temp));
+                           AReg = BReg;
+                           BReg = CReg;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x98: /* fpi32tor64    */
+		case 0x98: /* XXX fpi32tor64    */
 		           if (IsT414)
 		               goto BadCode;
+                           temp = word (AReg);
+                           fp_pushdb ((REAL64) INT(temp));
+                           AReg = BReg;
+                           BReg = CReg;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x9a: /* fpb32tor64    */
+		case 0x9a: /* XXX fpb32tor64    */
 		           if (IsT414)
 		               goto BadCode;
+                           temp = word (AReg);
+                           fp_pushdb ((REAL64) temp);
+                           AReg = BReg;
+                           BReg = CReg;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
 		case 0x9c: /* XXX fptesterr    */
 		           if (IsT414)
@@ -2263,17 +2321,34 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            AReg = temp;
 		           IPtr++;
 		           break;
-		case 0x9d: /* fprtoi32    */
+		case 0x9d: /* XXX fprtoi32    */
 		           if (IsT414)
 		               goto BadCode;
+                           if (FAReg.type == FP_REAL64)
+                                FAReg.u.db = fp_rtoi32db (FAReg.u.db);
+                           else
+                                FAReg.u.sn = fp_rtoi32sn (FAReg.u.sn);
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0x9e: /* fpstnli32    */
+		case 0x9e: /* XXX fpstnli32    */
 		           if (IsT414)
 		               goto BadCode;
+                           if (FAReg.type == FP_REAL64)
+                           {
+                                fp_popdb (&dbtemp1);
+                                dbtemp1   = trunc (dbtemp1);
+                                temp64.fp = dbtemp1;
+                                temp      = temp64.bits & 0xffffffff;
+                           }
+                           else
+                           {
+                                fp_popsn (&sntemp1);
+                                sntemp1   = truncf (sntemp1);
+                                temp32.fp = sntemp1;
+                                temp      = temp32.bits;
+                           }
+                           writeword (AReg, temp);
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
 		case 0x9f: /* XXX fpldzerosn    */
 		           if (IsT414)
@@ -2287,43 +2362,81 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            fp_pushdb (0.0);
 		           IPtr++;
 		           break;
-		case 0xa1: /* fpint    */
+		case 0xa1: /* XXX fpint    */
 		           if (IsT414)
 		               goto BadCode;
+                           if (FAReg.type == FP_REAL64)
+                                FAReg.u.db = fp_intdb (FAReg.u.db);
+                           else if (FAReg.type == FP_REAL32)
+                                FAReg.u.sn = fp_intsn (FAReg.u.sn);
+                           else
+                           {
+                                FAReg.type = FP_UNKNOWN;
+                                FAReg.u.db = 0.0;
+                           }
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0xa3: /* fpdup    */
+		case 0xa3: /* XXX fpdup    */
 		           if (IsT414)
 		               goto BadCode;
+                           FCReg = FBReg;
+                           FBReg = FAReg;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0xa4: /* fprev    */
+		case 0xa4: /* XXX fprev    */
 		           if (IsT414)
 		               goto BadCode;
+                           fptemp = FAReg;
+                           FAReg  = FBReg;
+                           FBReg  = fptemp;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0xa6: /* fpldnladddb    */
+		case 0xa6: /* XXX fpldnladddb    */
 		           if (IsT414)
 		               goto BadCode;
+                           dbtemp1 = real64 (AReg);
+                           if (FAReg.type == FP_REAL64)
+                                FAReg.u.db = fp_adddb (FAReg.u.db, dbtemp1);
+                           else
+                           {
+                                FAReg.type = FP_UNKNOWN;
+                                FAReg.u.db = 0.0;
+                           }
+                           AReg = BReg;
+                           BReg = CReg;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0xa8: /* fpldnlmuldb    */
+		case 0xa8: /* XXX fpldnlmuldb    */
 		           if (IsT414)
 		               goto BadCode;
+                           dbtemp1 = real64 (AReg);
+                           if (FAReg.type == FP_REAL64)
+                                FAReg.u.db = fp_muldb (FAReg.u.db, dbtemp1);
+                           else
+                           {
+                                FAReg.type = FP_UNKNOWN;
+                                FAReg.u.db = 0.0;
+                           }
+                           AReg = BReg;
+                           BReg = CReg;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0xaa: /* fpldnladdsn    */
+		case 0xaa: /* XXX fpldnladdsn    */
 		           if (IsT414)
 		               goto BadCode;
+                           sntemp1 = real32 (AReg);
+                           if (FAReg.type == FP_REAL32)
+                                FAReg.u.sn = fp_addsn (FAReg.u.sn, sntemp1);
+                           else
+                           {
+                                FAReg.type = FP_UNKNOWN;
+                                FAReg.u.db = 0.0;
+                           }
+                           AReg = BReg;
+                           BReg = CReg;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
-		case 0xab: /* fpentry    */
+		case 0xab: /* XXX fpentry    */
 		           if (IsT414)
 		               goto BadCode;
                            temp = AReg;
@@ -2360,13 +2473,29 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			              IPtr++;
                                       /* Do not reset rounding mode. */
 			              OReg = 0; continue;
-			   case 0x07: /* fpur32tor64    */
+			   case 0x07: /* XXX fpur32tor64    */
+                                      if (FAReg.type == FP_REAL32)
+                                      {
+                                          FAReg.u.db = fp_r32tor64 (FAReg.u.sn);
+                                      }
+                                      else
+                                      {
+                                          FAReg.u.db = 0.0;
+                                          FAReg.type = FP_UNKNOWN;
+                                      }
 			              IPtr++;
-			              printf ("-W-EMU414: FPU instruction.\n");
 			              break;
-			   case 0x08: /* fpur64tor32    */
+			   case 0x08: /* XXX fpur64tor32    */
+                                      if (FAReg.type == FP_REAL64)
+                                      {
+                                          FAReg.u.sn = fp_r64tor32 (FAReg.u.db);
+                                      }
+                                      else
+                                      {
+                                          FAReg.u.sn = 0.0F;
+                                          FAReg.type = FP_UNKNOWN;
+                                      }
 			              IPtr++;
-			              printf ("-W-EMU414: FPU instruction.\n");
 			              break;
 			   case 0x09: /* XXX fpuexpdec32    */
                                       fp_dounary (fp_expdec32db, fp_expdec32sn);
@@ -2380,17 +2509,24 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                       fp_dounary (fp_absdb, fp_abssn);
 			              IPtr++;
 			              break;
-			   case 0x0d: /* fpunoround    */
+			   case 0x0d: /* XXX fpunoround    */
+                                      FAReg.type = FP_REAL32;
+                                      FAReg.u.sn = fp_norounddb (FAReg.u.db);
 			              IPtr++;
-			              printf ("-W-EMU414: FPU instruction.\n");
 			              break;
-			   case 0x0e: /* fpuchki32    */
+			   case 0x0e: /* XXX fpuchki32    */
+                                      if (FAReg.type == FP_REAL32)
+                                          fp_chki32sn (FAReg.u.sn);
+                                      else
+                                          fp_chki32db (FAReg.u.db);
 			              IPtr++;
-			              printf ("-W-EMU414: FPU instruction.\n");
 			              break;
-			   case 0x0f: /* fpuchki64    */
+			   case 0x0f: /* XXX fpuchki64    */
+                                      if (FAReg.type == FP_REAL32)
+                                          fp_chki64sn (FAReg.u.sn);
+                                      else
+                                          fp_chki64db (FAReg.u.db);
 			              IPtr++;
-			              printf ("-W-EMU414: FPU instruction.\n");
 			              break;
 			   case 0x11: /* XXX fpudivby2    */
                                       fp_dounary (fp_divby2db, fp_divby2sn);
@@ -2420,11 +2556,25 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			             break;
                            }
 		           break;
-		case 0xac: /* fpldnlmulsn    */
+		case 0xac: /* XXX fpldnlmulsn    */
 		           if (IsT414)
 		               goto BadCode;
+                           fp_chkexcept ("Before real32 ()");
+                           sntemp1 = real32 (AReg);
+                           fp_chkexcept ("After real32 ()");
+                           if (FAReg.type == FP_REAL32)
+                           {
+                                fp_chkexcept ("Before fp_mulsn ()");
+                                FAReg.u.sn = fp_mulsn (FAReg.u.sn, sntemp1);
+                           }
+                           else
+                           {
+                                FAReg.type = FP_UNKNOWN;
+                                FAReg.u.db = 0.0;
+                           }
+                           AReg = BReg;
+                           BReg = CReg;
 		           IPtr++;
-		           printf ("-W-EMU414: FPU instruction.\n");
 		           break;
 		default  : 
 BadCode:
@@ -3031,11 +3181,11 @@ uint32_t readword (uint32_t ptr)
         uint32_t *wptr;
 
         if (INT(ptr) < INT(ExtMemStart))
-                wptr = (uint32_t *)(core + (MEM_WORD_MASK & ptr));
+                wptr = (uint32_t *)(core + (MemWordMask & ptr));
         else
         {
                 ptr -= CoreSize;
-                wptr = (uint32_t *)(mem + (MEM_WORD_MASK & ptr));
+                wptr = (uint32_t *)(mem + (MemWordMask & ptr));
         }
         result = *wptr;
 #else
@@ -3044,18 +3194,18 @@ uint32_t readword (uint32_t ptr)
 	/* Get bytes, ensuring memory references are in range. */
         if (INT(ptr) < INT(ExtMemStart))
         {
-	        val[0] = core[(ptr & MEM_WORD_MASK)];
-	        val[1] = core[(ptr & MEM_WORD_MASK)+1];
-	        val[2] = core[(ptr & MEM_WORD_MASK)+2];
-	        val[3] = core[(ptr & MEM_WORD_MASK)+3];
+	        val[0] = core[(ptr & MemWordMask)];
+	        val[1] = core[(ptr & MemWordMask)+1];
+	        val[2] = core[(ptr & MemWordMask)+2];
+	        val[3] = core[(ptr & MemWordMask)+3];
         }
         else
         {
                 ptr -= CoreSize;
-	        val[0] = mem[(ptr & MEM_WORD_MASK)];
-	        val[1] = mem[(ptr & MEM_WORD_MASK)+1];
-	        val[2] = mem[(ptr & MEM_WORD_MASK)+2];
-	        val[3] = mem[(ptr & MEM_WORD_MASK)+3];
+	        val[0] = mem[(ptr & MemWordMask)];
+	        val[1] = mem[(ptr & MemWordMask)+1];
+	        val[2] = mem[(ptr & MemWordMask)+2];
+	        val[3] = mem[(ptr & MemWordMask)+3];
         }
 
 	result = (val[0]) | (val[1]<<8) | (val[2]<<16) | (val[3]<<24);
@@ -3070,7 +3220,7 @@ uint32_t word (uint32_t ptr)
 
         result = readword (ptr);
 
-        if (emumem)
+        if (memdebug)
                 printf ("\tRD: Mem[%08X] ? %08X\n", ptr, result);
 	return (result);
 }
@@ -3084,11 +3234,11 @@ void writeword (uint32_t ptr, uint32_t value)
         uint32_t *wptr;
 
         if (INT(ptr) < INT(ExtMemStart))
-                wptr = (uint32_t *) (core + (MEM_WORD_MASK & ptr));
+                wptr = (uint32_t *) (core + (MemWordMask & ptr));
         else
         {
                 ptr -= CoreSize;
-                wptr = (uint32_t *) (mem + (MEM_WORD_MASK & ptr));
+                wptr = (uint32_t *) (mem + (MemWordMask & ptr));
         }
         *wptr = value;
 #else
@@ -3102,22 +3252,22 @@ void writeword (uint32_t ptr, uint32_t value)
 	/* Write bytes, ensuring memory references are in range. */
         if (INT(ptr) < INT(ExtMemStart))
         {
-	        core[(ptr & MEM_WORD_MASK)]   = val[0];
-	        core[(ptr & MEM_WORD_MASK)+1] = val[1];
-	        core[(ptr & MEM_WORD_MASK)+2] = val[2];
-	        core[(ptr & MEM_WORD_MASK)+3] = val[3];
+	        core[(ptr & MemWordMask)]   = val[0];
+	        core[(ptr & MemWordMask)+1] = val[1];
+	        core[(ptr & MemWordMask)+2] = val[2];
+	        core[(ptr & MemWordMask)+3] = val[3];
         }
         else
         {
                 ptr -= CoreSize;
-	        mem[(ptr & MEM_WORD_MASK)]   = val[0];
-	        mem[(ptr & MEM_WORD_MASK)+1] = val[1];
-	        mem[(ptr & MEM_WORD_MASK)+2] = val[2];
-	        mem[(ptr & MEM_WORD_MASK)+3] = val[3];
+	        mem[(ptr & MemWordMask)]   = val[0];
+	        mem[(ptr & MemWordMask)+1] = val[1];
+	        mem[(ptr & MemWordMask)+2] = val[2];
+	        mem[(ptr & MemWordMask)+3] = val[3];
         }
 #endif
 
-        if (emumem)
+        if (memdebug)
                 printf ("\tWR: Mem[%08X] ! %08X\n", ptr, value);
 
 }
@@ -3129,11 +3279,11 @@ unsigned char byte (uint32_t ptr)
 
 	/* Get byte, ensuring memory reference is in range. */
         if (INT(ptr) < INT(ExtMemStart))
-	        result = core[(ptr & MEM_BYTE_MASK)];
+	        result = core[(ptr & MemByteMask)];
         else
         {
                 ptr -= CoreSize;
-	        result = mem[(ptr & MEM_BYTE_MASK)];
+	        result = mem[(ptr & MemByteMask)];
         }
 
 	return (result);
@@ -3144,11 +3294,11 @@ INLINE void writebyte (uint32_t ptr, unsigned char value)
 {
 	/* Write byte, ensuring memory reference is in range. */
         if (INT(ptr) < INT(ExtMemStart))
-                core[(ptr & MEM_BYTE_MASK)] = value;
+                core[(ptr & MemByteMask)] = value;
         else
         {
                 ptr -= CoreSize;
-	        mem[(ptr & MEM_BYTE_MASK)] = value;
+	        mem[(ptr & MemByteMask)] = value;
         }
 }
 

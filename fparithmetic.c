@@ -203,7 +203,7 @@ void db_dump (char *msg, REAL64 fp)
         fpreal64_t x;
 
         x.fp = fp;
-        printf ("%s: fp = %lf (#%016llX, sign=%d,exp=%d,frac=%llX)\n",
+        printf ("%s: fp = %lf (#%016llX, %d,%04d,%014llX)\n",
                 msg, fp, x.bits,
                 fp_signdb(fp) ? 1 : 0,
                 fp_expdb(fp),
@@ -215,40 +215,44 @@ void sn_dump (char *msg, REAL32 fp)
         fpreal32_t x;
 
         x.fp = fp;
-        printf ("%s: fp = %f (#%08X, sign=%d,exp=%d,frac=%X)\n",
+        printf ("%s: fp = %f (#%08X, %d,%03d,%06X)\n",
                 msg, fp, x.bits,
                 fp_signsn(fp) ? 1 : 0,
                 fp_expsn(fp),
                 fp_fracsn(fp));
 }
 
-#define onoff(x)        (x ? "on" : "off")
+#define setclear(x)        (x ? "Set" : "Clear")
 
 void decode_except (int expc, int typeDB)
 {
         if (0 == expc)
                 return;
 
+        printf ("-W-EMU414: Native FPU exception!\n");
         if (1 == typeDB)
         {
-                db_dump ("  Barg", BargDB);
-                db_dump ("  Aarg", AargDB);
-                db_dump ("Result", ResultDB);
+                printf  ("-W-EMU414: Operation arguments.\n");
+                db_dump ("-W-EMU414:   Barg", BargDB);
+                db_dump ("-W-EMU414:   Aarg", AargDB);
+                db_dump ("-W-EMU414: Result", ResultDB);
         }
         else if (0 == typeDB)
         {
-                sn_dump ("  Barg", BargSN);
-                sn_dump ("  Aarg", AargSN);
-                sn_dump ("Result", ResultSN);
+                printf  ("-W-EMU414: Operation arguments.\n");
+                sn_dump ("-W-EMU414:   Barg", BargSN);
+                sn_dump ("-W-EMU414:   Aarg", AargSN);
+                sn_dump ("-W-EMU414: Result", ResultSN);
         }
 
-        printf ("-W-EMU414: Native FPU exception!\n");
-        printf ("-W-EMU414: fpexcept       = %d\n", expc);
-        printf ("-W-EMU414: FE_INVALID     %s\n", onoff (expc & FE_INVALID));
-        printf ("-W-EMU414: FE_DIVBYZERO   %s\n", onoff (expc & FE_DIVBYZERO));
-        printf ("-W-EMU414: FE_OVERFLOW    %s\n", onoff (expc & FE_OVERFLOW));
-        printf ("-W-EMU414: FE_UNDERFLOW   %s\n", onoff (expc & FE_UNDERFLOW));
-        printf ("-W-EMU414: FE_INEXACT     %s\n", onoff (expc & FE_INEXACT));
+        printf ("-W-EMU414: FPExceptFlag   = %d\n", expc);
+        printf ("-W-EMU414:   Invalid      %s\n", setclear (expc & FE_INVALID));
+        printf ("-W-EMU414:   DivideByZero %s\n", setclear (expc & FE_DIVBYZERO));
+        printf ("-W-EMU414:   Overflow     %s\n", setclear (expc & FE_OVERFLOW));
+        printf ("-W-EMU414:   Underflow    %s\n", setclear (expc & FE_UNDERFLOW));
+        printf ("-W-EMU414:   Inexact      %s\n", setclear (expc & FE_INEXACT));
+
+        fp_clrexcept ();
 }
 
 void fp_clrexcept (void)

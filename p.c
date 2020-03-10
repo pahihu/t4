@@ -447,7 +447,7 @@ void reset_channel (uint32_t addr)
         }
 }
 
-void print_fpreg (char *ident, char name, REAL *fpreg)
+void print_fpreg (char *ident, char name, REAL *fpreg, int printempty)
 {
         fpreal64_t r64;
         fpreal32_t r32;
@@ -462,7 +462,7 @@ void print_fpreg (char *ident, char name, REAL *fpreg)
                 r32.fp = fpreg->u.sn;
                 printf ("%sF%cReg                  #%08X   (%f)\n", ident, name, r32.bits, fpreg->u.sn);
         } 
-        else
+        else if (printempty)
         {
                 r64.fp = fpreg->u.db;
                 printf ("%sF%cReg          #%016llX   (Empty)\n", ident, name, r64.bits);
@@ -484,9 +484,9 @@ void processor_state (void)
         printf ("\tHalt on Error  %s\n", ReadHaltOnError ? "Set" : "Clear");
         if (IsT800)
         {
-                print_fpreg ("\t", 'A', &FAReg);
-                print_fpreg ("\t", 'B', &FBReg);
-                print_fpreg ("\t", 'C', &FCReg);
+                print_fpreg ("\t", 'A', &FAReg, 1);
+                print_fpreg ("\t", 'B', &FBReg, 1);
+                print_fpreg ("\t", 'C', &FCReg, 1);
                 printf ("\tFP_Error       %s\n", FP_Error ? "Set" : "Clear");
         }
         printf ("\tFPtr1 (Low     #%08X\n", FPtrReg1);
@@ -615,12 +615,13 @@ void mainloop (void)
 
         int   printIPtr, instrBytes;
         int   asmLines;
+        int   currFPInstr, prevFPInstr;
         char *mnemo;
 
-
-        printIPtr  = TRUE;
-        instrBytes = 0;
-        asmLines   = 0;
+        printIPtr   = TRUE;
+        prevFPInstr = FALSE;
+        instrBytes  = 0;
+        asmLines    = 0;
         m2dSourceStride = m2dDestStride = m2dLength = 0xdeadbeef;
 
         init_processor ();
@@ -688,9 +689,14 @@ void mainloop (void)
                                 AReg, BReg, CReg, WPtr, readword (WPtr));
                         if (IsT800)
                         {
-                                print_fpreg("\t\t\t\t\t\t\t  ", 'A', &FAReg);
-                                print_fpreg("\t\t\t\t\t\t\t  ", 'B', &FBReg);
-                                print_fpreg("\t\t\t\t\t\t\t  ", 'C', &FCReg);
+                                currFPInstr = 0 == strncmp (mnemo, "FP", 2);
+                                if (currFPInstr || prevFPInstr)
+                                {
+                                        print_fpreg("\t\t\t\t\t\t\t  ", 'A', &FAReg, 0);
+                                        print_fpreg("\t\t\t\t\t\t\t  ", 'B', &FBReg, 0);
+                                        print_fpreg("\t\t\t\t\t\t\t  ", 'C', &FCReg, 0);
+                                        prevFPInstr = currFPInstr;
+                                }
                         }
                         printIPtr = TRUE;
                 }

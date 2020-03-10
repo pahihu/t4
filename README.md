@@ -35,7 +35,9 @@ pahihu,  8 / 3 / 2020
 
 
 
-Command line arguments:
+Command line arguments
+======================
+
         Usage : t4 [options] [program arguments]
 
         t4 V1.3   10/3/2020
@@ -56,7 +58,8 @@ Command line arguments:
 
 
 
-Running the Minix demo:
+Running the Minix demo
+======================
 
         Secondary bootstrap entered.
         Free mem starts at 800007bc
@@ -94,7 +97,8 @@ Running the Minix demo:
 
 
 
-Example output from the instruction tracing:
+Example output from the instruction tracing
+===========================================
 
         -IPtr------Code-----------------------Mnemonic------------HE---AReg-----BReg-----CReg-------WPtr-----WPtr[0]-
          80000202: 12                         LDLP    #2          --   80000148 80000077 80000077   80000230 80000048

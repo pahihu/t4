@@ -2188,7 +2188,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            fp_dobinary (fp_muldb, fp_mulsn);
 		           IPtr++;
 		           break;
-		case 0x8c: /* fpdiv    */
+		case 0x8c: /* XXX fpdiv    */
 		           if (IsT414)
 		               goto BadCode;
                            fp_dobinary (fp_divdb, fp_divsn);
@@ -2448,6 +2448,15 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		           IPtr++;
                            switch (temp) {
 			   case 0x01: /* fpusqrtfirst    */
+                                      if (FAReg.type == FP_REAL64)
+                                          FAReg.u.db = fp_sqrtfirstdb (FAReg.u.db);
+                                      else if (FAReg.type == FP_REAL32)
+                                          FAReg.u.sn =fp_sqrtfirstsn (FAReg.u.sn);
+                                      else
+                                      {
+                                          FAReg.type = FP_UNKNOWN;
+                                          FAReg.u.db = 0.0;
+                                      }
                                       FBReg.type = FP_UNKNOWN;
                                       FCReg.type = FP_UNKNOWN;
 			              break;
@@ -2456,7 +2465,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                       FCReg.type = FP_UNKNOWN;
 			              break;
 			   case 0x03: /* fpusqrtlast    */
-                                      fp_dounary (fp_sqrtdb, fp_sqrtsn);
+                                      fp_dounary (fp_sqrtlastdb, fp_sqrtlastsn);
 			              break;
 			   case 0x04: /* XXX fpurp    */
                                       fp_setrounding (ROUND_P);

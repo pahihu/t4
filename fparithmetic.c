@@ -532,7 +532,7 @@ REAL64 db_mulby2 (REAL64 fa)             { return ldexp (fa,  1); }
 REAL64 db_divby2 (REAL64 fa)             { return ldexp (fa, -1); }
 REAL64 db_expinc32 (REAL64 fa)           { return ldexp (fa,  32); }
 REAL64 db_expdec32 (REAL64 fa)           { return ldexp (fa, -32); }
-REAL64 db_sqrt (REAL64 fa)               { return  sqrt (fa); }
+REAL64 db_sqrt (REAL64 fa)               { return sqrt (fa); }
 REAL64 db_remfirst(REAL64 fb, REAL64 fa) { return fmod (fb, fa); }
 int    db_gt (REAL64 fb, REAL64 fa)      { return fb  > fa; }
 int    db_eq (REAL64 fb, REAL64 fa)      { return fb == fa; }
@@ -587,7 +587,14 @@ REAL64 fp_absdb (REAL64 fa)
 
         return result;
 }
-REAL64 fp_sqrtdb (REAL64 fa)             { return db_unary (fa, db_sqrt); }
+REAL64 fp_sqrtfirstdb (REAL64 fa)
+{
+        if (fp_notfinitedb (fa))
+                FP_Error = TRUE;
+
+        return fa;
+}
+REAL64 fp_sqrtlastdb (REAL64 fa)         { return db_unary (fa, db_sqrt); }
 REAL64 fp_remfirstdb (REAL64 fb, REAL64 fa) { return db_binary (fb, fa, db_remfirst); }
 int    fp_gtdb (REAL64 fb, REAL64 fa)    { return db_binary2word (fb, fa, db_gt); }
 int    fp_eqdb (REAL64 fb, REAL64 fa)    { return db_binary2word (fb, fa, db_eq); }
@@ -606,7 +613,10 @@ REAL32  fp_r64tor32 (REAL64 fp)
 #endif
 
         if (fp_nandb (fp))
+        {
+                FP_Error = TRUE;
                 return Real32ConversionNaN;
+        }
 
         if (fp_infdb (fp))
                 FP_Error = TRUE;
@@ -648,6 +658,12 @@ int fp_chki32db (REAL64 fp)
         AargDB = fp; db_setbits (&ResultDB, NAN64_UNKNOWN);
 #endif
 
+        if (fp_notfinitedb (fp))
+        {
+                FP_Error = TRUE;
+                return FALSE;
+        }
+
         result = lrint (fp);
 
 #ifndef NDEBUG
@@ -667,6 +683,12 @@ int fp_chki64db (REAL64 fp)
 #ifndef NDEBUG
         AargDB = fp; db_setbits (&ResultDB, NAN64_UNKNOWN);
 #endif
+
+        if (fp_notfinitedb (fp))
+        {
+                FP_Error = TRUE;
+                return FALSE;
+        }
 
         result = llrintf (fp);
 
@@ -755,7 +777,14 @@ REAL32 fp_abssn (REAL32 fa)
 
         return result;
 }
-REAL32 fp_sqrtsn (REAL32 fa)             { return sn_unary (fa, sn_sqrt); }
+REAL32 fp_sqrtfirstsn (REAL32 fa)
+{
+        if (fp_notfinitesn (fa))
+                FP_Error = TRUE;
+
+        return fa;
+}
+REAL32 fp_sqrtlastsn (REAL32 fa)         { return sn_unary (fa, sn_sqrt); }
 REAL32 fp_remfirstsn (REAL32 fb, REAL32 fa) { return sn_binary (fb, fa, sn_remfirst); }
 int    fp_gtsn (REAL32 fb, REAL32 fa)    { return sn_binary2word (fb, fa, sn_gt); }
 int    fp_eqsn (REAL32 fb, REAL32 fa)    { return sn_binary2word (fb, fa, sn_eq); }
@@ -813,6 +842,12 @@ int fp_chki32sn (REAL32 fp)
         AargSN = fp; sn_setbits (&ResultSN, NAN32_UNKNOWN);
 #endif
 
+        if (fp_notfinitesn (fp))
+        {
+                FP_Error = TRUE;
+                return FALSE;
+        }
+
         result = lrintf (fp);
 
 #ifndef NDEBUG
@@ -832,6 +867,11 @@ int fp_chki64sn (REAL32 fp)
         AargSN = fp; sn_setbits (&ResultSN, NAN32_UNKNOWN);
 #endif
 
+        if (fp_notfinitesn (fp))
+        {
+                FP_Error = TRUE;
+                return FALSE;
+        }
         result = llrintf (fp);
 
 #ifndef NDEBUG

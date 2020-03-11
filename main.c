@@ -73,6 +73,7 @@ int membits     = 0;
 int tracing     = 0;
 int emudebug    = FALSE;
 int memdebug    = FALSE;
+int memnotinit  = FALSE;
 int msgdebug    = FALSE;
 
 extern int32_t quit;
@@ -139,17 +140,19 @@ int main (int argc, char **argv)
 		printf("Usage : t4 [options] [program arguments]\n\n");
 		printf("t4 V1.3   10/3/2020\n\n");
 		printf("Options:\n");
-                printf("    -s4                  Select T414 mode. (default)\n");
-                printf("    -s8                  Select T800 mode.\n");
 		printf("    -sa                  Analyse transputer.\n");
 		printf("    -sb filename         Boot program \"filename\".\n");
 		printf("    -sc filename         Copy file \"filename\" to transputer.\n");
 		printf("    -se                  Terminate on transputer error.\n");
 		printf("    -si                  Output progress messages.\n");
-                printf("    -sm #bits            Memory size in address bits (default 21, 2Mbyte).\n");
 		printf("    -sr                  Reset transputer.\n");
 		printf("    -sp number           Peek \"number\" kilobytes on analyse.\n");
 		printf("    -ss                  Provide host services to transputer.\n");
+                printf("Extra options:\n");
+                printf("    -s4                  Select T414 mode. (default)\n");
+                printf("    -s8                  Select T800 mode.\n");
+                printf("    -sm #bits            Memory size in address bits (default 21, 2Mbyte).\n");
+                printf("    -su                  Halt on not initialized memory read.\n");
                 printf("    -sx [number]         Execution trace (4 - mem ld/st, 2 - iserver, 1 - instructions).\n");
 		printf("\n");
 		handler (-1);
@@ -320,6 +323,13 @@ int main (int argc, char **argv)
 						strcat (CommandLineMost, " ");
 					  }
 					  else serve=TRUE;
+					  break;
+				case 'u': if (argv[arg][3]!='\0')
+					  {
+						strcat (CommandLineMost, argv[arg]);
+						strcat (CommandLineMost, " ");
+					  }
+					  else memnotinit=true;
 					  break;
 				case 'x': if (argv[arg][3]!='\0')
 					  {

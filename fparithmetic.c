@@ -16,7 +16,8 @@
 
 #define __INT32_MIN__   ((-__INT32_MAX__)-1)
 
-#define FE_T800_EXCEPT  (FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW | FE_INEXACT)
+/* #define FE_T800_EXCEPT  (FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW | FE_INEXACT) */
+#define FE_T800_EXCEPT  (FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW)
 
 #define REAL64_SIGN     0x8000000000000000LL
 #define REAL64_EXP      0x7FF0000000000000LL
@@ -296,7 +297,7 @@ void translate_except (int excp)
                 FP_Error = TRUE;
 }
 
-REAL64 db_decode_except (REAL64 result)
+REAL64 db_check_except (REAL64 result)
 {
         int excp;
 
@@ -311,14 +312,16 @@ REAL64 db_decode_except (REAL64 result)
         db_dump ("-W-EMU414: Result", ResultDB);
 
         translate_except (excp);
+/*
         if (excp & FE_INEXACT)
                 result = Real64InexactNaN;
+*/
         fp_clrexcept ();
 
         return result;
 }
 
-REAL32 sn_decode_except (REAL32 result)
+REAL32 sn_check_except (REAL32 result)
 {
         int excp;
 
@@ -333,8 +336,10 @@ REAL32 sn_decode_except (REAL32 result)
         sn_dump ("-W-EMU414: Result", ResultSN);
 
         translate_except (excp);
+/*
         if (excp & FE_INEXACT)
                 result = Real32InexactNaN;
+*/
         fp_clrexcept ();
 
         return result;
@@ -375,7 +380,7 @@ REAL64 db_binary (REAL64 fb, REAL64 fa, REAL64 (*opr)(REAL64, REAL64))
         ResultDB = result;
 #endif
 
-        result = db_decode_except (result);
+        result = db_check_except (result);
         return result;
 }
 
@@ -399,7 +404,7 @@ int db_binary2word (REAL64 fb, REAL64 fa, int (*opr)(REAL64, REAL64))
         ResultDB = result;
 #endif
 
-        db_decode_except (0.0);
+        db_check_except (0.0);
         return result;
 }
 
@@ -423,7 +428,7 @@ REAL64 db_unary (REAL64 fa, REAL64 (*opr)(REAL64))
         ResultDB = result;
 #endif
 
-        result = db_decode_except (result);
+        result = db_check_except (result);
         return result;
 }
 
@@ -462,7 +467,7 @@ REAL32 sn_binary (REAL32 fb, REAL32 fa, REAL32 (*opr)(REAL32, REAL32))
         ResultSN = result;
 #endif
 
-        result = sn_decode_except (result);
+        result = sn_check_except (result);
         return result;
 }
 
@@ -486,7 +491,7 @@ int sn_binary2word (REAL32 fb, REAL32 fa, int (*opr)(REAL32, REAL32))
         ResultSN = result;
 #endif
 
-        sn_decode_except (0.0F);
+        sn_check_except (0.0F);
         return result;
 }
 
@@ -511,7 +516,7 @@ REAL32 sn_unary (REAL32 fa, REAL32 (*opr)(REAL32))
         ResultSN = result;
 #endif
 
-        result = sn_decode_except (result);
+        result = sn_check_except (result);
         return result;
 }
 
@@ -564,6 +569,7 @@ REAL64 fp_expdec32db (REAL64 fa)         { return db_unary (fa, db_expdec32); }
 REAL64 fp_absdb (REAL64 fa)
 {
         fpreal64_t x;
+        REAL64 result;
 
         if (fp_nandb (fa))
         {
@@ -575,7 +581,11 @@ REAL64 fp_absdb (REAL64 fa)
         }
         else if (fp_infdb (fa))
                 FP_Error = TRUE;
-        return fabs (fa);
+
+        result = fabs (fa);
+        fp_clrexcept ();
+
+        return result;
 }
 REAL64 fp_sqrtdb (REAL64 fa)             { return db_unary (fa, db_sqrt); }
 REAL64 fp_remfirstdb (REAL64 fb, REAL64 fa) { return db_binary (fb, fa, db_remfirst); }
@@ -589,7 +599,6 @@ int    fp_ordereddb (REAL64 fb, REAL64 fa)
 }
 REAL32  fp_r64tor32 (REAL64 fp)
 {
-        fpreal32_t r32;
         REAL32     result;
 
 #ifndef NDEBUG
@@ -597,10 +606,7 @@ REAL32  fp_r64tor32 (REAL64 fp)
 #endif
 
         if (fp_nandb (fp))
-        {
-                r32.bits = NAN32_CONVERSION64;
-                return r32.fp;
-        }
+                return Real32ConversionNaN;
 
         if (fp_infdb (fp))
                 FP_Error = TRUE;
@@ -611,7 +617,7 @@ REAL32  fp_r64tor32 (REAL64 fp)
         ResultSN = result;
 #endif
 
-        result = sn_decode_except (result);
+        result = sn_check_except (result);
         return result;
 }
 REAL64 fp_intdb (REAL64 fp)
@@ -631,7 +637,7 @@ REAL64 fp_intdb (REAL64 fp)
         ResultDB = result;
 #endif
 
-        result = db_decode_except (result);
+        result = db_check_except (result);
         return result;
 }
 int fp_chki32db (REAL64 fp)
@@ -648,7 +654,7 @@ int fp_chki32db (REAL64 fp)
         ResultDB = result;
 #endif
 
-        db_decode_except (0.0);
+        db_check_except (0.0);
         if (FP_Error)
                 return FALSE;
 
@@ -668,7 +674,7 @@ int fp_chki64db (REAL64 fp)
         ResultDB = result;
 #endif
 
-        db_decode_except (0.0);
+        db_check_except (0.0);
         if (FP_Error)
                 return FALSE;
         return TRUE;
@@ -701,6 +707,19 @@ REAL32 fp_norounddb (REAL64 fp)
                    (REAL32_FRAC & (frac >> 29));
         return r32.fp;
 }
+uint32_t fp_stnli32db (REAL64 fp)
+{
+        union {
+                int32_t i;
+                uint32_t u;
+        } result;
+
+        fp = trunc (fp);
+        result.i = (int32_t) fp;
+        fp_clrexcept ();
+
+        return result.u;
+}
 
 
 
@@ -718,6 +737,7 @@ REAL32 fp_expdec32sn (REAL32 fa)         { return sn_unary (fa, sn_expdec32); }
 REAL32 fp_abssn (REAL32 fa)
 {
         fpreal32_t x;
+        REAL32 result;
 
         if (fp_nansn (fa))
         {
@@ -729,7 +749,11 @@ REAL32 fp_abssn (REAL32 fa)
         }
         else if (fp_infsn (fa))
                 FP_Error = TRUE;
-        return fabsf (fa);
+
+        result =  fabsf (fa);
+        fp_clrexcept ();
+
+        return result;
 }
 REAL32 fp_sqrtsn (REAL32 fa)             { return sn_unary (fa, sn_sqrt); }
 REAL32 fp_remfirstsn (REAL32 fb, REAL32 fa) { return sn_binary (fb, fa, sn_remfirst); }
@@ -758,7 +782,7 @@ REAL64  fp_r32tor64 (REAL32 fp)
         ResultDB = result;
 #endif
 
-        result = db_decode_except (result);
+        result = db_check_except (result);
         return result;
 }
 REAL32 fp_intsn (REAL32 fp)
@@ -778,7 +802,7 @@ REAL32 fp_intsn (REAL32 fp)
         ResultSN = result;
 #endif
 
-        result = sn_decode_except (result);
+        result = sn_check_except (result);
         return result;
 }
 int fp_chki32sn (REAL32 fp)
@@ -795,7 +819,7 @@ int fp_chki32sn (REAL32 fp)
         ResultSN = result;
 #endif
 
-        sn_decode_except (0.0F);
+        sn_check_except (0.0F);
         if (FP_Error)
                 return FALSE;
         return (__INT32_MIN__ < result) && (result < __INT32_MAX__);
@@ -814,7 +838,7 @@ int fp_chki64sn (REAL32 fp)
         ResultSN = result;
 #endif
 
-        sn_decode_except (0.0F);
+        sn_check_except (0.0F);
         if (FP_Error)
                 return FALSE;
         return TRUE;
@@ -823,4 +847,17 @@ REAL32 fp_rtoi32sn (REAL32 fp)
 {
         fp_chki32sn (fp);
         return fp_intsn (fp);
+}
+uint32_t fp_stnli32sn (REAL32 fp)
+{
+        union {
+                int32_t i;
+                uint32_t u;
+        } result;
+
+        fp = truncf (fp);
+        result.i = (int32_t) fp;
+        fp_clrexcept ();
+
+        return result.u;
 }

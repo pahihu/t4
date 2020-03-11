@@ -101,6 +101,7 @@ int    fp_chki32db (REAL64);
 int    fp_chki64db (REAL64);
 REAL64 fp_rtoi32db (REAL64);
 REAL32 fp_norounddb (REAL64);
+uint32_t fp_stnli32db (REAL64);
 
 
 /*
@@ -132,4 +133,5 @@ REAL32 fp_intsn (REAL32);
 int    fp_chki32sn (REAL32);
 int    fp_chki64sn (REAL32);
 REAL32 fp_rtoi32sn (REAL32);
+uint32_t fp_stnli32sn (REAL32);
 

@@ -3,7 +3,7 @@ I would like to say thanks to Julian Highfield writing his [Transputer Emulator]
 Goals
 =====
 
-* emulate the first generation T414 (maybe T800) transputers
+* emulate the first generation T414/T800 transputers
 * instruction tracing
 * to run the D7205A occam 2 toolset on macOS and Linux 64bit
 
@@ -18,6 +18,7 @@ Non-goals
 Changes
 =======
 
+* runs the T800 Whetstone benchmark
 * changed program arguments, memory size can be changed from the command line
 * runs the Minix demo (does NOT need a microcode emulator or an iserver supporting block operations)
 * D7205A occam 2 toolset successfully built hello example
@@ -43,17 +44,19 @@ Command line arguments
         t4 V1.3   10/3/2020
 
         Options:
-            -s4                  Select T414 mode. (default)
-            -s8                  Select T800 mode.
             -sa                  Analyse transputer.
             -sb filename         Boot program "filename".
             -sc filename         Copy file "filename" to transputer.
             -se                  Terminate on transputer error.
             -si                  Output progress messages.
-            -sm #bits            Memory size in address bits (default 21, 2Mbyte).
             -sr                  Reset transputer.
             -sp number           Peek "number" kilobytes on analyse.
             -ss                  Provide host services to transputer.
+        Extra options:
+            -s4                  Select T414 mode. (default)
+            -s8                  Select T800 mode.
+            -sm #bits            Memory size in address bits (default 21, 2Mbyte).
+            -su                  Halt on not initialized memory read.
             -sx [number]         Execution trace (4 - mem ld/st, 2 - iserver, 1 - instructions).
 
 

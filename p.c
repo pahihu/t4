@@ -72,7 +72,9 @@ uint32_t MemSize     = 1 << 21;
 uint32_t MemWordMask = ((uint32_t)0x001ffffc);
 uint32_t MemByteMask = ((uint32_t)0x001fffff);
 
-uint32_t readword (uint32_t);
+#define WordUnknown_p   ((uint32_t)0x2ffa2ffa)
+
+uint32_t word_int (uint32_t);
 
 /* Registers. */
 uint32_t IPtr;
@@ -190,6 +192,7 @@ extern int profiling;
 extern int32_t profile[10];
 extern int emudebug;
 extern int memdebug;
+extern int memnotinit;
 extern int msgdebug;
 
 LinkIface Link[4];
@@ -561,10 +564,10 @@ void init_memory (void)
 
 #ifndef NDEBUG
         for (i = 0; i < CoreSize; i += 4)
-                writeword (MostNeg + i, 0x2ffa2ffa);
+                writeword_int (MostNeg + i, WordUnknown_p);
 
         for (i = 0; i < MemSize; i += 4)
-                writeword (ExtMemStart + i, 0x2ffa2ffa);
+                writeword_int (ExtMemStart + i, WordUnknown_p);
 #endif
 }
 
@@ -610,8 +613,6 @@ void mainloop (void)
         REAL32 sntemp1, sntemp2;
         REAL64 dbtemp1, dbtemp2;
         REAL   fptemp;
-        fpreal32_t temp32;
-        fpreal64_t temp64;
 
         int   printIPtr, instrBytes;
         int   asmLines;
@@ -686,7 +687,7 @@ void mainloop (void)
                         if (IsT800)
 	                        printf ("%c", FLAG(FP_Error, 'F'));
                         printf ("   %8X %8X %8X   %08X %8X\n", 
-                                AReg, BReg, CReg, WPtr, readword (WPtr));
+                                AReg, BReg, CReg, WPtr, word_int (WPtr));
                         if (IsT800)
                         {
                                 currFPInstr = 0 == strncmp (mnemo, "FP", 2);
@@ -1911,8 +1912,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 {
                                         for (temp2 = 0; temp2 < m2dWidth; temp2++)
                                         {
-                                                pixel = byte (m2dSourceAddress++);
-                                                writebyte (m2dDestAddress++, pixel);
+                                                pixel = byte (m2dSourceAddress + temp2);
+                                                writebyte (m2dDestAddress + temp2, pixel);
                                         }
                                         m2dSourceAddress += m2dSourceStride;
                                         m2dDestAddress   += m2dDestStride;
@@ -1932,10 +1933,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 {
                                         for (temp2 = 0; temp2 < m2dWidth; temp2++)
                                         {
-                                                pixel = byte (m2dSourceAddress++);
+                                                pixel = byte (m2dSourceAddress + temp2);
                                                 if (pixel)
-                                                        writebyte (m2dDestAddress, pixel);
-                                                m2dDestAddress++;
+                                                        writebyte (m2dDestAddress + temp2, pixel);
                                         }
                                         m2dSourceAddress += m2dSourceStride;
                                         m2dDestAddress   += m2dDestStride;
@@ -1955,10 +1955,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 {
                                         for (temp2 = 0; temp2 < m2dWidth; temp2++)
                                         {
-                                                pixel = byte (m2dSourceAddress++);
+                                                pixel = byte (m2dSourceAddress + temp2);
                                                 if (0 == pixel)
-                                                        writebyte (m2dDestAddress, pixel);
-                                                m2dDestAddress++;
+                                                        writebyte (m2dDestAddress + temp2, pixel);
                                         }
                                         m2dSourceAddress += m2dSourceStride;
                                         m2dDestAddress   += m2dDestStride;
@@ -2342,18 +2341,16 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            if (FAReg.type == FP_REAL64)
                            {
                                 fp_popdb (&dbtemp1);
-                                dbtemp1   = trunc (dbtemp1);
-                                temp64.fp = dbtemp1;
-                                temp      = temp64.bits & 0xffffffff;
+                                temp = fp_stnli32db (dbtemp1);
                            }
                            else
                            {
                                 fp_popsn (&sntemp1);
-                                sntemp1   = truncf (sntemp1);
-                                temp32.fp = sntemp1;
-                                temp      = temp32.bits;
+                                temp = fp_stnli32sn (sntemp1);
                            }
                            writeword (AReg, temp);
+                           AReg = BReg;
+                           BReg = CReg;
 		           IPtr++;
 		           break;
 		case 0x9f: /* XXX fpldzerosn    */
@@ -2453,107 +2450,90 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   case 0x01: /* fpusqrtfirst    */
                                       FBReg.type = FP_UNKNOWN;
                                       FCReg.type = FP_UNKNOWN;
-			              IPtr++;
 			              break;
 			   case 0x02: /* fpusqrtstep    */
                                       FBReg.type = FP_UNKNOWN;
                                       FCReg.type = FP_UNKNOWN;
-			              IPtr++;
 			              break;
 			   case 0x03: /* fpusqrtlast    */
                                       fp_dounary (fp_sqrtdb, fp_sqrtsn);
-			              IPtr++;
 			              break;
 			   case 0x04: /* XXX fpurp    */
                                       fp_setrounding (ROUND_P);
-			              IPtr++;
                                       /* Do not reset rounding mode. */
 			              OReg = 0; continue;
 			   case 0x05: /* XXX fpurm    */
                                       fp_setrounding (ROUND_M);
-			              IPtr++;
                                       /* Do not reset rounding mode. */
 			              OReg = 0; continue;
 			   case 0x06: /* XXX fpurz    */
                                       fp_setrounding (ROUND_Z);
-			              IPtr++;
                                       /* Do not reset rounding mode. */
 			              OReg = 0; continue;
 			   case 0x07: /* XXX fpur32tor64    */
                                       if (FAReg.type == FP_REAL32)
                                       {
+                                          FAReg.type = FP_REAL64;
                                           FAReg.u.db = fp_r32tor64 (FAReg.u.sn);
                                       }
                                       else
                                       {
-                                          FAReg.u.db = 0.0;
                                           FAReg.type = FP_UNKNOWN;
+                                          FAReg.u.db = 0.0;
                                       }
-			              IPtr++;
 			              break;
 			   case 0x08: /* XXX fpur64tor32    */
                                       if (FAReg.type == FP_REAL64)
                                       {
+                                          FAReg.type = FP_REAL32;
                                           FAReg.u.sn = fp_r64tor32 (FAReg.u.db);
                                       }
                                       else
                                       {
-                                          FAReg.u.sn = 0.0F;
                                           FAReg.type = FP_UNKNOWN;
+                                          FAReg.u.sn = 0.0F;
                                       }
-			              IPtr++;
 			              break;
 			   case 0x09: /* XXX fpuexpdec32    */
                                       fp_dounary (fp_expdec32db, fp_expdec32sn);
-			              IPtr++;
 			              break;
 			   case 0x0a: /* XXX fpuexpinc32    */
                                       fp_dounary (fp_expinc32db, fp_expinc32sn);
-			              IPtr++;
 			              break;
 			   case 0x0b: /* XXX fpuabs    */
                                       fp_dounary (fp_absdb, fp_abssn);
-			              IPtr++;
 			              break;
 			   case 0x0d: /* XXX fpunoround    */
                                       FAReg.type = FP_REAL32;
                                       FAReg.u.sn = fp_norounddb (FAReg.u.db);
-			              IPtr++;
 			              break;
 			   case 0x0e: /* XXX fpuchki32    */
                                       if (FAReg.type == FP_REAL64)
                                           fp_chki32db (FAReg.u.db);
                                       else
                                           fp_chki32sn (FAReg.u.sn);
-			              IPtr++;
 			              break;
 			   case 0x0f: /* XXX fpuchki64    */
                                       if (FAReg.type == FP_REAL64)
                                           fp_chki64db (FAReg.u.db);
                                       else
                                           fp_chki64sn (FAReg.u.sn);
-			              IPtr++;
 			              break;
 			   case 0x11: /* XXX fpudivby2    */
                                       fp_dounary (fp_divby2db, fp_divby2sn);
-			              IPtr++;
 			              break;
 			   case 0x12: /* XXX fpumulby2    */
                                       fp_dounary (fp_mulby2db, fp_mulby2sn);
-			              IPtr++;
 			              break;
 			   case 0x22: /* XXX fpurn    */
                                       fp_setrounding (ROUND_N);
-			              IPtr++;
                                       /* Do not reset rounding mode. */
 			              OReg = 0; continue;
 			   case 0x23: /* XXX fpuseterr    */
                                       FP_Error = TRUE;
-			              IPtr++;
 			              break;
 			   case 0x9c: /* XXX fpuclrerr    */
                                       FP_Error = FALSE;
-			              IPtr++;
 			              break;
                            default  :  
                                       printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg, AReg));
@@ -2637,7 +2617,8 @@ void schedule (uint32_t wdesc)
                 printf ("-I-EMUDBG: Schedule(1): Process = #%08X at priority = %s\n", wptr, pri ? "Lo" : "Hi");
 
 	/* Remove from timer queue if a ready alt. */
-	temp = word (index (wptr, State_s));
+        /* !!! XXX - READ OF NOT INITIALIZED MEMORY !!! */
+	temp = word_int (index (wptr, State_s));
 	if (temp == Ready_p)
 		purge_timer ();
 
@@ -3125,8 +3106,10 @@ INLINE void update_time (void)
 
 		count2 += elapsed_usec;
 
-		/* Check high priority timer queue. */
-                if ((ProcPriority == HiPriority) || IntEnabled)
+		/* Check high priority timer queue if HiPriority or interrupts enabled. */
+                /* ??? Timers may be not enabled. */
+                if ((TPtrLoc0 != NotProcess_p) &&
+                    ((ProcPriority == HiPriority) || IntEnabled))
                 {
 		        temp3 = word (index (TPtrLoc0, Time_s));
 		        while ((INT(ClockReg0 - temp3) > 0) && (TPtrLoc0 != NotProcess_p))
@@ -3134,7 +3117,8 @@ INLINE void update_time (void)
 			        schedule (TPtrLoc0 | HiPriority);
 
 			        TPtrLoc0 = word (index (TPtrLoc0, TLink_s));
-			        temp3 = word (index (TPtrLoc0, Time_s));
+                                if (TPtrLoc0 != NotProcess_p)
+			                temp3 = word (index (TPtrLoc0, Time_s));
 		        }
                 }
 
@@ -3145,8 +3129,9 @@ INLINE void update_time (void)
 			count3 += (count2 / 64);
 			count2  =  count2 & 63;
 
-			/* Check low priority timer queue. */
-                        if ((ProcPriority == HiPriority) || IntEnabled)
+			/* Check low priority timer queue if HiPriority or interrupts enabled. */
+                        if ((TPtrLoc1 != NotProcess_p) &&
+                            ((ProcPriority == HiPriority) || IntEnabled))
                         {
 			        temp3 = word (index (TPtrLoc1, Time_s));
 			        while ((INT(ClockReg1 - temp3) > 0) && (TPtrLoc1 != NotProcess_p))
@@ -3154,7 +3139,8 @@ INLINE void update_time (void)
                                         schedule (TPtrLoc1 | LoPriority);
 
 				        TPtrLoc1 = word (index (TPtrLoc1, TLink_s));
-				        temp3 = word (index (TPtrLoc1, Time_s));
+                                        if (TPtrLoc1 != NotProcess_p)
+				                temp3 = word (index (TPtrLoc1, Time_s));
 			        }
                         }
 
@@ -3174,7 +3160,7 @@ INLINE void update_time (void)
 }
 
 /* Read a word from memory. */
-uint32_t readword (uint32_t ptr)
+uint32_t word_int (uint32_t ptr)
 {
 	uint32_t result;
 #ifdef LITTLE_ENDIAN
@@ -3215,19 +3201,31 @@ uint32_t readword (uint32_t ptr)
 	return (result);
 }
 
+void word_notinit (void)
+{
+        printf ("-E-EMU414: Error - read of not initialized memory!\n");
+        handler (-1);
+}
+
 uint32_t word (uint32_t ptr)
 {
         uint32_t result;
 
-        result = readword (ptr);
+        result = word_int (ptr);
 
         if (memdebug)
-                printf ("\tRD: Mem[%08X] ? %08X\n", ptr, result);
+                printf ("-I-EMUMEM: RD: Mem[%08X] ? %08X\n", ptr, result);
+
+#ifndef NDEBUG
+        if ((memnotinit) && (result == WordUnknown_p))
+                word_notinit ();
+#endif
 	return (result);
 }
 
+
 /* Write a word to memory. */
-void writeword (uint32_t ptr, uint32_t value)
+void writeword_int (uint32_t ptr, uint32_t value)
 {
 
 #ifdef LITTLE_ENDIAN
@@ -3268,10 +3266,17 @@ void writeword (uint32_t ptr, uint32_t value)
         }
 #endif
 
-        if (memdebug)
-                printf ("\tWR: Mem[%08X] ! %08X\n", ptr, value);
-
 }
+
+
+void writeword (uint32_t ptr, uint32_t value)
+{
+        writeword_int (ptr, value);
+
+        if (memdebug)
+                printf ("-I-EMUMEM: WR: Mem[%08X] ! %08X\n", ptr, value);
+}
+
 
 /* Read a byte from memory. */
 unsigned char byte (uint32_t ptr)

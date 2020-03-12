@@ -282,12 +282,14 @@ void fp_chkexcept (char *msg)
 /* Translate native FPU exception to FP_Error. */
 void translate_except (int excp)
 {
+#if 0
         printf ("-W-EMU414: FPExceptFlag   = %d\n", excp);
         printf ("-W-EMU414:   Invalid      %s\n", setclear (excp & FE_INVALID));
         printf ("-W-EMU414:   DivideByZero %s\n", setclear (excp & FE_DIVBYZERO));
         printf ("-W-EMU414:   Overflow     %s\n", setclear (excp & FE_OVERFLOW));
         printf ("-W-EMU414:   Underflow    %s\n", setclear (excp & FE_UNDERFLOW));
         printf ("-W-EMU414:   Inexact      %s\n", setclear (excp & FE_INEXACT));
+#endif
 
         if (excp & FE_INVALID)
                 FP_Error = TRUE;
@@ -305,11 +307,13 @@ REAL64 db_check_except (REAL64 result)
         if (0 == excp)
                 return result;
 
+#if 0
         printf  ("-W-EMU414: Native FPU exception!\n");
         printf  ("-W-EMU414: Operation arguments.\n");
         db_dump ("-W-EMU414:   Barg", BargDB);
         db_dump ("-W-EMU414:   Aarg", AargDB);
         db_dump ("-W-EMU414: Result", ResultDB);
+#endif
 
         translate_except (excp);
 /*
@@ -329,11 +333,13 @@ REAL32 sn_check_except (REAL32 result)
         if (0 == excp)
                 return result;
 
+#if 0
         printf  ("-W-EMU414: Native FPU exception!\n");
         printf  ("-W-EMU414: Operation arguments.\n");
         sn_dump ("-W-EMU414:   Barg", BargSN);
         sn_dump ("-W-EMU414:   Aarg", AargSN);
         sn_dump ("-W-EMU414: Result", ResultSN);
+#endif
 
         translate_except (excp);
 /*

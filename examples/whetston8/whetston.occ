@@ -1,0 +1,93 @@
+#INCLUDE "hostio.inc"
+#USE "hostio.lib"
+#USE "whet.t8h"
+#USE "convert.lib"
+--{{{  Benchmark
+PROC Benchmark (CHAN OF SP fs, ts)
+  CHAN OF INT c :
+  PRI PAR
+    --{{{  Hi priority timer process
+    INT delay :
+    TIMER TIME :
+    SEQ
+      c ? delay
+      IF
+        delay <> 0
+          INT now :
+          SEQ
+            TIME ? now
+            WHILE TRUE
+              SEQ
+                now := now PLUS delay
+                TIME ? AFTER now
+    --}}}
+    --{{{  DECLs
+    VAL [11]INT n IS [0, 12, 14, 345, 0, 210, 32, 899, 616, 0, 93]:
+    VAL INT TICKS IS 64: -- ticks per usec
+    [12] INT time1, time2, time.diff, sep.time:
+    INT length, interrupts, delay :
+    BYTE result :
+    [80]BYTE line :
+    BOOL error :
+    --}}}
+    SEQ
+      --{{{  interrupts / sec
+      so.commandline(fs, ts, 0(BYTE), length, line, result)
+      STRINGTOINT(error, interrupts, [line FROM 0 FOR length])
+      IF
+        interrupts <> 0
+          delay := 1000000/interrupts -- hi priority
+        TRUE
+          delay := 0
+      c ! delay
+      --}}}
+      -- The difference between two runs is taken to eliminate the time
+      -- taken by the frame work for the benchmark
+
+      Whetstone (n, 10, time1)
+      Whetstone (n, 20, time2)
+      --{{{  calculate timings
+      SEQ i = 1 FOR 11
+        time.diff [i-1] := (TICKS*((time2[i] - time2[0]) - (time1[i] - time1[0])))/100
+      
+      sep.time [0] := time.diff [0]
+      SEQ i = 1 FOR 10
+        sep.time [i] := time.diff [i] - time.diff [i-1]
+      --}}}
+
+      so.write.string (fs, ts, "Whetstone benchmark results*c*n*c*n")
+      so.write.string (fs, ts, "Usage: iserver /sb whetston.btl n*c*n")
+      so.write.string (fs, ts, "       where n is number of interrupts/sec*c*n")
+      --{{{  print time for modules
+      SEQ i = 0 FOR 11
+        SEQ
+          so.write.string(fs, ts, "Module :")
+          so.write.int(fs, ts, i+1, 0)
+          so.write.string(fs, ts, " = ")
+          so.write.int(fs, ts, sep.time [i]/10, 0)
+          so.write.string(fs, ts, ".")
+          so.write.int(fs, ts, sep.time [i]\10, 0)
+          so.write.string(fs, ts, " mS*c*n")
+      --}}}
+      --{{{  print total time
+      SEQ
+        so.write.string(fs, ts, "*c*nTotal time = ")
+        so.write.int(fs, ts, time.diff [10]/10, 0)
+        so.write.string(fs, ts, ".")
+        so.write.int(fs, ts, time.diff [10]\10, 0)
+        so.write.string(fs, ts, " mS*c*n")
+        -- The Whetstone rating is then given by   1/(total time * 1.0E-6)
+        so.write.int(fs, ts, 10000000 / time.diff [10], 6)
+        so.write.string(fs, ts, " KWhetstones")
+        IF
+          interrupts <> 0
+            SEQ
+              so.write.string(fs, ts, " at ")
+              so.write.int(fs, ts, interrupts, 0)
+              so.write.string(fs, ts, " interrupts/sec*c*n")
+          TRUE
+            so.write.string(fs, ts, "*c*n")
+      --}}}
+      so.exit(fs, ts, 0(INT32))
+:
+--}}}

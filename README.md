@@ -32,7 +32,7 @@ Changes
 **NOTE**: There is the excellent [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) from Gavin Crate. Otherwise here is the code. Good luck!
 
 
-pahihu,  8 / 3 / 2020
+pahihu,  12 / 3 / 2020
 
 
 
@@ -58,6 +58,7 @@ Command line arguments
             -s8                  Select T800 mode.
             -sm #bits            Memory size in address bits (default 21, 2Mbyte).
             -su                  Halt on not initialized memory read.
+            -sw "string"         Trigger execution trace on SP_WRITE (string).
             -sx [number]         Execution trace (4 - mem ld/st, 2 - iserver, 1 - instructions).
 
 

@@ -543,6 +543,8 @@ char *mnemonic(unsigned char icode, uint32_t oreg, uint32_t fpuentry)
                                 mnemo = bad;
                         }
                 }
+                else if (oreg == 0x17c)
+                        mnemo = "LDDEVID";
                 else if (oreg < 0xfa)
                         mnemo = Secondaries[oreg];
 
@@ -2566,6 +2568,11 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            BReg = CReg;
 		           IPtr++;
 		           break;
+                case 0x17c: /* XXX lddevid    */
+                           if (IsT800) /* TTH */
+                                BReg = CReg;
+                           IPtr++;
+                           break;
 		default  : 
 BadCode:
                            printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg, AReg));

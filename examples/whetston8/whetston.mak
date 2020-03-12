@@ -8,9 +8,9 @@ CC=icc
 DELETE=rm
 LIBOPT=
 OCCOPT=
-LINKOPT=-i
+LINKOPT=
 CONFOPT=
-OCONFOPT=-i
+OCONFOPT=
 COLLECTOPT=
 COPT=
 
@@ -20,7 +20,7 @@ COPT=
 whetston.btl: whetston.cfb 
 	$(COLLECT) whetston.cfb -o whetston.btl $(COLLECTOPT)
 
-whetston.cfb: whetston.pgm /Users/pahi/d7205/libs/hostio.inc whetston.c8h 
+whetston.cfb: whetston.pgm whetston.c8h 
 	$(OCONFIG) whetston.pgm -o whetston.cfb $(OCONFOPT)
 
 whetston.c8h: whetston.l8h whetston.t8h 
@@ -29,9 +29,6 @@ whetston.c8h: whetston.l8h whetston.t8h
 whet.t8h: whet.occ
 	$(OCCAM) whet -t8 -o whet.t8h
 
-whetston.t8h: whetston.occ /Users/pahi/d7205/libs/hostio.inc \
-               /Users/pahi/d7205/libs/hostio.lib \
-               /Users/pahi/d7205/libs/hostio.liu \
-               /Users/pahi/d7205/libs/convert.lib whet.t8h 
+whetston.t8h: whetston.occ whet.t8h 
 	$(OCCAM) whetston -t8 -h -o whetston.t8h $(OCCOPT)
 

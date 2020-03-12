@@ -23,10 +23,7 @@ sqrroots.b4h: sqrroots.c4h
 sqrroots.c4h: sqrroots.l4h sqrroots.t4h 
 	$(LINK) -f sqrroots.l4h -t4 -h -o sqrroots.c4h $(LINKOPT)
 
-sqrroots.t4h: sqrroots.occ /Users/Pahi/d7205/libs/hostio.inc \
-              /Users/Pahi/d7205/libs/hostio.lib \
-              /Users/Pahi/d7205/libs/hostio.liu \
-              /Users/Pahi/d7205/libs/convert.lib 
+sqrroots.t4h: sqrroots.occ
 	$(OCCAM) sqrroots -t4 -h -o sqrroots.t4h $(OCCOPT)
 
 clean  : delete

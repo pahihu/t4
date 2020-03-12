@@ -18,14 +18,15 @@ Non-goals
 Changes
 =======
 
+* D7214C C toolset successfully built hello example, added hello example in C
 * runs the T800 sqrroots example, added sqrroots source by Daniel Hyde
 * runs the T800 Whetstone benchmark
 * changed program arguments, memory size can be changed from the command line
 * runs the Minix demo (does NOT need a microcode emulator or an iserver supporting block operations)
 * D7205A occam 2 toolset successfully built hello example
 * itools directory contains D7205A environment setup and some tool scripts
-* `-sx` flag enables instruction execution tracing
-* `-sm` enables memory reference tracing
+* instruction execution tracing
+* memory reference tracing
 * fixed some process scheduling bugs
 * the simulator is ported to macOS/Linux 64bit architecture
 

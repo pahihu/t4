@@ -20,7 +20,7 @@ COPT=
 whetston.btl: whetston.cfb 
 	$(COLLECT) whetston.cfb -o whetston.btl $(COLLECTOPT)
 
-whetston.cfb: whetston.pgm /Users/pahi/d7205/libs/hostio.inc whetston.cah 
+whetston.cfb: whetston.pgm whetston.cah 
 	$(OCONFIG) whetston.pgm -o whetston.cfb $(OCONFOPT)
 
 whetston.cah: whetston.lah whetston.tah 
@@ -29,9 +29,6 @@ whetston.cah: whetston.lah whetston.tah
 whet.tau: whet.occ
 	$(OCCAM) whet -ta -o whet.tau
 
-whetston.tah: whetston.occ /Users/pahi/d7205/libs/hostio.inc \
-               /Users/pahi/d7205/libs/hostio.lib \
-               /Users/pahi/d7205/libs/hostio.liu \
-               /Users/pahi/d7205/libs/convert.lib whet.tau 
+whetston.tah: whetston.occ whet.tau 
 	$(OCCAM) whetston -ta -h -o whetston.tah $(OCCOPT)
 

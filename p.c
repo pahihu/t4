@@ -650,7 +650,7 @@ void mainloop (void)
                         start_process ();
 
 		/* Execute an instruction. */
-	Instruction = byte (IPtr);
+	Instruction = byte_int (IPtr);
 	Icode = Instruction & 0xf0;
 	Idata = Instruction & 0x0f;
 	OReg  = OReg | Idata;
@@ -921,7 +921,7 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 					        printf ("-I-EMUDBG: In(3): Transferring message from #%08X.\n", otherPtr);
 					for (loop=0;loop<AReg;loop++)
 					{
-						writebyte ((CReg + loop), byte (otherPtr + loop));
+						writebyte ((CReg + loop), byte_int (otherPtr + loop));
 					}
                                         CReg = CReg + BytesRead(CReg, AReg);
 					writeword (BReg, NotProcess_p);
@@ -1024,7 +1024,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                                         printf ("-I-EMUDBG: out(4): Ready, communicate.\n");
 						for (loop = 0;loop < AReg; loop++)
 						{
-							writebyte ((otherPtr + loop), byte (CReg + loop));
+							writebyte ((otherPtr + loop), byte_int (CReg + loop));
 						}
                                                 CReg = CReg + BytesRead(CReg, AReg);
 						writeword (BReg, NotProcess_p);
@@ -1750,7 +1750,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x4a: /* move        */
 			   for (temp=0;temp<AReg;temp++)
 			   {
-				writebyte ((BReg+temp), byte (CReg+temp));
+				writebyte_int ((BReg+temp), byte_int (CReg+temp));
 			   }
                            CReg = CReg + WordsRead(CReg, AReg) * BytesPerWord;
 			   IPtr++;
@@ -1912,8 +1912,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 {
                                         for (temp2 = 0; temp2 < m2dWidth; temp2++)
                                         {
-                                                pixel = byte (m2dSourceAddress + temp2);
-                                                writebyte (m2dDestAddress + temp2, pixel);
+                                                pixel = byte_int (m2dSourceAddress + temp2);
+                                                writebyte_int (m2dDestAddress + temp2, pixel);
                                         }
                                         m2dSourceAddress += m2dSourceStride;
                                         m2dDestAddress   += m2dDestStride;
@@ -1933,9 +1933,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 {
                                         for (temp2 = 0; temp2 < m2dWidth; temp2++)
                                         {
-                                                pixel = byte (m2dSourceAddress + temp2);
+                                                pixel = byte_int (m2dSourceAddress + temp2);
                                                 if (pixel)
-                                                        writebyte (m2dDestAddress + temp2, pixel);
+                                                        writebyte_int (m2dDestAddress + temp2, pixel);
                                         }
                                         m2dSourceAddress += m2dSourceStride;
                                         m2dDestAddress   += m2dDestStride;
@@ -1955,9 +1955,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 {
                                         for (temp2 = 0; temp2 < m2dWidth; temp2++)
                                         {
-                                                pixel = byte (m2dSourceAddress + temp2);
+                                                pixel = byte_int (m2dSourceAddress + temp2);
                                                 if (0 == pixel)
-                                                        writebyte (m2dDestAddress + temp2, pixel);
+                                                        writebyte_int (m2dDestAddress + temp2, pixel);
                                         }
                                         m2dSourceAddress += m2dSourceStride;
                                         m2dDestAddress   += m2dDestStride;
@@ -3223,7 +3223,7 @@ uint32_t word (uint32_t ptr)
         result = word_int (ptr);
 
         if (memdebug)
-                printf ("-I-EMUMEM: RD: Mem[%08X] ? %08X\n", ptr, result);
+                printf ("-I-EMUMEM: RW: Mem[%08X] ? %08X\n", ptr, result);
 
 #ifndef NDEBUG
         if ((memnotinit) && (result == WordUnknown_p))
@@ -3283,12 +3283,12 @@ void writeword (uint32_t ptr, uint32_t value)
         writeword_int (ptr, value);
 
         if (memdebug)
-                printf ("-I-EMUMEM: WR: Mem[%08X] ! %08X\n", ptr, value);
+                printf ("-I-EMUMEM: WW: Mem[%08X] ! %08X\n", ptr, value);
 }
 
 
 /* Read a byte from memory. */
-unsigned char byte (uint32_t ptr)
+unsigned char byte_int (uint32_t ptr)
 {
 	unsigned char result;
 
@@ -3304,8 +3304,19 @@ unsigned char byte (uint32_t ptr)
 	return (result);
 }
 
+unsigned char byte (uint32_t ptr)
+{
+        unsigned char result;
+
+        result = byte_int (ptr);
+        if (memdebug)
+                printf ("-I-EMUMEM: RB: Mem[%08X] ! %02X\n", ptr, result);
+
+        return result;
+}
+
 /* Write a byte to memory. */
-INLINE void writebyte (uint32_t ptr, unsigned char value)
+INLINE void writebyte_int (uint32_t ptr, unsigned char value)
 {
 	/* Write byte, ensuring memory reference is in range. */
         if (INT(ptr) < INT(ExtMemStart))
@@ -3315,6 +3326,14 @@ INLINE void writebyte (uint32_t ptr, unsigned char value)
                 ptr -= CoreSize;
 	        mem[(ptr & MemByteMask)] = value;
         }
+}
+
+void writebyte (uint32_t ptr, unsigned char value)
+{
+        if (memdebug)
+                printf ("-I-EMUMEM: WB: Mem[%08X] ! %02X\n", ptr, value);
+
+        writebyte_int (ptr, value);
 }
 
 /* Read a REAL32 from memory. */

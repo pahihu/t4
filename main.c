@@ -426,7 +426,7 @@ int main (int argc, char **argv)
 	}
 	for (temp2=0; temp2<temp; temp2++)
 	{
-		writebyte ((MemStart+temp2), getc (CopyIn));
+		writebyte_int ((MemStart+temp2), getc (CopyIn));
 	}
 	WPtr = MemStart + temp2;
 	while ((WPtr & 0x00000003) != 0x00000000)

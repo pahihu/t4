@@ -1,0 +1,62 @@
+#INCLUDE "hostio.inc" -- contains SP protocol
+PROC Newton2 (CHAN OF SP keyboard, screen, []INT user.buffer)
+  -- Pipeline examples based on "Occam Programming Manual", Inmos,
+  --                             Prentice Hall, 1984, section 2.8.
+  -- Computes square root of number by pipeline
+  -- of Newton Raphson iterations
+  -- Programmed by Dan Hyde, Bucknell University, June, 1987
+  -- updated Jan 5, 1991
+
+  #USE "hostio.lib"
+
+  PROC Controller (CHAN OF ANY Out, In)
+    -- read in real numbers and feed X and X/2 to input of pipeline
+    -- receive X and current estimate and print them
+    REAL32 X, Root :
+    BOOL error :
+    BOOL done :
+    SEQ
+      done := FALSE
+      WHILE NOT done
+        SEQ
+          so.write.string.nl (keyboard, screen, "Type in a value for X")
+          so.read.echo.real32 (keyboard, screen, X, error)
+          so.write.nl (keyboard, screen)
+          IF
+            X >= 0.0 (REAL32)
+              SEQ
+                Out ! X
+                Out ! X / 2.0 (REAL32)
+                                  -- wait to tompute the square root
+                In ? X
+                In ? Root
+                so.write.string (keyboard, screen, "Square root of ")
+                so.write.real32 (keyboard, screen, X, 4, 6)
+                so.write.string (keyboard, screen, " is ")
+                so.write.real32 (keyboard, screen, Root, 4, 6)
+                so.write.nl (keyboard, screen)
+            X < 0.0 (REAL32)
+              done := TRUE
+      so.exit (keyboard, screen, sps.success)
+  :  -- end of Controller
+
+  PROC NR (CHAN OF ANY In, Out)
+    -- read in X and current Estimate, compute next iteration and ship out
+    REAL32 X, Estimate :
+    WHILE TRUE
+      SEQ
+        In ? X
+        In ? Estimate
+        Out ! X
+        Out ! (Estimate + (X / Estimate)) / 2.0 (REAL32)
+  : -- end of NR
+
+  VAL N IS 4 :            -- number of iterations in pipeline
+  [N + 1] CHAN OF ANY Links :
+
+  PAR                     -- Harness
+    Controller (Links[0], Links[N])
+    PAR i = 0 FOR N
+      NR (Links[i], Links[i + 1])
+: -- end of Main
+

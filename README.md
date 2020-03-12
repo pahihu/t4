@@ -18,6 +18,7 @@ Non-goals
 Changes
 =======
 
+* runs the T800 sqrroots example, added sqrroots source by Daniel Hyde
 * runs the T800 Whetstone benchmark
 * changed program arguments, memory size can be changed from the command line
 * runs the Minix demo (does NOT need a microcode emulator or an iserver supporting block operations)

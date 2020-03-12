@@ -270,7 +270,7 @@ int server (void)
 			/* Move message to ToServerBuffer. */
 			for (loop1=0; loop1<Link0OutLength; loop1++)
 			{
-				ToServerBuffer[ToServerLen] = byte (Link0OutSource);
+				ToServerBuffer[ToServerLen] = byte_int (Link0OutSource);
 				ToServerLen++;
 				Link0OutSource++;
 				if (ToServerLen == 514)
@@ -336,7 +336,7 @@ int server (void)
                         dump_message ("Reply.", FromServerBuffer, FromServerLen);
 			while ((loop1 < Link0InLength) && (FromServerLen > 0))
 			{
-				writebyte (Link0InDest, FromServerBuffer[loop1]);
+				writebyte_int (Link0InDest, FromServerBuffer[loop1]);
 				Link0InDest++;
 				FromServerLen--;
 				loop1++;

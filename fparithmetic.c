@@ -444,7 +444,7 @@ REAL32 sn_binary (REAL32 fb, REAL32 fa, REAL32 (*opr)(REAL32, REAL32))
         BargSN = fb; AargSN = fa; sn_setbits (&ResultSN, NAN32_UNKNOWN);
 #endif
 
-        if (fp_nansn (fb) && fp_nansn (fb))
+        if (fp_nansn (fb) && fp_nansn (fa))
         {
                 fracb = fp_fracsn (fb);
                 fraca = fp_fracsn (fa);
@@ -458,7 +458,7 @@ REAL32 sn_binary (REAL32 fb, REAL32 fa, REAL32 (*opr)(REAL32, REAL32))
         else if (fp_nansn (fa))
                 return fa;
 
-        if (fp_infsn (fa) || fp_infsn (fb))
+        if (fp_infsn (fb) || fp_infsn (fa))
                 FP_Error = TRUE;
 
         result = opr(fb, fa);

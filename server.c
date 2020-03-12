@@ -96,6 +96,8 @@ extern int  copy;
 extern FILE *CopyIn;
 extern int  emudebug;
 extern int  msgdebug;
+extern char *dbgtrigger;
+extern void set_debug (void);
 
 extern int profiling;
 extern int32_t profile[10];
@@ -700,12 +702,12 @@ void sp_write (void)
 		        if (ToServerBuffer[pos] == 0x0d)
 			        ToServerBuffer[pos] = 0x00;
 
-        /* Minix demo debug
-        if (strncmp ((char *) &ToServerBuffer[9], "Loading boot monitor", 20) == 0)
+        if (dbgtrigger && (strncmp ((char *) &ToServerBuffer[9], dbgtrigger, strlen (dbgtrigger)) == 0))
         {
-                emudebug = TRUE; msgdebug = TRUE;
+                set_debug ();
+                dbgtrigger = NULL;
         }
-        */
+
 	length = fwrite ((&ToServerBuffer[9]), 1, datalen, fd);
 
 	/* Must flush screen output. Strange standard. */

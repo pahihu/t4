@@ -75,6 +75,7 @@ int emudebug    = FALSE;
 int memdebug    = FALSE;
 int memnotinit  = FALSE;
 int msgdebug    = FALSE;
+char *dbgtrigger = NULL;
 
 extern int32_t quit;
 extern int32_t quitstatus;
@@ -112,6 +113,12 @@ struct termios t_poll;
 enum {INIT, GETK, POLL} t_state;
 #endif
 
+void set_debug (void)
+{
+        emudebug = (tracing & 1) ? TRUE : FALSE;
+        msgdebug = (tracing & 2) ? TRUE : FALSE;
+        memdebug = (tracing & 4) ? TRUE : FALSE;
+}
 
 #ifdef __MWERKS__
 void main(void)
@@ -153,6 +160,7 @@ int main (int argc, char **argv)
                 printf("    -s8                  Select T800 mode.\n");
                 printf("    -sm #bits            Memory size in address bits (default 21, 2Mbyte).\n");
                 printf("    -su                  Halt on not initialized memory read.\n");
+                printf("    -sw \"string\"         Trigger execution trace on SP_WRITE (string).\n");
                 printf("    -sx [number]         Execution trace (4 - mem ld/st, 2 - iserver, 1 - instructions).\n");
 		printf("\n");
 		handler (-1);
@@ -331,6 +339,22 @@ int main (int argc, char **argv)
 					  }
 					  else memnotinit=true;
 					  break;
+				case 'w': if (argv[arg][3]!='\0')
+					  {
+						strcat (CommandLineMost, argv[arg]);
+						strcat (CommandLineMost, " ");
+					  }
+					  else
+					  {
+						arg++;
+						if (arg>=argc)
+						{
+							printf("\nMissing string after -sw\n");
+							handler (-1);
+						}
+                                                dbgtrigger = argv[arg];
+					  }
+					  break;
 				case 'x': if (argv[arg][3]!='\0')
 					  {
 						strcat (CommandLineMost, argv[arg]);
@@ -354,9 +378,6 @@ int main (int argc, char **argv)
 							        handler (-1);
                                                         }
 						}
-                                                emudebug = (tracing & 1) ? TRUE : FALSE;
-                                                msgdebug = (tracing & 2) ? TRUE : FALSE;
-                                                memdebug = (tracing & 4) ? TRUE : FALSE;
 					  }
 					  break;
 				default : strcat(CommandLineMost, argv[arg]);
@@ -399,6 +420,9 @@ int main (int argc, char **argv)
 		printf ("\nFailed to allocate %dK of external memory!\n", MemSize / 1024);
 		exit (-1);
 	}
+
+        if (tracing && (dbgtrigger == NULL))
+                set_debug ();
 
         if (emudebug)
         {

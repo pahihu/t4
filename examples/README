@@ -11,6 +11,7 @@ The Minix demo and the Whetstone-benchmark is from Ram's Transputer Home page (h
 
 minix-demo/
 whetston/
+whetston8/
 
 
 The following file is from Daniel Hyde's "Introduction to the Programming Language Occam", Mar 20, 1995:

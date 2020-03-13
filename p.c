@@ -158,6 +158,7 @@ uint32_t IntEnabled;            /* Interrupt enabled */
 #define GetDescWPtr(wdesc)      ((wdesc) & 0xfffffffe)
 
 #define BytesPerWord            4
+#define ByteSelectMask          0x00000003
 #define WordsRead(addr,len)     (((addr&(BytesPerWord-1))?1:0)+(len+(BytesPerWord-1))/BytesPerWord)
 #define BytesRead(addr,len)     (WordsRead(addr,len)*BytesPerWord)
 
@@ -607,11 +608,20 @@ void init_processor (void)
 #define FLAG(x,y)       ((x) ? (y) : '-')
 
 
-void checkWPtr (uint32_t wptr)
+void checkWPtr (char *where, uint32_t wptr)
 {
-        if (wptr & 3)
+        if (wptr & ByteSelectMask)
         {
-                printf ("-E-EMU414: Error - byte selector of WPtr should be zero!\n");
+                printf ("-E-EMU414: Error - byte selector of WPtr should be zero! (%s)\n", where);
+                handler (-1);
+        }
+}
+
+void checkWordAligned (char *where, uint32_t ptr)
+{
+        if (ptr & ByteSelectMask)
+        {
+                printf ("-E-EMU414: Error - byte selector of register should be zero! (%s)\n", where);
                 handler (-1);
         }
 }
@@ -740,6 +750,7 @@ void mainloop (void)
 			   IPtr++;
 			   break;
 		case 0x30: /* ldnl  */
+                           checkWordAligned ("ldnl", AReg);
 			   AReg = word (index (AReg, OReg));
 			   IPtr++;
 			   OReg = 0; IntEnabled = TRUE;
@@ -752,6 +763,7 @@ void mainloop (void)
 			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0x50: /* ldnlp */
+                           checkWordAligned ("ldnlp", AReg);
 			   AReg = index (AReg, OReg);
 			   IPtr++;
 			   OReg = 0; IntEnabled = TRUE;
@@ -825,6 +837,7 @@ void mainloop (void)
 			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0xe0: /* XXX stnl  */
+                           checkWordAligned ("stnl", AReg);
 			   writeword (index (AReg, OReg), BReg);
 			   AReg = CReg;
 			   IPtr++;
@@ -865,7 +878,7 @@ void mainloop (void)
 
 				/* Do successor process. */
 				WPtr = AReg;
-                                checkWPtr (WPtr);
+                                checkWPtr ("endp", WPtr);
 				IPtr = word (index (AReg, 0));
 			   }
 			   else
@@ -929,7 +942,7 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 				{
 					/* Ready. */
                                         otherWPtr = GetDescWPtr(otherWdesc);
-                                        checkWPtr (otherWPtr);
+                                        checkWPtr ("in", otherWPtr);
 					otherPtr = word (index (otherWPtr, Pointer_s));
                                         if (msgdebug || emudebug)
 					        printf ("-I-EMUDBG: In(3): Transferring message from #%08X.\n", otherPtr);
@@ -1103,7 +1116,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				{
 					/* Ready. */
                                         otherWPtr = GetDescWPtr(otherWdesc);
-                                        checkWPtr (otherWPtr);
+                                        checkWPtr ("outbyte", otherWPtr);
 					altState = otherPtr = word (index (otherWPtr, Pointer_s));
 					if ((altState & 0xfffffffc) == MostNeg)
 					{
@@ -1177,7 +1190,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				{
 					/* Ready. */
                                         otherWPtr = GetDescWPtr(otherWdesc);
-                                        checkWPtr (otherWPtr);
+                                        checkWPtr ("outword", otherWPtr);
 					altState = otherPtr =  word (index (otherWPtr, State_s));
 					if ((altState & 0xfffffffc) == MostNeg)
 					{
@@ -1545,7 +1558,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   IPtr++;
 			   break;
 		case 0x34: /* bcnt        */
-			   AReg = AReg * 4;
+			   AReg = AReg * BytesPerWord;
 			   IPtr++;
 			   break;
 		case 0x35: /* lshr        */
@@ -1580,7 +1593,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   schedule (AReg);
 			   break;
 		case 0x3a: /* XXX xword       */
-			   if ((AReg>BReg) && (INT(BReg) >= 0))
+                           if ((AReg>BReg) && (INT(BReg) >= 0))
 			   {
 				AReg = BReg;
 			   }
@@ -1599,10 +1612,10 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   break;
 		case 0x3c: /* gajw        */
                            /* XXX: proc prio toggle trick of AReg lsb=1       */
+                           checkWordAligned ("gajw", AReg);
 			   temp = AReg;
 			   AReg = WPtr;
 			   WPtr = temp;
-                           checkWPtr (WPtr);
 			   IPtr++;
 			   break;
 		case 0x3d: /* savel       */
@@ -1621,7 +1634,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   break;
 		case 0x3f: /* XXX wcnt        */
 			   CReg = BReg;
-			   BReg = AReg & 0x00000003;
+			   BReg = AReg & ByteSelectMask;
 			   AReg = AReg >> 2;
 			   IPtr++;
 			   break;
@@ -1696,12 +1709,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                     (word (index (WPtr, TLink_s)) == TimeSet_p) &&
                                     (INT(BReg - word (index (WPtr, Time_s))) >= 0))
 			   {
-                                if (INT(BReg - word (index (WPtr, Time_s))) >= 0)
-                                {
-                                        if (emudebug)
-				                printf ("-I-EMUDBG: enbt(2): Time already set earlier than or equal to this one.\n");
-				        /* ALT time is before this guard's time. Ignore. */
-                                }
+                                if (emudebug)
+				        printf ("-I-EMUDBG: enbt(2): Time already set earlier than or equal to this one.\n");
+				/* ALT time is before this guard's time. Ignore. */
 			   }
 			   else if ((AReg == true_t) && (word (index (WPtr, TLink_s)) == TimeSet_p))
 			   {
@@ -2141,7 +2151,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x82: /* XXX fpldnldbi    */
 		           if (IsT414)
 		               goto BadCode;
-                           fp_pushdb (real64 (index (AReg, BReg)));
+                           fp_pushdb (real64 (index (AReg, 2*BReg)));
                            AReg = CReg;
 		           IPtr++;
 		           break;
@@ -2670,7 +2680,7 @@ void schedule (uint32_t wdesc)
 
 		ProcPriority = HiPriority;
 		WPtr = wptr;
-                checkWPtr (WPtr);
+                checkWPtr ("Schedule", WPtr);
 		IPtr = word (index (WPtr, Iptr_s));
 
 	}
@@ -2801,7 +2811,7 @@ int run_process (void)
 	{
 		/* Return to interrupted LoPriority process. */
 		WPtr = GetDescWPtr(word (index (MostNeg, 11)));
-                checkWPtr (WPtr);
+                checkWPtr ("RunProcess(1)", WPtr);
 		IPtr = word (index (MostNeg, 12));
 		AReg = word (index (MostNeg, 13));
 		BReg = word (index (MostNeg, 14));
@@ -2828,7 +2838,7 @@ int run_process (void)
 		{
 			/* Only one process in list. */
 			WPtr = ptr;
-                        checkWPtr (WPtr);
+                        checkWPtr ("RunProcess(2)", WPtr);
 
 			/* Get Iptr. */
 			IPtr = word (index (WPtr, Iptr_s));
@@ -2847,7 +2857,7 @@ int run_process (void)
 		{
 			/* List. */
 			WPtr = ptr;
-                        checkWPtr (WPtr);
+                        checkWPtr ("RunProcess(3)", WPtr);
 
 			/* Get Iptr. */
 			IPtr = word (index (WPtr, Iptr_s));

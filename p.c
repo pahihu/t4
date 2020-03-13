@@ -72,7 +72,8 @@ uint32_t MemSize     = 1 << 21;
 uint32_t MemWordMask = ((uint32_t)0x001ffffc);
 uint32_t MemByteMask = ((uint32_t)0x001fffff);
 
-#define WordUnknown_p   ((uint32_t)0x2ffa2ffa)
+#define InvalidInstr_p  ((uint32_t)0x2ffa2ffa)
+#define Undefined_p     ((uint32_t)0xdeadbeef)
 
 uint32_t word_int (uint32_t);
 
@@ -567,10 +568,10 @@ void init_memory (void)
 
 #ifndef NDEBUG
         for (i = 0; i < CoreSize; i += 4)
-                writeword_int (MostNeg + i, WordUnknown_p);
+                writeword_int (MostNeg + i, InvalidInstr_p);
 
         for (i = 0; i < MemSize; i += 4)
-                writeword_int (ExtMemStart + i, WordUnknown_p);
+                writeword_int (ExtMemStart + i, InvalidInstr_p);
 #endif
 }
 
@@ -645,7 +646,7 @@ void mainloop (void)
         prevFPInstr = FALSE;
         instrBytes  = 0;
         asmLines    = 0;
-        m2dSourceStride = m2dDestStride = m2dLength = 0xdeadbeef;
+        m2dSourceStride = m2dDestStride = m2dLength = Undefined_p;
 
         init_processor ();
 
@@ -659,8 +660,8 @@ void mainloop (void)
 	while (1)
 	{
 #ifndef NDEBUG
-                temp = temp2 = 0xdeadbeef;
-                otherWdesc = otherWPtr = otherPtr = altState = 0xdeadbeef;
+                temp = temp2 = Undefined_p;
+                otherWdesc = otherWPtr = otherPtr = altState = Undefined_p;
 #endif
                 /* Save current value of Error flag */
                 PrevError = ReadError;
@@ -948,7 +949,7 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 					        printf ("-I-EMUDBG: In(3): Transferring message from #%08X.\n", otherPtr);
 					for (loop=0;loop<AReg;loop++)
 					{
-						writebyte ((CReg + loop), byte_int (otherPtr + loop));
+					        writebyte ((CReg + loop), byte_int (otherPtr + loop));
 					}
                                         CReg = CReg + BytesRead(CReg, AReg);
 					writeword (BReg, NotProcess_p);
@@ -1775,11 +1776,18 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   IPtr++;
 			   break;
 		case 0x4a: /* move        */
-			   for (temp=0;temp<AReg;temp++)
-			   {
-				writebyte_int ((BReg+temp), byte_int (CReg+temp));
-			   }
-                           CReg = CReg + WordsRead(CReg, AReg) * BytesPerWord;
+                           if (INT(AReg) > 0)
+                           {
+			        for (temp=0;temp<AReg;temp++)
+			        {
+				        writebyte_int ((BReg+temp), byte_int (CReg+temp));
+			        }
+                                CReg = CReg + WordsRead(CReg, AReg) * BytesPerWord;
+                           }
+                           else
+                           {
+                                AReg = BReg = CReg = Undefined_p;
+                           }
 			   IPtr++;
 			   break;
 		case 0x4b: /* or          */
@@ -1947,7 +1955,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 }
                            }
 #ifndef NDEBUG
-                           m2dSourceStride = m2dDestStride = m2dLength = 0xdeadbeef;
+                           m2dSourceStride = m2dDestStride = m2dLength = Undefined_p;
 #endif
 		           IPtr++;
 		           break;
@@ -1969,7 +1977,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 }
                            }
 #ifndef NDEBUG
-                           m2dSourceStride = m2dDestStride = m2dLength = 0xdeadbeef;
+                           m2dSourceStride = m2dDestStride = m2dLength = Undefined_p;
 #endif
 		           IPtr++;
 		           break;
@@ -1991,7 +1999,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 }
                            }
 #ifndef NDEBUG
-                           m2dSourceStride = m2dDestStride = m2dLength = 0xdeadbeef;
+                           m2dSourceStride = m2dDestStride = m2dLength = Undefined_p;
 #endif
 		           IPtr++;
 		           break;
@@ -3262,7 +3270,7 @@ uint32_t word (uint32_t ptr)
                 printf ("-I-EMUMEM: RW: Mem[%08X] ? %08X\n", ptr, result);
 
 #ifndef NDEBUG
-        if ((memnotinit) && (result == WordUnknown_p))
+        if ((memnotinit) && (result == InvalidInstr_p))
                 word_notinit ();
 #endif
 	return (result);

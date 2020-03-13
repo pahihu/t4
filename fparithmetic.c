@@ -736,13 +736,13 @@ REAL32 fp_norounddb (REAL64 fp)
         exp  = fp_expdb (fp);
         frac = fp_fracdb (fp);
 
-        if (exp > 1024) exp -= 2048;
+        exp -= 1023;
         if ((exp < -126) || (exp > 127))
         {
-                exp = 127;
+                exp = 128;
                 frac = 0;
         }
-        exp = (exp + 128) & 0xff;;
+        exp = (exp + 127) & 0xff;
         r32.bits = (sign ? REAL32_SIGN : 0) + 
                    (REAL32_EXP  & (exp  << 23)) +
                    (REAL32_FRAC & (frac >> 29));

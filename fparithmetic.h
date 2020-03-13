@@ -37,6 +37,7 @@ extern REAL32 Real32UndefinedNaN;
 extern REAL32 Real32UnstableNaN;
 extern REAL32 Real32InexactNaN;
 extern REAL32 Real32Zero;
+extern REAL32 Real32Undefined_p;
 
 
 /*
@@ -49,6 +50,7 @@ extern REAL64 Real64UnstableNaN;
 extern REAL64 Real64InexactNaN;
 extern REAL64 Real64Zero;
 extern REAL32 Real32ConversionNaN;
+extern REAL64 Real64Undefined_p;
 
 
 /*

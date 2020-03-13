@@ -182,6 +182,7 @@ int count3;
 int timeslice;
 int32_t quit = FALSE;
 int32_t quitstatus;
+uint32_t InstrCount;            /* Instruction count */
 
 /* XXX Wdesc contains MostNeg + 1 in idle state */
 #define Wdesc   (WPtr | ProcPriority)
@@ -232,6 +233,19 @@ uint32_t t4_bitreverse (uint32_t x)
 }
 #endif
 
+void fp_drop (void)
+{
+        FAReg = FBReg;
+        FBReg = FCReg;
+        FCReg.type = FP_UNKNOWN;
+}
+
+void fp_drop2 (void)
+{
+        FAReg = FCReg;
+        FBReg.type = FP_UNKNOWN;
+        FCReg.type = FP_UNKNOWN;
+}
 
 /* Pop a REAL64 from the floating point stack. */
 void fp_popdb (REAL64 *fp)
@@ -239,11 +253,11 @@ void fp_popdb (REAL64 *fp)
         if (FAReg.type == FP_REAL64)
                 *fp = FAReg.u.db;
         else
-                *fp = 0.0;
-
-        FAReg = FBReg;
-        FBReg = FCReg;
-        FCReg.type = FP_UNKNOWN;
+        {
+                printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fp_popdb)\n");
+                *fp = Real64Undefined_p;
+        }
+        fp_drop ();
 }
 
 
@@ -257,8 +271,9 @@ void fp_peek2db (REAL64 *fb, REAL64 *fa)
         }
         else
         {
-                *fb = 0.0;
-                *fa = 0.0;
+                printf ("-W-EMUFPU: Warning - FBReg/FAReg are not REAL64! (fp_peek2db)\n");
+                *fb = Real64Undefined_p;
+                *fa = Real64Undefined_p;
         }
 }
 
@@ -267,9 +282,7 @@ void fp_peek2db (REAL64 *fb, REAL64 *fa)
 void fp_pop2db (REAL64 *fb, REAL64 *fa)
 {
         fp_peek2db (fb, fa);
-        FAReg = FCReg;
-        FBReg.type = FP_UNKNOWN;
-        FCReg.type = FP_UNKNOWN;
+        fp_drop2 ();
 }
 
 
@@ -289,10 +302,11 @@ void fp_popsn (REAL32 *fp)
         if (FP_REAL32 == FAReg.type)
                 *fp = FAReg.u.sn;
         else
-                *fp = 0.0F;
-        FAReg = FBReg;
-        FBReg = FCReg;
-        FCReg.type = FP_UNKNOWN;
+        {
+                printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fp_popsn)\n");
+                *fp = Real32Undefined_p;
+        }
+        fp_drop ();
 }
 
 
@@ -306,8 +320,9 @@ void fp_peek2sn (REAL32 *fb, REAL32 *fa)
         }
         else
         {
-                *fb = 0.0F;
-                *fa = 0.0F;
+                printf ("-W-EMUFPU: Warning - FBReg/FAReg are not REAL64!\n");
+                *fb = Real32Undefined_p;
+                *fa = Real32Undefined_p;
         }
 }
 
@@ -316,9 +331,7 @@ void fp_peek2sn (REAL32 *fb, REAL32 *fa)
 void fp_pop2sn (REAL32 *fb, REAL32 *fa)
 {
         fp_peek2sn (fb, fa);
-        FAReg = FCReg;
-        FBReg.type = FP_UNKNOWN;
-        FCReg.type = FP_UNKNOWN;
+        fp_drop2 ();
 }
 
 
@@ -350,8 +363,9 @@ void fp_dobinary (REAL64 (*dbop)(REAL64,REAL64), REAL32 (*snop)(REAL32,REAL32))
                         break;
                 default       :
                         /* Just pop 2 items and set FAReg to unknown. */
-                        fp_pop2db (&dbtemp1, &dbtemp2);
-                        fp_pushdb (0.0);
+                        printf ("-W-EMUFPU: Warning - FAReg is undefined! (fp_dobinary)\n");
+                        fp_drop2 ();
+                        fp_pushdb (Real64Undefined_p);
                         FAReg.type = FP_UNKNOWN;
                         break;
         }
@@ -377,7 +391,8 @@ int fp_binary2word (int (*dbop)(REAL64,REAL64), int (*snop)(REAL32,REAL32))
                         break;
                 default       :
                         /* Just pop 2 items and set FAReg to unknown. */
-                        fp_pop2db (&dbtemp1, &dbtemp2);
+                        printf ("-W-EMUFPU: Warning - FAReg is undefined! (fp_binary2word)\n");
+                        fp_drop2 ();
                         result = FALSE;
                         break;
         }
@@ -403,8 +418,9 @@ void fp_dounary (REAL64 (*dbop)(REAL64), REAL32 (*snop)(REAL32))
                         break;
                 default       :
                         /* Just pop 2 items and set FAReg to unknown. */
-                        fp_popdb (&dbtemp);
-                        fp_pushdb (0.0);
+                        printf ("-W-EMUFPU: Warning - FAReg is undefined! (fp_dounary)\n");
+                        fp_drop ();
+                        fp_pushdb (Real64Undefined_p);
                         FAReg.type = FP_UNKNOWN;
                         break;
         }
@@ -657,11 +673,18 @@ void mainloop (void)
 	Timers = TimersStop;
 
 
+        InstrCount = 0;
 	while (1)
 	{
+/*
+                if (++InstrCount > 61396800)
+                        emudebug = TRUE;
+*/
 #ifndef NDEBUG
                 temp = temp2 = Undefined_p;
                 otherWdesc = otherWPtr = otherPtr = altState = Undefined_p;
+                dbtemp1 = dbtemp2 = Real64Undefined_p;
+                sntemp1 = sntemp2 = Real32Undefined_p;
 #endif
                 /* Save current value of Error flag */
                 PrevError = ReadError;
@@ -2175,7 +2198,13 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x84: /* XXX fpstnldb    */
 		           if (IsT414)
 		               goto BadCode;
-                           fp_popdb (&dbtemp1);
+                           if (FAReg.type == FP_REAL64)
+                                fp_popdb (&dbtemp1);
+                           else
+                           {
+                                printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpstnldb)\n");
+                                dbtemp1 = Real64Undefined_p;
+                           }
                            writereal64 (AReg, dbtemp1);
                            AReg = BReg;
                            BReg = CReg;
@@ -2197,7 +2226,13 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x88: /* XXX fpstnlsn    */
 		           if (IsT414)
 		               goto BadCode;
-                           fp_popsn (&sntemp1);
+                           if (FAReg.type == FP_REAL32)
+                                fp_popsn (&sntemp1);
+                           else
+                           {
+                                printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fpstnlsn)\n");
+                                sntemp1 = Real32Undefined_p;
+                           }
                            writereal32 (AReg, sntemp1);
                            AReg = BReg;
                            BReg = CReg;
@@ -2264,6 +2299,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 temp = fp_nandb (FAReg.u.db);
                            else if (FAReg.type == FP_REAL32)
                                 temp = fp_nansn (FAReg.u.sn);
+                           else
+                                printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpnan)\n");
                            CReg = BReg;
                            BReg = AReg;
                            AReg = temp ? true_t : false_t;
@@ -2283,6 +2320,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 fp_peek2sn (&sntemp1, &sntemp2);
                                 temp = fp_orderedsn (sntemp1, sntemp2);
                            }
+                           else
+                                printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpordered)\n");
                            CReg = BReg;
                            BReg = AReg;
                            AReg = temp;
@@ -2296,6 +2335,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 temp = fp_notfinitedb (FAReg.u.db);
                            else if (FAReg.type == FP_REAL32)
                                 temp = fp_notfinitesn (FAReg.u.sn);
+                           else
+                                printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpnotfinite)\n");
                            CReg = BReg;
                            BReg = AReg;
                            AReg = temp ? true_t : false_t;
@@ -2366,8 +2407,19 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		               goto BadCode;
                            if (FAReg.type == FP_REAL64)
                                 FAReg.u.db = fp_rtoi32db (FAReg.u.db);
-                           else
+                           else if (FAReg.type == FP_REAL32)
                                 FAReg.u.sn = fp_rtoi32sn (FAReg.u.sn);
+                           else
+                           {
+                                printf ("-W-EMUFPU: Warning - FAReg is undefined! (fprtoi32)\n");
+                                /*
+                                if (emudebug == FALSE)
+                                        printf ("InstrCount = %u\n", InstrCount);
+                                emudebug = TRUE;
+                                */
+                                FAReg.type = FP_UNKNOWN;
+                                FAReg.u.sn = Real32Undefined_p;
+                           }
 		           IPtr++;
 		           break;
 		case 0x9e: /* XXX fpstnli32    */
@@ -2378,10 +2430,16 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 fp_popdb (&dbtemp1);
                                 temp = fp_stnli32db (dbtemp1);
                            }
-                           else
+                           else if (FAReg.type == FP_REAL32)
                            {
                                 fp_popsn (&sntemp1);
                                 temp = fp_stnli32sn (sntemp1);
+                           }
+                           else
+                           {
+                                printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpstnli32)\n");
+                                fp_drop ();
+                                temp = Undefined_p;
                            }
                            writeword (AReg, temp);
                            AReg = BReg;
@@ -2409,8 +2467,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 FAReg.u.sn = fp_intsn (FAReg.u.sn);
                            else
                            {
+                                printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpint)\n");
                                 FAReg.type = FP_UNKNOWN;
-                                FAReg.u.db = 0.0;
+                                FAReg.u.db = Real64Undefined_p;
                            }
 		           IPtr++;
 		           break;
@@ -2437,8 +2496,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 FAReg.u.db = fp_adddb (FAReg.u.db, dbtemp1);
                            else
                            {
+                                printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpldnladddb)\n");
                                 FAReg.type = FP_UNKNOWN;
-                                FAReg.u.db = 0.0;
+                                FAReg.u.db = Real64Undefined_p;
                            }
                            AReg = BReg;
                            BReg = CReg;
@@ -2452,8 +2512,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 FAReg.u.db = fp_muldb (FAReg.u.db, dbtemp1);
                            else
                            {
+                                printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpldnlmuldb)\n");
                                 FAReg.type = FP_UNKNOWN;
-                                FAReg.u.db = 0.0;
+                                FAReg.u.db = Real64Undefined_p;
                            }
                            AReg = BReg;
                            BReg = CReg;
@@ -2467,8 +2528,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 FAReg.u.sn = fp_addsn (FAReg.u.sn, sntemp1);
                            else
                            {
+                                printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fpldnladdsn)\n");
                                 FAReg.type = FP_UNKNOWN;
-                                FAReg.u.db = 0.0;
+                                FAReg.u.sn = Real32Undefined_p;
                            }
                            AReg = BReg;
                            BReg = CReg;
@@ -2489,8 +2551,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                           FAReg.u.sn =fp_sqrtfirstsn (FAReg.u.sn);
                                       else
                                       {
+                                          printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpusqrtfirst)\n");
                                           FAReg.type = FP_UNKNOWN;
-                                          FAReg.u.db = 0.0;
+                                          FAReg.u.db = Real64Undefined_p;
                                       }
                                       FBReg.type = FP_UNKNOWN;
                                       FCReg.type = FP_UNKNOWN;
@@ -2522,8 +2585,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                       }
                                       else
                                       {
+                                          printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fpur32tor64)\n");
                                           FAReg.type = FP_UNKNOWN;
-                                          FAReg.u.db = 0.0;
+                                          FAReg.u.db = Real64Undefined_p;
                                       }
 			              break;
 			   case 0x08: /* XXX fpur64tor32    */
@@ -2534,8 +2598,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                       }
                                       else
                                       {
+                                          printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpur64tor32)\n");
                                           FAReg.type = FP_UNKNOWN;
-                                          FAReg.u.sn = 0.0F;
+                                          FAReg.u.sn = Real32Undefined_p;
                                       }
 			              break;
 			   case 0x09: /* XXX fpuexpdec32    */
@@ -2548,20 +2613,33 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                       fp_dounary (fp_absdb, fp_abssn);
 			              break;
 			   case 0x0d: /* XXX fpunoround    */
-                                      FAReg.type = FP_REAL32;
-                                      FAReg.u.sn = fp_norounddb (FAReg.u.db);
+                                      if (FAReg.type == FP_REAL64)
+                                      {
+                                          FAReg.type = FP_REAL32;
+                                          FAReg.u.sn = fp_norounddb (FAReg.u.db);
+                                      }
+                                      else
+                                      {
+                                          printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpunoround)\n");
+                                          FAReg.type = FP_UNKNOWN;
+                                          FAReg.u.sn = Real32Undefined_p;
+                                      }
 			              break;
 			   case 0x0e: /* XXX fpuchki32    */
                                       if (FAReg.type == FP_REAL64)
                                           fp_chki32db (FAReg.u.db);
-                                      else
+                                      else if (FAReg.type == FP_REAL32)
                                           fp_chki32sn (FAReg.u.sn);
+                                      else
+                                          printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpuchki32)\n");
 			              break;
 			   case 0x0f: /* XXX fpuchki64    */
                                       if (FAReg.type == FP_REAL64)
                                           fp_chki64db (FAReg.u.db);
-                                      else
+                                      else if (FAReg.type == FP_REAL32)
                                           fp_chki64sn (FAReg.u.sn);
+                                      else
+                                          printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpuchki64)\n");
 			              break;
 			   case 0x11: /* XXX fpudivby2    */
                                       fp_dounary (fp_divby2db, fp_divby2sn);
@@ -2594,8 +2672,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 FAReg.u.sn = fp_mulsn (FAReg.u.sn, sntemp1);
                            else
                            {
+                                printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fpldnlmulsn)\n");
                                 FAReg.type = FP_UNKNOWN;
-                                FAReg.u.db = 0.0;
+                                FAReg.u.sn = Real32Undefined_p;
                            }
                            AReg = BReg;
                            BReg = CReg;

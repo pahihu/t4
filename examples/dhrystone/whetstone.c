@@ -55,23 +55,38 @@ C**********************************************************************
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
 
-/* the following is optional depending on the timing function used */
-#include <time.h>
+#ifndef REALPREC
+#define REALPREC   8
+#endif
 
 /* map the FORTRAN math functions, etc. to the C versions */
+#if REALPREC == 4
+#include <mathf.h>
+#define DSIN	sinf
+#define DCOS	cosf
+#define DATAN	atanf
+#define DLOG	logf
+#define DEXP	expf
+#define DSQRT	sqrtf
+#define REAL    float
+#define prec    "single"
+#else
+#include <math.h>
+#define REAL    double
 #define DSIN	sin
 #define DCOS	cos
 #define DATAN	atan
 #define DLOG	log
 #define DEXP	exp
 #define DSQRT	sqrt
+#define prec    "double"
+#endif
+
 #define IF		if
 
-#ifndef REAL
-#define REAL    double
-#endif
+/* the following is optional depending on the timing function used */
+#include <time.h>
 
 /* function prototypes */
 void POUT(long N, long J, long K, REAL X1, REAL X2, REAL X3, REAL X4);
@@ -131,9 +146,9 @@ C
 C	The actual benchmark starts here.
 C
 */
-	T  = .499975;
-	T1 = 0.50025;
-	T2 = 2.0;
+	T  = (REAL) 0.499975;
+	T1 = (REAL) 0.50025;
+	T2 = (REAL) 2.0;
 /*
 C
 C	With loopcount LOOP=10, one million Whetstone instructions
@@ -163,10 +178,10 @@ C
 C	Module 1: Simple identifiers
 C
 */
-	X1  =  1.0;
-	X2  = -1.0;
-	X3  = -1.0;
-	X4  = -1.0;
+	X1  = (REAL) 1.0;
+	X2  = (REAL)-1.0;
+	X3  = (REAL)-1.0;
+	X4  = (REAL)-1.0;
 
 	for (I = 1; I <= N1; I++) {
 	    X1 = (X1 + X2 + X3 - X4) * T;
@@ -183,10 +198,10 @@ C
 C	Module 2: Array elements
 C
 */
-	E1[1] =  1.0;
-	E1[2] = -1.0;
-	E1[3] = -1.0;
-	E1[4] = -1.0;
+	E1[1] = (REAL) 1.0;
+	E1[2] = (REAL)-1.0;
+	E1[3] = (REAL)-1.0;
+	E1[4] = (REAL)-1.0;
 
 	for (I = 1; I <= N2; I++) {
 	    E1[1] = ( E1[1] + E1[2] + E1[3] - E1[4]) * T;
@@ -253,8 +268,8 @@ C
 	    J = J * (K-J) * (L-K);
 	    K = L * K - (L-J) * K;
 	    L = (L-K) * (K+J);
-	    E1[L-1] = J + K + L;
-	    E1[K-1] = J * K * L;
+	    E1[L-1] = (REAL) (J + K + L);
+	    E1[K-1] = (REAL) (J * K * L);
 	}
 
 #ifdef PRINTOUT
@@ -266,12 +281,12 @@ C
 C	Module 7: Trigonometric functions
 C
 */
-	X = 0.5;
-	Y = 0.5;
+	X = (REAL) 0.5;
+	Y = (REAL) 0.5;
 
 	for (I = 1; I <= N7; I++) {
-		X = T * DATAN(T2*DSIN(X)*DCOS(X)/(DCOS(X+Y)+DCOS(X-Y)-1.0));
-		Y = T * DATAN(T2*DSIN(Y)*DCOS(Y)/(DCOS(X+Y)+DCOS(X-Y)-1.0));
+		X = T * DATAN(T2*DSIN(X)*DCOS(X)/(DCOS(X+Y)+DCOS(X-Y)-(REAL)1.0));
+		Y = T * DATAN(T2*DSIN(Y)*DCOS(Y)/(DCOS(X+Y)+DCOS(X-Y)-(REAL)1.0));
 	}
 
 #ifdef PRINTOUT
@@ -283,9 +298,9 @@ C
 C	Module 8: Procedure calls
 C
 */
-	X = 1.0;
-	Y = 1.0;
-	Z = 1.0;
+	X = (REAL) 1.0;
+	Y = (REAL) 1.0;
+	Z = (REAL) 1.0;
 
 	for (I = 1; I <= N8; I++)
 		P3(X,Y,&Z);
@@ -302,9 +317,9 @@ C
 	J = 1;
 	K = 2;
 	L = 3;
-	E1[1] = 1.0;
-	E1[2] = 2.0;
-	E1[3] = 3.0;
+	E1[1] = (REAL)1.0;
+	E1[2] = (REAL)2.0;
+	E1[3] = (REAL)3.0;
 
 	for (I = 1; I <= N9; I++)
 		P0();
@@ -337,7 +352,7 @@ C
 C	Module 11: Standard functions
 C
 */
-	X = 0.75;
+	X = (REAL)0.75;
 
 	for (I = 1; I <= N11; I++)
 		X = DSQRT(DEXP(DLOG(X)/T1));
@@ -379,11 +394,11 @@ C--------------------------------------------------------------------
 	printf("Loops: %ld, Iterations: %d, Duration: %ld sec.\n",
 			LOOP, II, finisec-startsec);
 
-	KIPS = (100.0*LOOP*II)/(REAL)(finisec-startsec);
-	if (KIPS >= 1000.0)
-		printf("C Converted Double Precision Whetstones: %.1f MIPS\n", KIPS/1000.0);
+	KIPS = ((REAL)100.0*LOOP*II)/(REAL)(finisec-startsec);
+	if (KIPS >= (REAL)1000.0)
+		printf("C Converted %s Precision Whetstones: %.1f MIPS\n", prec, KIPS/1000.0);
 	else
-		printf("C Converted Double Precision Whetstones: %.1f KIPS\n", KIPS);
+		printf("C Converted %s Precision Whetstones: %.1f KIPS\n", prec, KIPS);
 
 	if (continuous)
 		goto LCONT;

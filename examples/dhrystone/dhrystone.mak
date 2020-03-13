@@ -20,15 +20,10 @@ COPT=
 dhrystone.b8h: dhrystone.c8h 
 	$(COLLECT) dhrystone.c8h -t  -o dhrystone.b8h $(COLLECTOPT)
 
-dhrystone.c8h: dhrystone.lnk dhrystone.t8h \
-               /Users/pahi/ictools/libs/startup.lnk
+dhrystone.c8h: dhrystone.lnk dhrystone.t8h
 	$(LINK) -f dhrystone.lnk -t8 -h -o dhrystone.c8h $(LINKOPT)
 
-dhrystone.t8h: dhrystone.c /Users/pahi/ictools/libs/stdlib.h \
-               /Users/pahi/ictools/libs/stdio.h \
-               /Users/pahi/ictools/libs/subsem.h \
-               /Users/pahi/ictools/libs/subchan.h \
-               /Users/pahi/ictools/libs/limits.h 
+dhrystone.t8h: dhrystone.c
 	$(CC) dhrystone.c -g -t8 -o dhrystone.t8h $(COPT)
 
 clean  : delete

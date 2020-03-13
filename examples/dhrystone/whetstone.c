@@ -62,7 +62,11 @@ C**********************************************************************
 
 /* map the FORTRAN math functions, etc. to the C versions */
 #if REALPREC == 4
+#ifdef _ICC
 #include <mathf.h>
+#else
+#include <math.h>
+#endif
 #define DSIN	sinf
 #define DCOS	cosf
 #define DATAN	atanf

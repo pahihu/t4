@@ -157,9 +157,13 @@
 
 /* Accuracy of timings and human fatigue controlled by next two lines */
 /*#define LOOPS	50000		/* Use this for slow or 16 bit machines */
+#ifdef _ICC
 #define LOOPS	500000		/* Use this for faster machines */
+#endif
 /*#define LOOPS	5000000		/* Use this for faster machines */
-/*#define LOOPS	100000000	/* Use this for faster machines */
+#ifdef __APPLE__
+#define LOOPS	100000000	/* Use this for faster machines */
+#endif
 
 /* Compiler dependent options */
 /*#undef	NOENUM			/* Define if compiler has no enum's */
@@ -271,6 +275,9 @@ void Proc0(void)
 	String30		String1Loc;
 	String30		String2Loc;
 
+        float                   benchsecs;
+        float                   KIPS;
+
 #ifdef TIME
 	long			time();
 	long			starttime;
@@ -353,25 +360,28 @@ for (i = 0; i < LOOPS; ++i)
 *****************/
 }
 #ifdef TIME
-benchtime = time(0) - starttime - nulltime;
-printf("Dhrystone time for %ld passes = %ld\n", (long) LOOPS, benchtime);
-printf("This machine benchmarks at %ld dhrystones/second\n",
-	((long) LOOPS) / benchtime);
+        benchtime = time(0) - starttime - nulltime;
+        benchsecs = (float) benchtime;
+        KIPS = ((long) LOOPS) / (float) benchtime;
 #endif
 #ifdef TIMES
 	times(&tms);
 	benchtime = tms.tms_utime - starttime - nulltime;
-printf("Dhrystone time for %ld passes = %ld\n", (long) LOOPS, benchtime/HZ);
-printf("This machine benchmarks at %ld dhrystones/second\n",
-	((long) LOOPS) * HZ / benchtime);
+        benchsecs = (float) benchtime / HZ;
+        KIPS = ((long) LOOPS) * HZ / (float) benchtime;
 #endif
 #ifdef CLOCK
 	benchtime = clock() - starttime - nulltime;
-printf("Dhrystone time for %ld passes = %ld\n", (long) LOOPS, benchtime/CLOCKS_PER_SEC);
-printf("This machine benchmarks at %ld dhrystones/second\n",
-	((long) LOOPS) * CLOCKS_PER_SEC / benchtime);
+        benchsecs = (float) benchtime / CLOCKS_PER_SEC;
+        KIPS = ((long) LOOPS) * CLOCKS_PER_SEC / (float) benchtime;
 #endif
 
+printf("Dhrystone time for %ld passes = %.1fs\n", (long) LOOPS, benchsecs);
+KIPS = KIPS / 1000.0;
+if (KIPS > 1000.0)
+printf("This machine benchmarks at %.1fM dhrystones/second\n", KIPS / 1000.0);
+else
+printf("This machine benchmarks at %.1fK dhrystones/second\n", KIPS);
 }
 
 void Proc1(PtrParIn)

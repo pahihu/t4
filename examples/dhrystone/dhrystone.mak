@@ -12,7 +12,7 @@ LINKOPT=
 CONFOPT=
 OCONFOPT=
 COLLECTOPT=
-COPT=
+COPT=   #-g
 
 
 ##### IMAKEF CUT #####
@@ -24,7 +24,7 @@ dhrystone.c8h: dhrystone.lnk dhrystone.t8h
 	$(LINK) -f dhrystone.lnk -t8 -h -o dhrystone.c8h $(LINKOPT)
 
 dhrystone.t8h: dhrystone.c
-	$(CC) dhrystone.c -g -t8 -o dhrystone.t8h $(COPT)
+	$(CC) dhrystone.c -t8 -o dhrystone.t8h $(COPT)
 
 clean  : delete
 delete :

@@ -359,7 +359,7 @@ C
 	X = (REAL)0.75;
 
 	for (I = 1; I <= N11; I++)
-		X = DSQRT(DEXP(DLOG(X)/T1));
+	        X = DSQRT(DEXP(DLOG(X)/T1));
 
 #ifdef PRINTOUT
 	IF (JJ==II)POUT(N11,J,K,X,X,X,X);

@@ -612,7 +612,7 @@ REAL64 fp_remfirstdb (REAL64 fb, REAL64 fa)
         REAL64 result;
 
         result = db_binary (fb, fa, db_remfirst);
-        fp_pushdb (fp_divdb (fb, fa));
+        fp_pushdb (fp_divdb (fp_subdb (fb, result), fa));
         return result;
 }
 int    fp_gtdb (REAL64 fb, REAL64 fa)    { return db_binary2word (fb, fa, db_gt); }
@@ -809,7 +809,7 @@ REAL32 fp_remfirstsn (REAL32 fb, REAL32 fa)
         REAL32 result;
 
         result = sn_binary (fb, fa, sn_remfirst);
-        fp_pushsn (fp_divsn (fb, fa));
+        fp_pushsn (fp_divsn (fp_subsn (fb, result), fa));
         return result;
 }
 int    fp_gtsn (REAL32 fb, REAL32 fa)    { return sn_binary2word (fb, fa, sn_gt); }

@@ -19,6 +19,12 @@ The following file is from Daniel Hyde's "Introduction to the Programming Langua
 sqrroots/sqrroots.occ
 
 
+These examples are in C:
+
+chello/
+dhrystone/
+
+
 These examples are from comp.sys.transputer, written by Michael Bruestle:
 
 inoutswap.asm

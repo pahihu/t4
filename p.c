@@ -606,6 +606,16 @@ void init_processor (void)
 
 #define FLAG(x,y)       ((x) ? (y) : '-')
 
+
+void checkWPtr (uint32_t wptr)
+{
+        if (wptr & 3)
+        {
+                printf ("-E-EMU414: Error - byte selector of WPtr should be zero!\n");
+                handler (-1);
+        }
+}
+
 void mainloop (void)
 {
         uint32_t temp, temp2;
@@ -855,11 +865,7 @@ void mainloop (void)
 
 				/* Do successor process. */
 				WPtr = AReg;
-                                if (WPtr & 3)
-                                {
-                                        printf ("-E-EMU414: Error - WPtr is unaligned!\n");
-                                        handler (-1);
-                                }
+                                checkWPtr (WPtr);
 				IPtr = word (index (AReg, 0));
 			   }
 			   else
@@ -923,11 +929,7 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 				{
 					/* Ready. */
                                         otherWPtr = GetDescWPtr(otherWdesc);
-                                        if (otherWPtr & 3)
-                                        {
-                                                printf ("-E-EMU414: Error - otherWPtr is unaligned!\n");
-                                                handler (-1);
-                                        }
+                                        checkWPtr (otherWPtr);
 					otherPtr = word (index (otherWPtr, Pointer_s));
                                         if (msgdebug || emudebug)
 					        printf ("-I-EMUDBG: In(3): Transferring message from #%08X.\n", otherPtr);
@@ -1101,11 +1103,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				{
 					/* Ready. */
                                         otherWPtr = GetDescWPtr(otherWdesc);
-                                        if (otherWPtr & 3)
-                                        {
-                                                printf ("-E-EMU414: Error - otherWPtr is unaligned!\n");
-                                                handler (-1);
-                                        }
+                                        checkWPtr (otherWPtr);
 					altState = otherPtr = word (index (otherWPtr, Pointer_s));
 					if ((altState & 0xfffffffc) == MostNeg)
 					{
@@ -1179,11 +1177,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				{
 					/* Ready. */
                                         otherWPtr = GetDescWPtr(otherWdesc);
-                                        if (otherWPtr & 3)
-                                        {
-                                                printf ("-E-EMU414: Error - otherWPtr is unaligned!\n");
-                                                handler (-1);
-                                        }
+                                        checkWPtr (otherWPtr);
 					altState = otherPtr =  word (index (otherWPtr, State_s));
 					if ((altState & 0xfffffffc) == MostNeg)
 					{
@@ -1608,11 +1602,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   temp = AReg;
 			   AReg = WPtr;
 			   WPtr = temp;
-                           if (WPtr & 3)
-                           {
-                                printf ("-E-EMU414: Error - WPtr is unaligned!\n");
-                                handler (-1);
-                           }
+                           checkWPtr (WPtr);
 			   IPtr++;
 			   break;
 		case 0x3d: /* savel       */
@@ -2680,11 +2670,7 @@ void schedule (uint32_t wdesc)
 
 		ProcPriority = HiPriority;
 		WPtr = wptr;
-                if (WPtr & 3)
-                {
-                        printf ("-E-EMU414: Error - WPtr is unaligned!\n");
-                        handler (-1);
-                }
+                checkWPtr (WPtr);
 		IPtr = word (index (WPtr, Iptr_s));
 
 	}
@@ -2815,11 +2801,7 @@ int run_process (void)
 	{
 		/* Return to interrupted LoPriority process. */
 		WPtr = GetDescWPtr(word (index (MostNeg, 11)));
-                if (WPtr & 3)
-                {
-                        printf ("-E-EMU414: Error - WPtr is unaligned!\n");
-                        handler (-1);
-                }
+                checkWPtr (WPtr);
 		IPtr = word (index (MostNeg, 12));
 		AReg = word (index (MostNeg, 13));
 		BReg = word (index (MostNeg, 14));
@@ -2846,11 +2828,7 @@ int run_process (void)
 		{
 			/* Only one process in list. */
 			WPtr = ptr;
-                        if (WPtr & 3)
-                        {
-                                printf ("-E-EMU414: Error - WPtr is unaligned!\n");
-                                handler (-1);
-                        }
+                        checkWPtr (WPtr);
 
 			/* Get Iptr. */
 			IPtr = word (index (WPtr, Iptr_s));
@@ -2869,11 +2847,7 @@ int run_process (void)
 		{
 			/* List. */
 			WPtr = ptr;
-                        if (WPtr & 3)
-                        {
-                                printf ("-E-EMU414: Error - WPtr is unaligned!\n");
-                                handler (-1);
-                        }
+                        checkWPtr (WPtr);
 
 			/* Get Iptr. */
 			IPtr = word (index (WPtr, Iptr_s));

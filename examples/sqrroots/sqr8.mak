@@ -30,4 +30,5 @@ clean  : delete
 delete :
 	-$(DELETE) sqrroots.c8h
 	-$(DELETE) sqrroots.t8h
+	-$(DELETE) sqrroots.cfb
 

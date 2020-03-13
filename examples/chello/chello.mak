@@ -12,7 +12,7 @@ LINKOPT=
 CONFOPT=
 OCONFOPT=
 COLLECTOPT=
-COPT=
+COPT=   #-g
 
 
 ##### IMAKEF CUT #####
@@ -24,7 +24,7 @@ chello.c4h: chello.lnk chello.t4h
 	$(LINK) -f chello.lnk -t4 -h -o chello.c4h $(LINKOPT)
 
 chello.t4h: chello.c
-	$(CC) chello.c -g -t4 -o chello.t4h $(COPT)
+	$(CC) chello.c -t4 -o chello.t4h $(COPT)
 
 clean  : delete
 delete :

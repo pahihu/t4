@@ -31,4 +31,5 @@ clean  : delete
 delete :
 	-$(DELETE) whetstone.c8h
 	-$(DELETE) whetstone.t8h
+	-$(DELETE) whetstone.cfb
 

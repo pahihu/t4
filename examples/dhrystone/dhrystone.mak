@@ -30,4 +30,5 @@ clean  : delete
 delete :
 	-$(DELETE) dhrystone.c8h
 	-$(DELETE) dhrystone.t8h
+	-$(DELETE) dhrystone.cfb
 

@@ -787,7 +787,8 @@ void mainloop (void)
 			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0x50: /* ldnlp */
-                           checkWordAligned ("ldnlp", AReg);
+                           /* NB. Minix demo uses unaligned AReg! */
+                           /* checkWordAligned ("ldnlp", AReg); */
 			   AReg = index (AReg, OReg);
 			   IPtr++;
 			   OReg = 0; IntEnabled = TRUE;

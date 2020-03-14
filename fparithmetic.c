@@ -24,7 +24,7 @@
 #define REAL64_FRAC_MSB 0x0010000000000000LL
 #define REAL64_FRAC     0x000FFFFFFFFFFFFFLL
 
-#define NAN64_UNKNOWN   ((uint64_t)0x7ff2bad2bad2bad2LL)
+#define REAL64_UNDEFINED ((uint64_t)0x7ff2bad2bad2bad2LL)
 
 #define INT64(x)        ((int64_t)(x))
 #define INT32(x)        ((int32_t)(x))
@@ -34,29 +34,27 @@
 #define REAL32_FRAC     0x007FFFFFL
 #define REAL32_FRAC_MSB 0x00800000L
 
-#define NAN32_UNKNOWN   ((uint32_t)0x7f82bad2)
+#define REAL32_UNDEFINED ((uint32_t)0x7f82bad2)
 
 #undef TRUE
 #undef FALSE
 #define FALSE   0x0000
 #define TRUE    0x0001
 
-REAL32 Real32PlusInf;
-REAL32 Real32MinusInf;
-REAL32 Real32UndefinedNaN;
-REAL32 Real32UnstableNaN;
-REAL32 Real32InexactNaN;
-REAL32 Real32Zero;
-REAL32 Real32Undefined_p;
+REAL32 RInf;
+REAL32 undefined_NaN;
+REAL32 unstable_NaN;
+REAL32 inexact_NaN;
+REAL32 RZero;
+REAL32 RUndefined;
 
-REAL64 Real64PlusInf;
-REAL64 Real64MinusInf;
-REAL64 Real64UndefinedNaN;
-REAL64 Real64UnstableNaN;
-REAL64 Real64InexactNaN;
-REAL64 Real64Zero;
-REAL32 Real32ConversionNaN;
-REAL64 Real64Undefined_p;
+REAL64 DRInf;
+REAL64 Dundefined_NaN;
+REAL64 Dunstable_NaN;
+REAL64 Dinexact_NaN;
+REAL64 DRZero;
+REAL32 conversion_NaN;
+REAL64 DRUndefined;
 
 extern int FP_Error;
 extern int RoundingMode;
@@ -80,22 +78,20 @@ void fp_init (void)
         if (rc)
                 printf ("-W-EMU414: Warning - cannot initialize FP environment!\n");
 
-        sn_setbits (&Real32PlusInf,      PINFINITY32);
-        sn_setbits (&Real32MinusInf,     MINFINITY32);
-        sn_setbits (&Real32UndefinedNaN, NAN32_UNDEFINED);
-        sn_setbits (&Real32UnstableNaN,  NAN32_UNSTABLE);
-        sn_setbits (&Real32InexactNaN,   NAN32_INEXACT);
-        sn_setbits (&Real32Zero,         ZERO32);
-        sn_setbits (&Real32Undefined_p,  NAN32_UNKNOWN);
+        sn_setbits (&RInf,           INFINITY32);
+        sn_setbits (&undefined_NaN,  NAN32_UNDEFINED);
+        sn_setbits (&unstable_NaN,   NAN32_UNSTABLE);
+        sn_setbits (&inexact_NaN,    NAN32_INEXACT);
+        sn_setbits (&RZero,          ZERO32);
+        sn_setbits (&RUndefined,     REAL32_UNDEFINED);
 
-        db_setbits (&Real64PlusInf,      PINFINITY64);
-        db_setbits (&Real64MinusInf,     MINFINITY64);
-        db_setbits (&Real64UndefinedNaN, NAN64_UNDEFINED);
-        db_setbits (&Real64UnstableNaN,  NAN64_UNSTABLE);
-        db_setbits (&Real64InexactNaN,   NAN64_INEXACT);
-        db_setbits (&Real64Zero,         ZERO64);
-        db_setbits (&Real64Undefined_p,  NAN64_UNKNOWN);
-        sn_setbits (&Real32ConversionNaN, NAN32_CONVERSION64);
+        db_setbits (&DRInf,          INFINITY64);
+        db_setbits (&Dundefined_NaN, NAN64_UNDEFINED);
+        db_setbits (&Dunstable_NaN,  NAN64_UNSTABLE);
+        db_setbits (&Dinexact_NaN,   NAN64_INEXACT);
+        db_setbits (&DRZero,         ZERO64);
+        db_setbits (&DRUndefined,    REAL64_UNDEFINED);
+        sn_setbits (&conversion_NaN, NAN32_CONVERSION64);
 }
 
 void db_setbits (REAL64 *ptr, uint64_t bits)
@@ -366,7 +362,7 @@ REAL64 db_binary (REAL64 fb, REAL64 fa, REAL64 (*opr)(REAL64, REAL64))
         fp_chkexcept ("Enter db_binary ()");
 
 #ifndef NDEBUG
-        BargDB = fb; AargDB = fa; ResultDB = Real64Undefined_p;
+        BargDB = fb; AargDB = fa; ResultDB = DRUndefined;
 #endif
 
         if (fp_nandb (fb) && fp_nandb (fb))
@@ -402,7 +398,7 @@ int db_binary2word (REAL64 fb, REAL64 fa, int (*opr)(REAL64, REAL64))
         int result;
 
 #ifndef NDEBUG
-        BargDB = fb; AargDB = fa; ResultDB = Real64Undefined_p;
+        BargDB = fb; AargDB = fa; ResultDB = DRUndefined;
 #endif
 
         if (fp_notfinitedb (fb) || fp_notfinitedb (fa))
@@ -426,7 +422,7 @@ REAL64 db_unary (REAL64 fa, REAL64 (*opr)(REAL64))
         REAL64 result;
 
 #ifndef NDEBUG
-        AargDB = fa; ResultDB = Real64Undefined_p;
+        AargDB = fa; ResultDB = DRUndefined;
 #endif
         if (fp_nandb (fa))
                 return fa;
@@ -453,7 +449,7 @@ REAL32 sn_binary (REAL32 fb, REAL32 fa, REAL32 (*opr)(REAL32, REAL32))
         fp_chkexcept ("Enter sn_binary ()");
 
 #ifndef NDEBUG
-        BargSN = fb; AargSN = fa; ResultSN = Real32Undefined_p;
+        BargSN = fb; AargSN = fa; ResultSN = RUndefined;
 #endif
 
         if (fp_nansn (fb) && fp_nansn (fa))
@@ -489,7 +485,7 @@ int sn_binary2word (REAL32 fb, REAL32 fa, int (*opr)(REAL32, REAL32))
         int result;
 
 #ifndef NDEBUG
-        BargSN = fb; AargSN = fa; ResultSN = Real32Undefined_p;
+        BargSN = fb; AargSN = fa; ResultSN = RUndefined;
 #endif
 
         if (fp_notfinitesn (fb) || fp_notfinitesn (fa))
@@ -513,7 +509,7 @@ REAL32 sn_unary (REAL32 fa, REAL32 (*opr)(REAL32))
         REAL32 result;
 
 #ifndef NDEBUG
-        AargSN = fa; ResultSN = Real32Undefined_p;
+        AargSN = fa; ResultSN = RUndefined;
 #endif
 
         if (fp_nandb (fa))
@@ -628,13 +624,13 @@ REAL32  fp_r64tor32 (REAL64 fp)
         REAL32     result;
 
 #ifndef NDEBUG
-        AargDB = fp; ResultSN = Real32Undefined_p;
+        AargDB = fp; ResultSN = RUndefined;
 #endif
 
         if (fp_nandb (fp))
         {
                 FP_Error = TRUE;
-                return Real32ConversionNaN;
+                return conversion_NaN;
         }
 
         if (fp_infdb (fp))
@@ -654,7 +650,7 @@ REAL64 fp_intdb (REAL64 fp)
         REAL64 result;
 
 #ifndef NDEBUG
-        AargDB = fp; ResultDB = Real64Undefined_p;
+        AargDB = fp; ResultDB = DRUndefined;
 #endif
 
         if (fp_notfinitedb (fp))
@@ -674,7 +670,7 @@ int fp_chki32db (REAL64 fp)
         long result;
 
 #ifndef NDEBUG
-        AargDB = fp; ResultDB = Real64Undefined_p;
+        AargDB = fp; ResultDB = DRUndefined;
 #endif
 
         if (fp_notfinitedb (fp))
@@ -700,7 +696,7 @@ int fp_chki64db (REAL64 fp)
         long long result;
 
 #ifndef NDEBUG
-        AargDB = fp; ResultDB = Real64Undefined_p;
+        AargDB = fp; ResultDB = DRUndefined;
 #endif
 
         if (fp_notfinitedb (fp))
@@ -825,7 +821,7 @@ REAL64  fp_r32tor64 (REAL32 fp)
         REAL64 result;
 
 #ifndef NDEBUG
-        AargDB = fp; ResultDB = Real64Undefined_p;
+        AargDB = fp; ResultDB = DRUndefined;
 #endif
 
         if (fp_notfinitesn (fp))
@@ -845,7 +841,7 @@ REAL32 fp_intsn (REAL32 fp)
         REAL32 result;
 
 #ifndef NDEBUG
-        AargSN = fp; ResultSN = Real32Undefined_p;
+        AargSN = fp; ResultSN = RUndefined;
 #endif
 
         if (fp_notfinitesn (fp))
@@ -865,7 +861,7 @@ int fp_chki32sn (REAL32 fp)
         long result;
 
 #ifndef NDEBUG
-        AargSN = fp; ResultSN = Real32Undefined_p;
+        AargSN = fp; ResultSN = RUndefined;
 #endif
 
         if (fp_notfinitesn (fp))
@@ -890,7 +886,7 @@ int fp_chki64sn (REAL32 fp)
         long long result;
 
 #ifndef NDEBUG
-        AargSN = fp; ResultSN = Real32Undefined_p;
+        AargSN = fp; ResultSN = RUndefined;
 #endif
 
         if (fp_notfinitesn (fp))

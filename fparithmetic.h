@@ -19,11 +19,10 @@ typedef union {
         uint32_t bits;
 } fpreal32_t;
 
-#define PINFINITY64             ((uint64_t)0x7ff0000000000000LL)
-#define MINFINITY64             ((uint64_t)0xfff0000000000000LL)
-#define NAN64_UNDEFINED         ((uint64_t)0x7ff0000000000010LL)
-#define NAN64_UNSTABLE          ((uint64_t)0x7ff0000000000008LL)
-#define NAN64_INEXACT           ((uint64_t)0x7ff0000000000004LL)
+#define INFINITY64              ((uint64_t)0x7ff0000000000000LL)
+#define NAN64_UNDEFINED         ((uint64_t)0x7ff0000200000000LL)
+#define NAN64_UNSTABLE          ((uint64_t)0x7ff0000100000000LL)
+#define NAN64_INEXACT           ((uint64_t)0x7ff0000080000000LL)
 #define ZERO64                  ((uint64_t)0x0000000000000000LL)
 #define NAN32_CONVERSION64      ((uint32_t)0x7f800002)
 
@@ -31,26 +30,26 @@ typedef union {
 /*
  * REAL32 constants.
  */
-extern REAL32 Real32PlusInf;
-extern REAL32 Real32MinusInf;
-extern REAL32 Real32UndefinedNaN;
-extern REAL32 Real32UnstableNaN;
-extern REAL32 Real32InexactNaN;
-extern REAL32 Real32Zero;
-extern REAL32 Real32Undefined_p;
+extern REAL32 RInf;
+extern REAL32 RMinusInf;
+extern REAL32 undefined_NaN;
+extern REAL32 unstable_NaN;
+extern REAL32 inexact_NaN;
+extern REAL32 Zero;
+extern REAL32 RUndefined;
 
 
 /*
  * REAL64 constants.
  */
-extern REAL64 Real64PlusInf;
-extern REAL64 Real64MinusInf;
-extern REAL64 Real64UndefinedNaN;
-extern REAL64 Real64UnstableNaN;
-extern REAL64 Real64InexactNaN;
-extern REAL64 Real64Zero;
-extern REAL32 Real32ConversionNaN;
-extern REAL64 Real64Undefined_p;
+extern REAL64 DRInf;
+extern REAL64 DRMinusInf;
+extern REAL64 Dundefined_NaN;
+extern REAL64 Dunstable_NaN;
+extern REAL64 Dinexact_NaN;
+extern REAL64 DZero;
+extern REAL32 conversion_NaN;
+extern REAL64 DRUndefined;
 
 
 /*

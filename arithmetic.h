@@ -36,7 +36,8 @@
  *
  */
 
-#define INFINITY32      ((uint32_t)0x7f800000)
+#define PINFINITY32     ((uint32_t)0x7f800000)
+#define MINFINITY32     ((uint32_t)0xff800000)
 #define NAN32_UNDEFINED ((uint32_t)0x7f800010)
 #define NAN32_UNSTABLE  ((uint32_t)0x7f800008)
 #define NAN32_INEXACT   ((uint32_t)0x7f800004)

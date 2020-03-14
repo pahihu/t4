@@ -36,12 +36,33 @@
 
 #define REAL32_UNDEFINED ((uint32_t)0x7f82bad2)
 
+#define NAN32_DivZeroByZero     ((uint32_t)0x7fc00000UL)
+#define NAN32_DivInfByInf       ((uint32_t)0x7fa00000UL)
+#define NAN32_MulZeroByInf      ((uint32_t)0x7f900000UL)
+#define NAN32_AddOppositeInf    ((uint32_t)0x7f880000UL)
+#define NAN32_SubSameInf        ((uint32_t)0x7f880000UL)
+#define NAN32_NegativeSqrt      ((uint32_t)0x7f840000UL)
+#define NAN32_ConversionNaN     ((uint32_t)0x7f820000UL)
+#define NAN32_RemFromInf        ((uint32_t)0x7f804000UL)
+#define NAN32_RemByZero         ((uint32_t)0x7f802000UL)
+
+#define NAN64_DivZeroByZero     ((uint64_t)0x7ff8000000000000ULL)
+#define NAN64_DivInfByInf       ((uint64_t)0x7ff4000000000000ULL)
+#define NAN64_MulZeroByInf      ((uint64_t)0x7ff2000000000000ULL)
+#define NAN64_AddOppositeInf    ((uint64_t)0x7ff1000000000000ULL)
+#define NAN64_SubSameInf        ((uint64_t)0x7ff1000000000000ULL)
+#define NAN64_NegativeSqrt      ((uint64_t)0x7ff0800000000000ULL)
+#define NAN64_ConversionNaN     ((uint64_t)0x7ff0400000000000ULL)
+#define NAN64_RemFromInf        ((uint64_t)0x7ff0080000000000ULL)
+#define NAN64_RemByZero         ((uint64_t)0x7ff0040000000000ULL)
+
 #undef TRUE
 #undef FALSE
 #define FALSE   0x0000
 #define TRUE    0x0001
 
 REAL32 RInf;
+REAL32 RMinusInf;
 REAL32 undefined_NaN;
 REAL32 unstable_NaN;
 REAL32 inexact_NaN;
@@ -49,12 +70,35 @@ REAL32 RZero;
 REAL32 RUndefined;
 
 REAL64 DRInf;
+REAL64 DRMinusInf;
 REAL64 Dundefined_NaN;
 REAL64 Dunstable_NaN;
 REAL64 Dinexact_NaN;
 REAL64 DRZero;
-REAL32 conversion_NaN;
 REAL64 DRUndefined;
+
+/*
+ * T800 FPU Not-a-numbers.
+ */
+static REAL32 DivZeroByZero_NaN;
+static REAL32 DivInfByInf_NaN;
+static REAL32 MulZeroByInf_NaN;
+static REAL32 AddOppositeInf_NaN;
+static REAL32 SubSameInf_NaN;
+static REAL32 NegativeSqrt_NaN;
+static REAL32 Conversion_NaN;
+static REAL32 RemFromInf_NaN;
+static REAL32 RemByZero_NaN;
+
+static REAL64 DDivZeroByZero_NaN;
+static REAL64 DDivInfByInf_NaN;
+static REAL64 DMulZeroByInf_NaN;
+static REAL64 DAddOppositeInf_NaN;
+static REAL64 DSubSameInf_NaN;
+static REAL64 DNegativeSqrt_NaN;
+static REAL64 DConversion_NaN;
+static REAL64 DRemFromInf_NaN;
+static REAL64 DRemByZero_NaN;
 
 extern int FP_Error;
 extern int RoundingMode;
@@ -78,20 +122,41 @@ void fp_init (void)
         if (rc)
                 printf ("-W-EMU414: Warning - cannot initialize FP environment!\n");
 
-        sn_setbits (&RInf,           INFINITY32);
+        sn_setbits (&RInf,           PINFINITY32);
+        sn_setbits (&RMinusInf,      MINFINITY32);
         sn_setbits (&undefined_NaN,  NAN32_UNDEFINED);
         sn_setbits (&unstable_NaN,   NAN32_UNSTABLE);
         sn_setbits (&inexact_NaN,    NAN32_INEXACT);
         sn_setbits (&RZero,          ZERO32);
         sn_setbits (&RUndefined,     REAL32_UNDEFINED);
 
-        db_setbits (&DRInf,          INFINITY64);
+        sn_setbits (&DivZeroByZero_NaN,  NAN32_DivZeroByZero);
+        sn_setbits (&DivInfByInf_NaN,    NAN32_DivInfByInf);
+        sn_setbits (&MulZeroByInf_NaN,   NAN32_MulZeroByInf);
+        sn_setbits (&AddOppositeInf_NaN, NAN32_AddOppositeInf);
+        sn_setbits (&SubSameInf_NaN,     NAN32_SubSameInf);
+        sn_setbits (&NegativeSqrt_NaN,   NAN32_NegativeSqrt);
+        sn_setbits (&Conversion_NaN,     NAN32_ConversionNaN);
+        sn_setbits (&RemFromInf_NaN,     NAN32_RemFromInf);
+        sn_setbits (&RemByZero_NaN,      NAN32_RemByZero);
+
+        db_setbits (&DRInf,          PINFINITY64);
+        db_setbits (&DRMinusInf,     MINFINITY64);
         db_setbits (&Dundefined_NaN, NAN64_UNDEFINED);
         db_setbits (&Dunstable_NaN,  NAN64_UNSTABLE);
         db_setbits (&Dinexact_NaN,   NAN64_INEXACT);
         db_setbits (&DRZero,         ZERO64);
         db_setbits (&DRUndefined,    REAL64_UNDEFINED);
-        sn_setbits (&conversion_NaN, NAN32_CONVERSION64);
+
+        db_setbits (&DDivZeroByZero_NaN,  NAN64_DivZeroByZero);
+        db_setbits (&DDivInfByInf_NaN,    NAN64_DivInfByInf);
+        db_setbits (&DMulZeroByInf_NaN,   NAN64_MulZeroByInf);
+        db_setbits (&DAddOppositeInf_NaN, NAN64_AddOppositeInf);
+        db_setbits (&DSubSameInf_NaN,     NAN64_SubSameInf);
+        db_setbits (&DNegativeSqrt_NaN,   NAN64_NegativeSqrt);
+        db_setbits (&DConversion_NaN,     NAN64_ConversionNaN);
+        db_setbits (&DRemFromInf_NaN,     NAN64_RemFromInf);
+        db_setbits (&DRemByZero_NaN,      NAN64_RemByZero);
 }
 
 void db_setbits (REAL64 *ptr, uint64_t bits)
@@ -171,7 +236,7 @@ uint64_t fp_fracdb(REAL64 fp)
         fpreal64_t x;
 
         x.fp = fp;
-        return REAL64_FRAC_MSB | (REAL64_FRAC & x.bits);
+        return (REAL64_FRAC & x.bits);
 }
 
 int fp_infdb(REAL64 fp)
@@ -187,6 +252,14 @@ int fp_nandb(REAL64 fp)
 int fp_notfinitedb(REAL64 fp)
 {
         return (2047 == fp_expdb (fp));
+}
+
+int fp_zerodb(REAL64 fp)
+{
+        fpreal64_t r64;
+
+        r64.fp = fp;
+        return (r64.bits == ZERO64);
 }
 
 int sn_sign (uint32_t fpbits)
@@ -215,7 +288,7 @@ uint32_t fp_fracsn(REAL32 fp)
         fpreal32_t x;
 
         x.fp = fp;
-        return REAL32_FRAC_MSB | (REAL32_FRAC & x.bits);
+        return (REAL32_FRAC & x.bits);
 }
 
 int fp_infsn(REAL32 fp)
@@ -231,6 +304,14 @@ int fp_nansn(REAL32 fp)
 int fp_notfinitesn(REAL32 fp)
 {
         return (255 == fp_expsn (fp));
+}
+
+int fp_zerosn(REAL32 fp)
+{
+        fpreal32_t r32;
+
+        r32.fp = fp;
+        return (r32.bits == ZERO32);
 }
 
 void db_dump (char *msg, REAL64 fp)
@@ -353,6 +434,11 @@ REAL32 sn_check_except (REAL32 result)
         return result;
 }
 
+REAL64 db_add(REAL64, REAL64);
+REAL64 db_sub(REAL64, REAL64);
+REAL64 db_mul(REAL64, REAL64);
+REAL64 db_div(REAL64, REAL64);
+
 /* Do a binary REAL64 operation, return REAL64 result. */
 REAL64 db_binary (REAL64 fb, REAL64 fa, REAL64 (*opr)(REAL64, REAL64))
 {
@@ -369,15 +455,53 @@ REAL64 db_binary (REAL64 fb, REAL64 fa, REAL64 (*opr)(REAL64, REAL64))
         {
                 fracb = fp_fracdb (fb);
                 fraca = fp_fracdb (fa);
-                if (INT64(fracb) > INT64(fraca))
-                        return fb;
-                else
-                        return fa;
+                return (fracb > fraca) ? fb : fa;
         }
         else if (fp_nandb (fb))
                 return fb;
         else if (fp_nandb (fa))
                 return fa;
+
+        if (opr == db_add)
+        {
+                if (fp_infdb (fb) && fp_infdb (fa))
+                {
+                        FP_Error = TRUE;
+                        if (fp_signdb (fb) != fp_signdb (fa))
+                                return DAddOppositeInf_NaN;
+                }
+        }
+        else if (opr == db_sub)
+        {
+                if (fp_infdb (fb) && fp_infdb (fa))
+                {
+                        FP_Error = TRUE;
+                        if (fp_signdb (fb) == fp_signdb (fa))
+                                return DSubSameInf_NaN;
+                }
+        }
+        else if (opr == db_mul)
+        {
+                if ((fp_zerodb (fb) && fp_infdb (fa)) ||
+                    (fp_infdb (fb)  && fp_zerodb (fa)))
+                {
+                        FP_Error = TRUE;
+                        return DMulZeroByInf_NaN;
+                }
+        }
+        else if (opr == db_div)
+        {
+                if (fp_zerodb (fb) && fp_zerodb (fa))
+                {
+                        FP_Error = TRUE;
+                        return DDivZeroByZero_NaN;
+                }
+                else if (fp_infdb (fb) && fp_infdb (fa))
+                {
+                        FP_Error = TRUE;
+                        return DDivInfByInf_NaN;
+                }
+        }
 
         if (fp_infdb (fa) || fp_infdb (fb))
                 FP_Error = TRUE;
@@ -440,6 +564,11 @@ REAL64 db_unary (REAL64 fa, REAL64 (*opr)(REAL64))
         return result;
 }
 
+REAL32 sn_add(REAL32, REAL32);
+REAL32 sn_sub(REAL32, REAL32);
+REAL32 sn_mul(REAL32, REAL32);
+REAL32 sn_div(REAL32, REAL32);
+
 /* Do a binary REAL64 operation, return REAL64 result. */
 REAL32 sn_binary (REAL32 fb, REAL32 fa, REAL32 (*opr)(REAL32, REAL32))
 {
@@ -456,15 +585,53 @@ REAL32 sn_binary (REAL32 fb, REAL32 fa, REAL32 (*opr)(REAL32, REAL32))
         {
                 fracb = fp_fracsn (fb);
                 fraca = fp_fracsn (fa);
-                if (INT32(fracb) > INT32(fraca))
-                        return fb;
-                else
-                        return fa;
+                return (fracb > fraca) ? fb : fa;
         }
         else if (fp_nansn (fb))
                 return fb;
         else if (fp_nansn (fa))
                 return fa;
+
+        if (opr == sn_add)
+        {
+                if (fp_infsn (fb) && fp_infsn (fa))
+                {
+                        FP_Error = TRUE;
+                        if (fp_signsn (fb) != fp_signsn (fa))
+                                return AddOppositeInf_NaN;
+                }
+        }
+        else if (opr == sn_sub)
+        {
+                if (fp_infsn (fb) && fp_infsn (fa))
+                {
+                        FP_Error = TRUE;
+                        if (fp_signsn (fb) == fp_signsn (fa))
+                                return SubSameInf_NaN;
+                }
+        }
+        else if (opr == sn_mul)
+        {
+                if ((fp_zerosn (fb) && fp_infsn (fa)) ||
+                    (fp_infsn (fb)  && fp_zerosn (fa)))
+                {
+                        FP_Error = TRUE;
+                        return MulZeroByInf_NaN;
+                }
+        }
+        else if (opr == sn_div)
+        {
+                if (fp_zerosn (fb) && fp_zerosn (fa))
+                {
+                        FP_Error = TRUE;
+                        return DivZeroByZero_NaN;
+                }
+                else if (fp_infsn (fb) && fp_infsn (fa))
+                {
+                        FP_Error = TRUE;
+                        return DivInfByInf_NaN;
+                }
+        }
 
         if (fp_infsn (fb) || fp_infsn (fa))
                 FP_Error = TRUE;
@@ -599,6 +766,8 @@ REAL64 fp_sqrtfirstdb (REAL64 fa)
 {
         if (fp_notfinitedb (fa))
                 FP_Error = TRUE;
+        if (fa < 0.0)
+                return DNegativeSqrt_NaN;
 
         return fa;
 }
@@ -607,8 +776,14 @@ REAL64 fp_remfirstdb (REAL64 fb, REAL64 fa)
 {
         REAL64 result;
 
+        if (fp_infdb (fb))
+                return DRemFromInf_NaN;
+        if (fp_zerodb (fa))
+                return DRemByZero_NaN;
+
         result = db_binary (fb, fa, db_remfirst);
         fp_pushdb (fp_divdb (fp_subdb (fb, result), fa));
+
         return result;
 }
 int    fp_gtdb (REAL64 fb, REAL64 fa)    { return db_binary2word (fb, fa, db_gt); }
@@ -630,7 +805,7 @@ REAL32  fp_r64tor32 (REAL64 fp)
         if (fp_nandb (fp))
         {
                 FP_Error = TRUE;
-                return conversion_NaN;
+                return Conversion_NaN;
         }
 
         if (fp_infdb (fp))
@@ -796,6 +971,8 @@ REAL32 fp_sqrtfirstsn (REAL32 fa)
 {
         if (fp_notfinitesn (fa))
                 FP_Error = TRUE;
+        if (fa < 0.0)
+                return NegativeSqrt_NaN;
 
         return fa;
 }
@@ -804,8 +981,14 @@ REAL32 fp_remfirstsn (REAL32 fb, REAL32 fa)
 {
         REAL32 result;
 
+        if (fp_infsn (fb))
+                return RemFromInf_NaN;
+        if (fp_zerosn (fa))
+                return RemByZero_NaN;
+
         result = sn_binary (fb, fa, sn_remfirst);
         fp_pushsn (fp_divsn (fp_subsn (fb, result), fa));
+
         return result;
 }
 int    fp_gtsn (REAL32 fb, REAL32 fa)    { return sn_binary2word (fb, fa, sn_gt); }

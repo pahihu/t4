@@ -19,12 +19,12 @@ typedef union {
         uint32_t bits;
 } fpreal32_t;
 
-#define INFINITY64              ((uint64_t)0x7ff0000000000000LL)
+#define PINFINITY64             ((uint64_t)0x7ff0000000000000LL)
+#define MINFINITY64             ((uint64_t)0xfff0000000000000LL)
 #define NAN64_UNDEFINED         ((uint64_t)0x7ff0000200000000LL)
 #define NAN64_UNSTABLE          ((uint64_t)0x7ff0000100000000LL)
 #define NAN64_INEXACT           ((uint64_t)0x7ff0000080000000LL)
 #define ZERO64                  ((uint64_t)0x0000000000000000LL)
-#define NAN32_CONVERSION64      ((uint32_t)0x7f800002)
 
 
 /*
@@ -48,7 +48,6 @@ extern REAL64 Dundefined_NaN;
 extern REAL64 Dunstable_NaN;
 extern REAL64 Dinexact_NaN;
 extern REAL64 DZero;
-extern REAL32 conversion_NaN;
 extern REAL64 DRUndefined;
 
 

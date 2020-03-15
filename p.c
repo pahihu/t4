@@ -2183,6 +2183,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x82: /* XXX fpldnldbi    */
 		           if (IsT414)
 		               goto BadCode;
+                           checkWordAligned ("fpldnldbi", AReg);
                            fp_pushdb (real64 (index (AReg, 2*BReg)));
                            AReg = CReg;
 		           IPtr++;
@@ -2199,6 +2200,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x84: /* XXX fpstnldb    */
 		           if (IsT414)
 		               goto BadCode;
+                           checkWordAligned ("fpstnldb", AReg);
                            if (FAReg.type == FP_REAL64)
                                 fp_popdb (&dbtemp1);
                            else
@@ -2214,6 +2216,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x86: /* XXX fpldnlsni    */
 		           if (IsT414)
 		               goto BadCode;
+                           checkWordAligned ("fpldnlsni", AReg);
                            fp_pushsn (real32 (index (AReg, BReg)));
                            AReg = CReg;
 		           IPtr++;
@@ -2227,6 +2230,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x88: /* XXX fpstnlsn    */
 		           if (IsT414)
 		               goto BadCode;
+                           checkWordAligned ("fpstnlsn", AReg);
                            if (FAReg.type == FP_REAL32)
                                 fp_popsn (&sntemp1);
                            else
@@ -2248,6 +2252,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x8a: /* XXX fpldnldb    */
 		           if (IsT414)
 		               goto BadCode;
+                           checkWordAligned ("fpldnldb", AReg);
                            fp_pushdb (real64 (AReg));
                            AReg = BReg;
                            BReg = CReg;
@@ -2268,6 +2273,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x8e: /* XXX fpldnlsn    */
 		           if (IsT414)
 		               goto BadCode;
+                           checkWordAligned ("fpldnlsn", AReg);
                            fp_pushsn (real32 (AReg));
                            AReg = BReg;
                            BReg = CReg;
@@ -2490,6 +2496,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0xa6: /* XXX fpldnladddb    */
 		           if (IsT414)
 		               goto BadCode;
+                           checkWordAligned ("fpldnladddb", AReg);
                            dbtemp1 = real64 (AReg);
                            if (FAReg.type == FP_REAL64)
                                 FAReg.u.db = fp_adddb (FAReg.u.db, dbtemp1);
@@ -2506,6 +2513,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0xa8: /* XXX fpldnlmuldb    */
 		           if (IsT414)
 		               goto BadCode;
+                           checkWordAligned ("fpldnlmuldb", AReg);
                            dbtemp1 = real64 (AReg);
                            if (FAReg.type == FP_REAL64)
                                 FAReg.u.db = fp_muldb (FAReg.u.db, dbtemp1);
@@ -2522,6 +2530,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0xaa: /* XXX fpldnladdsn    */
 		           if (IsT414)
 		               goto BadCode;
+                           checkWordAligned ("fpldnladdsn", AReg);
                            sntemp1 = real32 (AReg);
                            if (FAReg.type == FP_REAL32)
                                 FAReg.u.sn = fp_addsn (FAReg.u.sn, sntemp1);
@@ -2666,6 +2675,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0xac: /* XXX fpldnlmulsn    */
 		           if (IsT414)
 		               goto BadCode;
+                           checkWordAligned ("fpldnlmulsn", AReg);
                            sntemp1 = real32 (AReg);
                            if (FAReg.type == FP_REAL32)
                                 FAReg.u.sn = fp_mulsn (FAReg.u.sn, sntemp1);

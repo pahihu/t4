@@ -820,13 +820,7 @@ REAL32  fp_r64tor32 (REAL64 fp)
         AargDB = fp; ResultSN = RUndefined;
 #endif
 
-        if (fp_nandb (fp))
-        {
-                FP_Error = TRUE;
-                return Conversion_NaN;
-        }
-
-        if (fp_infdb (fp))
+        if (fp_notfinitedb (fp))
                 FP_Error = TRUE;
 
         result = (REAL32) fp;
@@ -836,6 +830,9 @@ REAL32  fp_r64tor32 (REAL64 fp)
 #endif
 
         result = sn_check_except (result);
+        if (fp_nandb (fp) && fp_infsn (result))
+                result = Conversion_NaN;
+
         return result;
 }
 REAL64 fp_intdb (REAL64 fp)

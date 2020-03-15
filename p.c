@@ -2392,12 +2392,10 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		           if (IsT414)
 		               goto BadCode;
                            if (FP_Error)
-                           {
                                 temp = false_t;
-                                FP_Error = FALSE;
-                           }
                            else
                                 temp = true_t;
+                           FP_Error = FALSE;
                            CReg = BReg;
                            BReg = AReg;
                            AReg = temp;

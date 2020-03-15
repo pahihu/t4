@@ -786,8 +786,26 @@ REAL64 fp_remfirstdb (REAL64 fb, REAL64 fa)
 
         return result;
 }
-int    fp_gtdb (REAL64 fb, REAL64 fa)    { return db_binary2word (fb, fa, db_gt); }
-int    fp_eqdb (REAL64 fb, REAL64 fa)    { return db_binary2word (fb, fa, db_eq); }
+int    fp_gtdb (REAL64 fb, REAL64 fa)
+{
+        fpreal64_t rb, ra;
+
+        /* ACWG pp.158: checks (Inf U NaN) membership, db_binary2word (fb, fa, db_gt) */
+        /* ACWG pp.106 B.2.7: binary comparison on total ordering */
+        rb.fp = fb;
+        ra.fp = fa;
+        return INT64(rb.bits) > INT64(ra.bits);
+}
+int    fp_eqdb (REAL64 fb, REAL64 fa)
+{
+        fpreal64_t rb, ra;
+
+        /* ACWG pp.158: checks (Inf U NaN) membership, db_binary2word (fb, fa, db_eq) */
+        /* ACWG pp.106 B.2.7: binary comparison on total ordering */
+        rb.fp = fb;
+        ra.fp = fa;
+        return rb.bits == ra.bits;
+}
 int    fp_ordereddb (REAL64 fb, REAL64 fa)
 {
         if (fp_nandb (fb) || fp_nandb (fa))
@@ -991,8 +1009,26 @@ REAL32 fp_remfirstsn (REAL32 fb, REAL32 fa)
 
         return result;
 }
-int    fp_gtsn (REAL32 fb, REAL32 fa)    { return sn_binary2word (fb, fa, sn_gt); }
-int    fp_eqsn (REAL32 fb, REAL32 fa)    { return sn_binary2word (fb, fa, sn_eq); }
+int    fp_gtsn (REAL32 fb, REAL32 fa)
+{
+        fpreal32_t rb, ra;
+
+        /* ACWG pp.158: checks (Inf U NaN) membership, sn_binary2word (fb, fa, sn_gt) */
+        /* ACWG pp.106 B.2.7: binary comparison on total ordering */
+        rb.fp = fb;
+        ra.fp = fa;
+        return INT32(rb.bits) > INT32(ra.bits);
+}
+int    fp_eqsn (REAL32 fb, REAL32 fa)
+{
+        fpreal32_t rb, ra;
+
+        /* ACWG pp.158: checks (Inf U NaN) membership, sn_binary2word (fb, fa, sn_eq) */
+        /* ACWG pp.106 B.2.7: binary comparison on total ordering */
+        rb.fp = fb;
+        ra.fp = fa;
+        return rb.bits == ra.bits;
+}
 int    fp_orderedsn (REAL32 fb, REAL32 fa)
 {
         if (fp_nansn (fb) || fp_nansn (fa))

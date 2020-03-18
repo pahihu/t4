@@ -68,6 +68,8 @@ REAL32 unstable_NaN;
 REAL32 inexact_NaN;
 REAL32 RZero;
 REAL32 RUndefined;
+REAL32 RInt32Min = (REAL32) __INT32_MIN__;
+REAL32 RInt32Max = (REAL32) __INT32_MAX__;
 
 REAL64 DRInf;
 REAL64 DRMinusInf;
@@ -76,6 +78,8 @@ REAL64 Dunstable_NaN;
 REAL64 Dinexact_NaN;
 REAL64 DRZero;
 REAL64 DRUndefined;
+REAL64 DInt32Min = (REAL64) __INT32_MIN__;
+REAL64 DInt32Max = (REAL64) __INT32_MAX__;
 
 /*
  * T800 FPU Not-a-numbers.
@@ -121,6 +125,8 @@ void fp_init (void)
         rc = feholdexcept (&fpenv);
         if (rc)
                 printf ("-W-EMU414: Warning - cannot initialize FP environment!\n");
+
+        fp_setrounding (ROUND_N);
 
         sn_setbits (&RInf,           PINFINITY32);
         sn_setbits (&RMinusInf,      MINFINITY32);
@@ -696,6 +702,26 @@ REAL32 sn_unary (REAL32 fa, REAL32 (*opr)(REAL32))
 }
 
 
+REAL64 DQuotRem (REAL64 X, REAL64 Y, long *N)
+{
+        REAL64 rem;
+
+        rem = remainder (X, Y);
+        *N  = (X - rem) / Y;
+
+        return rem;
+}
+
+REAL32 RQuotRem (REAL32 X, REAL32 Y, long *N)
+{
+        REAL32 rem;
+
+        rem = remainder (X, Y);
+        *N  = (X - rem) / Y;
+
+        return rem;
+}
+
 /* 
  * REAL64 basic operations.
  */
@@ -775,14 +801,19 @@ REAL64 fp_sqrtlastdb (REAL64 fa)         { return db_unary (fa, db_sqrt); }
 REAL64 fp_remfirstdb (REAL64 fb, REAL64 fa)
 {
         REAL64 result;
+        long N;
 
         if (fp_infdb (fb))
                 return DRemFromInf_NaN;
         if (fp_zerodb (fa))
                 return DRemByZero_NaN;
-
+#if 0
         result = db_binary (fb, fa, db_remfirst);
         fp_pushdb (fp_divdb (fp_subdb (fb, result), fa));
+#else
+        result = DQuotRem (fb, fa, &N);
+        fp_pushdb ((REAL64) N);
+#endif
 
         return result;
 }
@@ -879,7 +910,7 @@ int fp_chki32db (REAL64 fp)
         if (FP_Error)
                 return FALSE;
 
-        return (__INT32_MIN__ < result) && (result < __INT32_MAX__);
+        return (__INT32_MIN__ <= result) && (result <= __INT32_MAX__);
 }
 int fp_chki64db (REAL64 fp)
 {
@@ -995,14 +1026,20 @@ REAL32 fp_sqrtlastsn (REAL32 fa)         { return sn_unary (fa, sn_sqrt); }
 REAL32 fp_remfirstsn (REAL32 fb, REAL32 fa)
 {
         REAL32 result;
+        long N;
 
         if (fp_infsn (fb))
                 return RemFromInf_NaN;
         if (fp_zerosn (fa))
                 return RemByZero_NaN;
 
+#if 0
         result = sn_binary (fb, fa, sn_remfirst);
         fp_pushsn (fp_divsn (fp_subsn (fb, result), fa));
+#else
+        result = RQuotRem (fb, fa, &N);
+        fp_pushsn ((REAL32) N);
+#endif
 
         return result;
 }
@@ -1095,7 +1132,7 @@ int fp_chki32sn (REAL32 fp)
         sn_check_except (0.0F);
         if (FP_Error)
                 return FALSE;
-        return (__INT32_MIN__ < result) && (result < __INT32_MAX__);
+        return (__INT32_MIN__ <= result) && (result <= __INT32_MAX__);
 }
 int fp_chki64sn (REAL32 fp)
 {

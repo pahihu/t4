@@ -29,3 +29,6 @@ BOOT FILES
         200307AP  fixed LinkChannel checking, hangs on Loading boot monitor again
         200307AP  fixed DRAM memory wrapping, server not implemented packet sending, it works!
 
++savage
+        200318AP  works, T800 DATAN/DTAN gives the same results as T414 
+                  double precision version

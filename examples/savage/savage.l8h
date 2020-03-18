@@ -1,0 +1,10 @@
+--
+-- imakef : Version 3.40, 1st March 1991
+--
+-- linker command file "savage.l8h"
+--
+savage.t8h
+hostio.lib
+convert.lib
+dblmath.lib
+#INCLUDE occam8.lnk

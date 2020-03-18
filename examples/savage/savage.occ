@@ -1,0 +1,24 @@
+#INCLUDE "hostio.inc"
+#USE "hostio.lib"
+#USE "dblmath.lib"
+PROC Savage (CHAN OF SP fs, ts, []INT user.buffer)
+  REAL64 A, DiffA :
+  SEQ  
+    so.write.string.nl (fs, ts, "Savage benchmark")
+
+    A := 1.0 (REAL64)  
+ 
+    SEQ i = 0 FOR 2499
+      A := DTAN(DATAN(DEXP(DALOG(DSQRT(A*A))))) + 1.0 (REAL64)  
+ 
+    DiffA := 2500.0 (REAL64) - A
+
+    so.write.string (fs, ts, "   a =" )
+    so.write.real64 (fs, ts,     A, 1, 15)
+    so.write.nl (fs, ts)
+    so.write.string (fs, ts, "diff =" )
+    so.write.real64 (fs, ts, DiffA, 1, 15)
+    so.write.nl (fs, ts)
+
+    so.exit (fs, ts, sps.success)
+:

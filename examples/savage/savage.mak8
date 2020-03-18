@@ -1,0 +1,38 @@
+LIBRARIAN=ilibr
+OCCAM=oc
+LINK=ilink
+CONFIG=icconf
+OCONFIG=occonf
+COLLECT=icollect
+CC=icc
+DELETE=rm
+LIBOPT=
+OCCOPT=
+LINKOPT=
+CONFOPT=
+OCONFOPT=
+COLLECTOPT=
+COPT=
+
+
+##### IMAKEF CUT #####
+
+savage.b8h: savage.c8h 
+	$(COLLECT) savage.c8h -t  -o savage.b8h $(COLLECTOPT)
+
+savage.c8h: savage.lnk savage.t8h /Users/pahi/ictools/libs/startup.lnk \
+            /Users/pahi/ictools/libs/centry.lib \
+            /Users/pahi/ictools/libs/libc.lib 
+	$(LINK) -f savage.lnk -t8 -h -o savage.c8h $(LINKOPT)
+
+savage.t8h: savage.c /Users/pahi/ictools/libs/stdio.h \
+            /Users/pahi/ictools/libs/subsem.h \
+            /Users/pahi/ictools/libs/subchan.h \
+            /Users/pahi/ictools/libs/stdlib.h /Users/pahi/ictools/libs/math.h 
+	$(CC) savage.c -g -t8 -o savage.t8h $(COPT)
+
+clean  : delete
+delete :
+	-$(DELETE) savage.c8h
+	-$(DELETE) savage.t8h
+

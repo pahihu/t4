@@ -1,0 +1,36 @@
+LIBRARIAN=ilibr
+OCCAM=oc
+LINK=ilink
+CONFIG=icconf
+OCONFIG=occonf
+COLLECT=icollect
+CC=icc
+DELETE=rm
+LIBOPT=
+OCCOPT=
+LINKOPT=
+CONFOPT=
+OCONFOPT=
+COLLECTOPT=
+COPT=
+
+
+##### IMAKEF CUT #####
+
+savage.b4h: savage.c4h 
+	$(COLLECT) savage.c4h -t  -o savage.b4h $(COLLECTOPT)
+
+savage.c4h: savage.l4h savage.t4h 
+	$(LINK) -f savage.l4h -t4 -h -o savage.c4h $(LINKOPT)
+
+savage.t4h: savage.occ /Users/pahi/d7205/libs/hostio.lib \
+            /Users/pahi/d7205/libs/hostio.liu \
+            /Users/pahi/d7205/libs/convert.lib \
+            /Users/pahi/d7205/libs/dblmath.lib 
+	$(OCCAM) savage -t4 -h -o savage.t4h $(OCCOPT)
+
+clean  : delete
+delete :
+	-$(DELETE) savage.c4h
+	-$(DELETE) savage.t4h
+

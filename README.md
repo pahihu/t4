@@ -18,6 +18,7 @@ Non-goals
 Changes
 =======
 
+* added C and occam versions of Savage benchmark, fixed fpremfirst
 * added C versions of Dhrystone and Whetstone benchmarks
 * D7214C C toolset successfully built hello example, added hello example in C
 * runs the T800 sqrroots example, added sqrroots source by Daniel Hyde

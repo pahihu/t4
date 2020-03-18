@@ -476,12 +476,12 @@ void print_fpreg (char *ident, char name, REAL *fpreg, int printempty)
         if (fpreg->type == FP_REAL64)
         {
                 r64.fp = fpreg->u.db;
-                printf ("%sF%cReg          #%016llX   (%lg)\n", ident, name, r64.bits, fpreg->u.db);
+                printf ("%sF%cReg          #%016llX   (%.15le)\n", ident, name, r64.bits, fpreg->u.db);
         }
         else if (fpreg->type == FP_REAL32)
         {
                 r32.fp = fpreg->u.sn;
-                printf ("%sF%cReg                  #%08X   (%g)\n", ident, name, r32.bits, fpreg->u.sn);
+                printf ("%sF%cReg                  #%08X   (%.7e)\n", ident, name, r32.bits, fpreg->u.sn);
         } 
         else if (printempty)
         {

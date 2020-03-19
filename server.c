@@ -39,6 +39,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _MSC_VER
+#include <io.h>
+#include <fcntl.h>
+#endif
 
 #ifdef __MWERKS__
   #include <SIOUX.h>
@@ -58,7 +62,9 @@
     #endif
   #endif
   #include <sys/types.h>
+  #ifndef _MSC_VER
   #include <unistd.h>
+  #endif
 #endif
 
 #include <time.h>
@@ -591,14 +597,19 @@ void sp_open (void)
 		error_packet ();
 		return;
 	}
+	
+#ifdef _MSC_VER
+	if (type == SP_BINARY)
+		_setmode( _fileno(fd), _O_BINARY);
+#endif
 
 	FromServerBuffer[0] = 6;
 	FromServerBuffer[1] = 0;
 
 	FromServerBuffer[2] = SP_OK;
 
-        fdx = FromFile (fd);
-        Files[fdx].type = type;
+	fdx = FromFile (fd);
+	Files[fdx].type = type;
 
 	FromServerBuffer[3] = ((unsigned int)fdx) & 0x000000ff;
 	FromServerBuffer[4] = (((unsigned int)fdx) & 0x0000ff00) >>  8;

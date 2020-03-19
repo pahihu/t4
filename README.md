@@ -18,6 +18,7 @@ Non-goals
 Changes
 =======
 
+* Windows port, added Win32/Win64 executables
 * added C and occam versions of Savage benchmark, fixed fpremfirst
 * added C versions of Dhrystone and Whetstone benchmarks
 * D7214C C toolset successfully built hello example, added hello example in C

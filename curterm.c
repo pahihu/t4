@@ -6,8 +6,9 @@
 #include "curterm.h"
 
 static int ctrl_c_event;
+static int prepared = 0;
 
-#ifdef __MINGW32__
+#ifdef _MSC_VER
 #define WIN32_LEAN_AND_MEAN 1
 #include <windows.h>
 #include <conio.h>
@@ -77,13 +78,18 @@ void prepterm(int dir)
 	initterm();
 
 	if (dir) {
-		GetConsoleMode(hStdin, &told);
-		tnew  = told;
-		tnew &= ~ENABLE_PROCESSED_INPUT;
-		SetConsoleMode(hStdin, tnew);
+		if (prepared == 0) {
+			GetConsoleMode(hStdin, &told);
+			tnew  = told;
+			tnew &= ~ENABLE_PROCESSED_INPUT;
+			SetConsoleMode(hStdin, tnew);
+			prepared = 1;
+		}
 	}
-	else
+	else if (prepared) {
 		SetConsoleMode(hStdin, told);
+		prepared = 0;
+	}
 
 	return;
 }
@@ -122,13 +128,17 @@ void prepterm(int dir)
       return;
 
 	if (dir) {
-		tcgetattr(STDIN_FILENO, &told);
-		tnew = told;
-                tnew.c_iflag &= ~ICRNL;
-		tnew.c_lflag &= ~(ICANON | ECHO );
-		tcsetattr(STDIN_FILENO, TCSANOW | TCSAFLUSH, &tnew);
-	} else {
+		if (prepared == 0) {
+			tcgetattr(STDIN_FILENO, &told);
+			tnew = told;
+	                tnew.c_iflag &= ~ICRNL;
+			tnew.c_lflag &= ~(ICANON | ECHO );
+			tcsetattr(STDIN_FILENO, TCSANOW | TCSAFLUSH, &tnew);
+			prepared = 1;
+		}
+	} else if (prepared) {
 		tcsetattr(STDIN_FILENO, TCSANOW | TCSAFLUSH, &told);
+		prepared = 0;
    }
 }
 

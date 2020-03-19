@@ -36,12 +36,17 @@
  * The transputer emulator.
  *
  */
+#ifdef _MSC_VER
+#include "gettimeofday.h"
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _MSC_VER
 #include <sys/time.h>
 #include <unistd.h>
+#endif
 #include <math.h>
 #include "processor.h"
 #include "arithmetic.h"
@@ -216,6 +221,12 @@ struct prof *profile_head = NULL;
 
 /* Signal handler. */
 void handler (int);
+
+#ifdef _MSC_VER
+#define t4_popcount(x)			__popcnt (x)
+#else
+#define t4_popcount(x)			__builtin_popcount (x)
+#endif
 
 #ifdef __clang__
 #define t4_bitreverse(x)        __builtin_bitreverse32 (x)
@@ -2152,7 +2163,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x76: /* XXX bitcnt    */
 		           if (IsT414)
 		               goto BadCode;
-                           temp = __builtin_popcount (AReg);
+                           temp = t4_popcount (AReg);
                            AReg = temp + BReg;
                            BReg = CReg;
 		           IPtr++;

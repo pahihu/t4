@@ -14,7 +14,14 @@
 
 #pragma STDC FENV_ACCESS ON
 
+#ifdef __APPLE__
 #define __INT32_MIN__   ((-__INT32_MAX__)-1)
+#endif
+
+#ifdef _MSC_VER
+#define __INT32_MIN__	INT32_MIN
+#define __INT32_MAX__	INT32_MAX
+#endif
 
 /* #define FE_T800_EXCEPT  (FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW | FE_INEXACT) */
 #define FE_T800_EXCEPT  (FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW)

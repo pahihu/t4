@@ -39,6 +39,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#ifdef _MSC_VER
+#include <io.h>
+#include <fcntl.h>
+#endif
 #include "processor.h"
 
 #ifdef __MWERKS__
@@ -143,7 +147,10 @@ int main (int argc, char **argv)
 	int temp;
 	int temp2;
 
-        msgdebug = NULL != getenv ("MSGDEBUG");
+#ifdef _MSC_VER
+	_set_fmode (_O_BINARY);
+#endif	
+    msgdebug = NULL != getenv ("MSGDEBUG");
 
 #ifdef __MWERKS__
 	/* Create some menus, etc. */
@@ -399,7 +406,8 @@ int main (int argc, char **argv)
 			strcat (CommandLineMost, " ");
 		}
 	}
-	CommandLineMost[strlen(CommandLineMost)-1] = '\0';
+	if (strlen(CommandLineMost))
+		CommandLineMost[strlen(CommandLineMost)-1] = '\0';
 
         /* Allocate internal memory. */
 	core = malloc (CoreSize);
@@ -591,7 +599,8 @@ void handler (int signal)
 #endif
 
 #ifdef CURTERM
-        prepterm (0);
+   	prepterm (0);
+	exit (-1);
 #else
 #ifdef __MWERKS__
 	/* Exit dialog. */

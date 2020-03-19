@@ -42,20 +42,24 @@
 #include "processor.h"
 
 #ifdef __MWERKS__
-#include "mac_input.h"
-#include <profiler.h>
+  #include "mac_input.h"
+  #include <profiler.h>
 #else
-#define true TRUE
-#define false FALSE
-#ifdef SUN
-#include <termio.h>
-#else
-#include <sys/termios.h>
-#include <sys/ioctl.h>
-#define TCGETS TIOCGETA
-#define TCSETS TIOCSETA
-#define termio termios
-#endif
+  #define true TRUE
+  #define false FALSE
+  #ifdef CURTERM
+    #include "curterm.h"
+  #else
+    #ifdef SUN
+      #include <termio.h>
+    #else
+      #include <sys/termios.h>
+      #include <sys/ioctl.h>
+      #define TCGETS TIOCGETA
+      #define TCSETS TIOCSETA
+      #define termio termios
+    #endif
+  #endif
 #endif
 
 #undef TRUE
@@ -106,11 +110,15 @@ void handler (int);
 int argc; /*= 4;*/
 char argv[4][40]; /* = {"jserver","-se","-sb","solport.b4"};*/
 #else
+#ifdef CURTERM
+#include "curterm.h"
+#else
 /* Terminal settings. */
 struct termios t_init;
 struct termios t_getk;
 struct termios t_poll;
 enum {INIT, GETK, POLL} t_state;
+#endif
 #endif
 
 void set_debug (void)
@@ -461,6 +469,10 @@ int main (int argc, char **argv)
 	for (temp=0; temp<10; temp++)
 		profile[temp] = 0;
 
+#ifdef CURTERM
+        /* Initialise terminal settings. */
+        prepterm (1);
+#else
 #ifndef __MWERKS__
 	/* Initialise t_init terminal settings. */
 	if ((ioctl (0, TCGETS, &t_init)) != 0)
@@ -496,6 +508,7 @@ int main (int argc, char **argv)
 	t_poll.c_cc[VMIN] = 0;
 	t_poll.c_cc[VTIME] = 1;
 #endif
+#endif
 
 #ifdef PROFILE
 	if (profiling)
@@ -515,7 +528,7 @@ int main (int argc, char **argv)
 	if (ProfilerInit(collectDetailed,bestTimeBase,10,10) == noErr)
 	{
 #endif
-		
+
 	/* Now start the emulator. */
 	mainloop ();
 
@@ -543,6 +556,9 @@ int main (int argc, char **argv)
 	}
 #endif
 
+#ifdef CURTERM
+        prepterm (0);
+#else
 #ifndef __MWERKS__
 	if (t_state != INIT)
 	{
@@ -552,6 +568,7 @@ int main (int argc, char **argv)
 			handler (-1);
 		}
 	}
+#endif
 #endif
 
 #ifdef __MWERKS__
@@ -573,6 +590,9 @@ void handler (int signal)
 		fclose (ProfileFile);
 #endif
 
+#ifdef CURTERM
+        prepterm (0);
+#else
 #ifdef __MWERKS__
 	/* Exit dialog. */
 	dialog = GetNewDialog (129, nil, (void *) -1);
@@ -597,5 +617,6 @@ void handler (int signal)
 	}
 
 	exit (-1);
+#endif
 #endif
 }

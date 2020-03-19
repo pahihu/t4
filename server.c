@@ -41,20 +41,24 @@
 #include <string.h>
 
 #ifdef __MWERKS__
-#include <SIOUX.h>
-#include "mac_input.h"
+  #include <SIOUX.h>
+  #include "mac_input.h"
 #else
-#ifdef SUN
-#include <termio.h>
-#else
-#include <sys/termios.h>
-#include <sys/ioctl.h>
-#define TCGETS TIOCGETA
-#define TCSETS TIOCSETA
-#define termio termios
-#endif
-#include <sys/types.h>
-#include <unistd.h>
+  #ifdef CURTERM
+    #include "curterm.h"
+  #else
+    #ifdef SUN
+      #include <termio.h>
+    #else
+      #include <sys/termios.h>
+      #include <sys/ioctl.h>
+      #define TCGETS TIOCGETA
+      #define TCSETS TIOCSETA
+      #define termio termios
+    #endif
+  #endif
+  #include <sys/types.h>
+  #include <unistd.h>
 #endif
 
 #include <time.h>
@@ -1111,6 +1115,10 @@ void sp_getkey (void)
 {
 	char ch;
 
+#ifdef CURTERM
+        while (!has_key ());
+        ch = getkey ();
+#else
 #ifndef __MWERKS__
 	if (t_state != GETK)
 	if ((ioctl (0, TCSETS, &t_getk)) != 0)
@@ -1128,6 +1136,7 @@ void sp_getkey (void)
 #else
 
 	ch = mygetchar();
+#endif
 #endif
 
         // fprintf (stderr, "SP_GETKEY: ch = %d (#%X).\n", ch, ch);
@@ -1151,6 +1160,15 @@ void sp_pollkey (void) /* XXX */
 {
 	char ch;
 
+#ifdef CURTERM
+        if (has_key ())
+                ch = getkey ();
+        else
+        {
+                error_packet ();
+                return;
+        }
+#else
 #ifndef __MWERKS__
 	if (t_state != POLL)
 	if ((ioctl (0, TCSETS, &t_poll)) != 0)
@@ -1172,6 +1190,7 @@ void sp_pollkey (void) /* XXX */
 		error_packet ();
 		return;
 	}
+#endif
 #endif
 
 	FromServerBuffer[0] = 6;

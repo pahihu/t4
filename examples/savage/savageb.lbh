@@ -1,0 +1,10 @@
+--
+-- imakef : Version 3.40, 1st March 1991
+--
+-- linker command file "savageb.lbh"
+--
+savageb.tbh
+hostio.lib
+convert.lib
+tbmaths.lib
+#INCLUDE occama.lnk

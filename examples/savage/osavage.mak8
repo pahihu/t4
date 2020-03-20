@@ -23,11 +23,7 @@ savage.b8h: savage.c8h
 savage.c8h: savage.l8h savage.t8h 
 	$(LINK) -f savage.l8h -t8 -h -o savage.c8h $(LINKOPT)
 
-savage.t8h: savage.occ /Users/pahi/d7205/libs/hostio.inc \
-            /Users/pahi/d7205/libs/hostio.lib \
-            /Users/pahi/d7205/libs/hostio.liu \
-            /Users/pahi/d7205/libs/convert.lib \
-            /Users/pahi/d7205/libs/dblmath.lib 
+savage.t8h: savage.occ
 	$(OCCAM) savage -t8 -h -o savage.t8h $(OCCOPT)
 
 clean  : delete

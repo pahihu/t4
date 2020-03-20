@@ -20,15 +20,10 @@ COPT=
 savage.b4h: savage.c4h 
 	$(COLLECT) savage.c4h -t  -o savage.b4h $(COLLECTOPT)
 
-savage.c4h: savage.lnk savage.t4h /Users/pahi/ictools/libs/startup.lnk \
-            /Users/pahi/ictools/libs/centry.lib \
-            /Users/pahi/ictools/libs/libc.lib 
+savage.c4h: savage.lnk savage.t4h
 	$(LINK) -f savage.lnk -t4 -h -o savage.c4h $(LINKOPT)
 
-savage.t4h: savage.c /Users/pahi/ictools/libs/stdio.h \
-            /Users/pahi/ictools/libs/subsem.h \
-            /Users/pahi/ictools/libs/subchan.h \
-            /Users/pahi/ictools/libs/stdlib.h /Users/pahi/ictools/libs/math.h 
+savage.t4h: savage.c
 	$(CC) savage.c -g -t4 -o savage.t4h $(COPT)
 
 clean  : delete

@@ -32,3 +32,6 @@ BOOT FILES
 +savage
         200318AP  works, T800 DATAN/DTAN gives the same results as T414 
                   double precision version
+
+-savageb
+        200320AP  tbmaths version of Savage does NOT work (roundsn, unpacksn, postnormsn)

@@ -1,0 +1,26 @@
+#INCLUDE "hostio.inc"
+#USE "hostio.lib"
+#USE "tbmaths.lib"
+PROC Savage (CHAN OF SP fs, ts, []INT user.buffer)
+  REAL32 A, DiffA :
+  SEQ  
+    so.write.string (fs, ts, "Savage benchmark...")
+
+    A := 1.0 (REAL32)  
+ 
+    SEQ i = 0 FOR 2499
+      A := TAN(ATAN(EXP(ALOG(SQRT(A*A))))) + 1.0 (REAL32)  
+ 
+    so.write.string.nl (fs, ts, "done")
+
+    DiffA := 2500.0 (REAL32) - A
+
+    so.write.string (fs, ts, "   a =" )
+    so.write.real32 (fs, ts,     A, 1, 7)
+    so.write.nl (fs, ts)
+    so.write.string (fs, ts, "diff =" )
+    so.write.real32 (fs, ts, DiffA, 1, 7)
+    so.write.nl (fs, ts)
+
+    so.exit (fs, ts, sps.success)
+:

@@ -275,7 +275,8 @@ int server (void)
 	                printf ("-I-EMUSRV: To server buffer %d; From server buffer %d.\n", ToServerLen, FromServerLen);
         }
 
-	if ((FromServerLen==0) && (usetvs && (Link0InLength == 0)))
+	if ((!usetvs && (FromServerLen == 0)) ||
+            ( usetvs && (Link0InLength == 0)))
 	{
 		/* No messages leaving server, so server can handle the next incoming message. */
                 /* Check Link0Out for a valid process to see if there is a message.       */

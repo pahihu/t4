@@ -1,0 +1,188 @@
+#OPTION "V"
+#USE "dblmath.lib"
+--{{{  whetstones (single-length)
+PROC Whetstone (VAL [11]INT n, VAL INT iterations, [12]INT abstime)
+  TIMER time :
+  [4] REAL64 e1 :
+  REAL64 t, t1, t2 :
+  INT j, k, l :
+  --{{{  PROC pa (VAR e[])
+  PROC pa ([4]REAL64 e)
+    SEQ j = 0 FOR 6
+      SEQ
+        e[0] := (((e[0]    + e[1]) + e[2]) - e[3]) * t
+        e[1] := (((e[0]    + e[1]) - e[2]) + e[3]) * t
+        e[2] := (((e[0]    - e[1]) + e[2]) + e[3]) * t
+        e[3] := ((((-e[0]) + e[1]) + e[2]) + e[3]) / t2
+  :
+  --}}}
+  --{{{  PROC p0 ()
+  PROC p0 ()
+    SEQ
+      e1 [j] := e1 [k]
+      e1 [k] := e1 [l]
+      e1 [l] := e1 [j]
+  :
+  --}}}
+  --{{{  PROC p3 (VAL REAL64 xdash, ydash, REAL64 z)
+  PROC p3 (VAL REAL64 xdash, ydash, REAL64 z)
+    REAL64 x, y :
+    SEQ
+      x := t * (xdash + ydash)
+      y := t * (x + ydash)
+      z := (x + y) / t2
+  :
+  --}}}
+  SEQ
+    --{{{  initialise constants
+    t  := 0.499975(REAL64)
+    t1 := 0.50025(REAL64)
+    t2 := 2.0(REAL64)
+    --}}}
+    time ? abstime [0] -- record start time
+    --{{{  MODULE  1 : SIMPLE IDENTIFIERS
+    REAL64 x1, x2, x3, x4 :
+    SEQ
+      x1 :=  1.0(REAL64)
+      x2 := -1.0(REAL64)
+      x3 := -1.0(REAL64)
+      x4 := -1.0(REAL64)
+      SEQ i = 0 FOR n [0] * iterations
+        SEQ
+          x1 := (((   x1 + x2) + x3) - x4) * t
+          x2 := (((   x1 + x2) - x3) + x4) * t
+          x3 := (((   x1 - x2) + x3) + x4) * t
+          x4 := ((((-x1) + x2) + x3) + x4) * t
+    time ? abstime [1]
+    --}}}
+    --{{{  MODULE  2 : ARRAY ELEMENTS
+    SEQ
+      e1 [0] := 1.0(REAL64)
+      e1 [1] := - 1.0(REAL64)
+      e1 [2] := - 1.0(REAL64)
+      e1 [3] := - 1.0(REAL64)
+      SEQ i = 0 FOR n [1] * iterations
+        SEQ
+          e1[0] := (((e1[0]    + e1[1]) + e1[2]) - e1[3]) * t
+          e1[1] := (((e1[0]    + e1[1]) - e1[2]) + e1[3]) * t
+          e1[2] := (((e1[0]    - e1[1]) + e1[2]) + e1[3]) * t
+          e1[3] := ((((-e1[0]) + e1[1]) + e1[2]) + e1[3]) * t
+    time ? abstime [2]
+    --}}}
+    --{{{  MODULE  3 : ARRAY AS PARAMETER
+    SEQ i = 0 FOR n [2] * iterations
+      pa (e1)
+    time ? abstime [3]
+    --}}}
+    --{{{  MODULE  4 : CONDITIONAL JUMPS
+    SEQ
+      j := 1
+      SEQ i = 0 FOR n [3] * iterations
+        SEQ
+          IF
+            j = 1
+              j := 2
+            TRUE
+              j := 3
+          IF
+            j > 2
+              j := 0
+            TRUE
+              j := 1
+          IF
+            j < 1
+              j := 1
+            TRUE
+              j := 0
+    time ? abstime [4]
+    --}}}
+    --{{{  MODULE  5 : OMMITTED
+    time ? abstime [5]
+    --}}}
+    --{{{  MODULE  6 : INTEGER ARITHMETIC
+    SEQ
+      j := 1
+      k := 2
+      l := 3
+      SEQ i = 0 FOR n [5] * iterations
+        SEQ
+          j := (j * (k - j)) * (l - k)
+          k := (l * k) - ((l - j) * k)
+          l := (l - k) * (k + j)
+          e1 [l - 2] := REAL64 ROUND ((j + k) + l)
+          e1 [k - 2] := REAL64 ROUND ((j * k) * l)
+    time ? abstime [6]
+    --}}}
+    --{{{  MODULE  7 : TRIG. FUNCTIONS
+    REAL64 x, y, r1, r2, r3, r4 :
+    SEQ
+      x := 0.5(REAL64)
+      y := 0.5(REAL64)
+      SEQ i = 0 FOR n [6] * iterations
+        SEQ
+          --{{{  x := t*arctan((t2*sin(x)*cos(x))/((cos(x+y)+cos(x-y))-1.0))
+          r1 := DCOS(x + y)
+          r2 := DCOS(x - y)
+          r3 := DCOS(x)
+          r4 := DSIN(x)
+          r4 := DATAN(((t2*r3)*r4)/((r1 + r2) - 1.0(REAL64)))
+          x := t * r4
+          --}}}
+          --{{{  y := t*arctan((t2*sin(y)*cos(y))/((cos(x+y)+cos(x-y))-1.0))
+          r1 := DCOS(x + y)
+          r2 := DCOS(x - y)
+          r3 := DCOS(y)
+          r4 := DSIN(y)
+          r4 := DATAN(((t2*r2)*r4)/((r1 + r2) - 1.0(REAL64)))
+          y := t * r4
+          --}}}
+    time ? abstime [7]
+    --}}}
+    --{{{  MODULE  8 : PROCEDURE CALLS
+    REAL64 x, y, z :
+    SEQ
+      x := 1.0(REAL64)
+      y := 1.0(REAL64)
+      z := 1.0(REAL64)
+      SEQ i = 0 FOR n [7] * iterations
+        p3 (x, y, z)
+    time ? abstime [8]
+    --}}}
+    --{{{  MODULE  9 : ARRAY REFERENCES
+    SEQ
+      j := 1
+      k := 2
+      l := 3
+      e1[0] := 1.0(REAL64)
+      e1[1] := 2.0(REAL64)
+      e1[2] := 3.0(REAL64)
+      SEQ i = 0 FOR n [8] * iterations
+        p0 ()
+      time ? abstime [9]
+    --}}}
+    --{{{  MODULE 10 : INTEGER ARITHMETIC
+    SEQ
+      j := 2
+      k := 3
+      SEQ i = 0 FOR n [9] * iterations
+        SEQ
+          j := j + k
+          k := j + k
+          j := k - j
+          k := (k - j) - j
+    time ? abstime [10]
+    --}}}
+    --{{{  MODULE 11 : STANDARD FUNCTIONS
+    REAL64 x :
+    SEQ
+      x := 0.75(REAL64)
+      SEQ i = 0 FOR n [10] * iterations
+        REAL64 r2 :
+        SEQ
+          r2 := DALOG(x)
+          r2 := DEXP(r2/t1)
+          x := DSQRT(r2)
+    time ? abstime [11]
+    --}}}
+:
+--}}}

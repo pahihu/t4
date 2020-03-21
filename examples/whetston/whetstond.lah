@@ -1,0 +1,11 @@
+--
+-- imakef : Version 3.37, 19th February 1990
+--
+-- linker command file "whetston.lah"
+--
+whetston.tah
+hostio.lib
+whet.tau
+convert.lib
+dblmath.lib
+#INCLUDE occama.lnk

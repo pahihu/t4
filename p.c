@@ -514,7 +514,7 @@ void processor_state (void)
         printf ("\tCReg           #%08X\n", CReg);
         printf ("\tError          %s\n", ReadError ? "Set" : "Clear");
         printf ("\tHalt on Error  %s\n", ReadHaltOnError ? "Set" : "Clear");
-        if (IsT800)
+        if (IsT800 || IsTVS)
         {
                 print_fpreg ("\t", 'A', &FAReg, 1);
                 print_fpreg ("\t", 'B', &FBReg, 1);
@@ -574,6 +574,8 @@ char *mnemonic(unsigned char icode, uint32_t oreg, uint32_t fpuentry)
                 }
                 else if (oreg == 0x17c)
                         mnemo = "LDDEVID";
+                else if (oreg == 0x1FF)
+                        mnemo = "START";
                 else if (oreg < 0xfa)
                         mnemo = Secondaries[oreg];
 
@@ -622,7 +624,7 @@ void init_processor (void)
         update_tod (&LastTOD);
 
 
-        if (IsT800)
+        if (IsT800 || IsTVS)
         {
                 fp_init ();
                 FAReg.type = FP_UNKNOWN;
@@ -741,11 +743,11 @@ void mainloop (void)
                         mnemo = mnemonic (Icode, OReg, AReg);
                         printf("%-17s", mnemo);
 	                printf ("   %c%c", FLAG(ReadHaltOnError, 'H'), FLAG(      ReadError, 'E'));
-                        if (IsT800)
+                        if (IsT800 || IsTVS)
 	                        printf ("%c", FLAG(FP_Error, 'F'));
                         printf ("   %8X %8X %8X   %08X %8X\n", 
                                 AReg, BReg, CReg, WPtr, word_int (WPtr));
-                        if (IsT800)
+                        if (IsT800 || IsTVS)
                         {
                                 currFPInstr = 0 == strncmp (mnemo, "FP", 2);
                                 if (currFPInstr || prevFPInstr)
@@ -2705,6 +2707,10 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 BReg = CReg;
                            IPtr++;
                            break;
+                case 0x1ff: /* start    */
+                           quit = TRUE;
+                           IPtr++;
+                           break;
 		default  : 
 BadCode:
                            printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg, AReg));
@@ -2721,7 +2727,7 @@ BadCode:
 			   break;
 	} /* switch (Icode) */
                 /* Reset rounding mode to round nearest. */
-                if (IsT800 && (RoundingMode != ROUND_N))
+                if ((IsT800 || IsTVS) && (RoundingMode != ROUND_N))
                         fp_setrounding (ROUND_N);
 #ifdef PROFILE
 		if (profiling)
@@ -2926,7 +2932,7 @@ int run_process (void)
 		STATUSReg = word (index (MostNeg, 16));
 		/*EReg = word (index (MostNeg, 17));*/
 
-                if (IsT800)
+                if (IsT800 || IsTVS)
                 {
                         FAReg = FARegSave;
                         FBReg = FBRegSave;
@@ -3110,7 +3116,7 @@ void interrupt (void)
 	writeword (index (MostNeg, 16), STATUSReg);
 	/*writeword (index (MostNeg, 17), EReg);*/
 
-        if (IsT800)
+        if (IsT800 || IsTVS)
         {
                 FARegSave = FAReg;
                 FBRegSave = FBReg;

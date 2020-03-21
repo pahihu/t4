@@ -1,4 +1,8 @@
-I would like to say thanks to Julian Highfield writing his [Transputer Emulator](https://web.archive.org/web/20130515034826/http://spirit.lboro.ac.uk/emulator.html), Mike's [transputer.net](http://www.transputer.net/welcome.asp) for the Transputer Validation Suite and for invaluable documentation, although I've read the Compiler Writer's Guide several times back in 1992, and to Gavin Crate [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) for the email conversation about the Portakit.
+I would like to say thanks to 
+
+* Julian Highfield writing his [Transputer Emulator](https://web.archive.org/web/20130515034826/http://spirit.lboro.ac.uk/emulator.html)
+* Mike's [transputer.net](http://www.transputer.net/welcome.asp) for the Transputer Validation Suite and for invaluable documentation, although I've read the Compiler Writer's Guide several times back in 1992
+* Gavin Crate [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) for the email conversation about the Portakit
 
 Goals
 =====
@@ -15,9 +19,28 @@ Non-goals
 * emulate multiple transputers
 * to be efficient
 
+Failed tests from Mike's TVS
+============================
+
+* bitrevnbits
+* crcbyte
+* crcword
+* cword
+* div
+* fmul
+* ldiv
+* mul
+* postnormsn
+* rem
+* roundsn
+* unpacksn
+* wcnt
+* xword
+
 Changes
 =======
 
+* added -sv flag to support Mike's TVS1
 * Windows port, added Win32/Win64 executables
 * added C and occam versions of Savage benchmark, fixed fpremfirst
 * added C versions of Dhrystone and Whetstone benchmarks
@@ -36,7 +59,7 @@ Changes
 **NOTE**: There is the excellent [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) from Gavin Crate. Otherwise here is the code. Good luck!
 
 
-pahihu,  12 / 3 / 2020
+pahihu,  21 / 3 / 2020
 
 
 
@@ -46,7 +69,7 @@ Command line arguments
 
         Usage : t4 [options] [program arguments]
 
-        t4 V1.3   10/3/2020
+        t4 V1.4   21/3/2020
 
         Options:
             -sa                  Analyse transputer.
@@ -62,6 +85,8 @@ Command line arguments
             -s8                  Select T800 mode.
             -sm #bits            Memory size in address bits (default 21, 2Mbyte).
             -su                  Halt on not initialized memory read.
+            -sv inp.tbo inp.bin out.bin
+                                 Select Mike's TSV: T800 + T414 FP support.
             -sw "string"         Trigger execution trace on SP_WRITE (string).
             -sx [number]         Execution trace (4 - mem ld/st, 2 - iserver, 1 - instructions).
 

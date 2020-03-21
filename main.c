@@ -84,6 +84,7 @@ int memdebug    = FALSE;
 int memnotinit  = FALSE;
 int msgdebug    = FALSE;
 char *dbgtrigger = NULL;
+int usetvs      = FALSE;
 
 extern int32_t quit;
 extern int32_t quitstatus;
@@ -92,6 +93,7 @@ char CommandLineAll[256]  = "\0";
 char CommandLineMost[256] = "\0";
 
 FILE *CopyIn;
+FILE *InpFile, *OutFile;
 
 extern unsigned char *core;
 extern unsigned char *mem;
@@ -139,6 +141,7 @@ int main (int argc, char **argv)
 #endif
 {
 	static char CopyFileName[256];
+        static char InpFileName[256], OutFileName[256];
         char IBoardSize[32];
 	int verbose     = FALSE;
 	int reset       = FALSE;
@@ -150,7 +153,9 @@ int main (int argc, char **argv)
 #ifdef _MSC_VER
 	_set_fmode (_O_BINARY);
 #endif	
-    msgdebug = NULL != getenv ("MSGDEBUG");
+
+        msgdebug = NULL != getenv ("MSGDEBUG");
+        CopyIn = InpFile = OutFile = (FILE *) NULL;
 
 #ifdef __MWERKS__
 	/* Create some menus, etc. */
@@ -160,7 +165,7 @@ int main (int argc, char **argv)
 	{
 		printf("\n");
 		printf("Usage : t4 [options] [program arguments]\n\n");
-		printf("t4 V1.3   10/3/2020\n\n");
+		printf("t4 V1.4   21/3/2020\n\n");
 		printf("Options:\n");
 		printf("    -sa                  Analyse transputer.\n");
 		printf("    -sb filename         Boot program \"filename\".\n");
@@ -175,6 +180,8 @@ int main (int argc, char **argv)
                 printf("    -s8                  Select T800 mode.\n");
                 printf("    -sm #bits            Memory size in address bits (default 21, 2Mbyte).\n");
                 printf("    -su                  Halt on not initialized memory read.\n");
+                printf("    -sv inp.tbo inp.bin out.bin\n");
+                printf("                         Select Mike's TSV: T800 + T414 FP support.\n");
                 printf("    -sw \"string\"         Trigger execution trace on SP_WRITE (string).\n");
                 printf("    -sx [number]         Execution trace (4 - mem ld/st, 2 - iserver, 1 - instructions).\n");
 		printf("\n");
@@ -354,6 +361,29 @@ int main (int argc, char **argv)
 					  }
 					  else memnotinit=true;
 					  break;
+                                case 'v': if (argv[arg][3]!='\0')
+					  {
+						strcat (CommandLineMost, argv[arg]);
+						strcat (CommandLineMost, " ");
+					  }
+					  else
+					  {
+						if (arg + 3 >= argc)
+						{
+							printf("\nMissing parameters after -sv\n");
+							handler (-1);
+						}
+                                                strcpy (CopyFileName, argv[arg + 1]);
+                                                strcpy (InpFileName, argv[arg + 2]);
+                                                strcpy (OutFileName, argv[arg + 3]);
+                                                arg += 3;
+                                                usetvs = TRUE;
+                                                Txxx   = 1144;
+                                                CoreSize    = 4 * 1024;
+                                                MemStart    = 0x80000070;
+                                                ExtMemStart = 0x80001000;
+					  }
+					  break;
 				case 'w': if (argv[arg][3]!='\0')
 					  {
 						strcat (CommandLineMost, argv[arg]);
@@ -458,12 +488,34 @@ int main (int argc, char **argv)
 	}
 
 	/* Load bootstrap into emulator. */
-	temp = getc (CopyIn);
-	if (temp < 2)
-	{
-		printf ("\nFile does not start with bootstrap code!\n");
-		handler (-1);
-	}
+        if (usetvs)
+        {
+                /* Optional InpFileName. */
+                if ((0 != strlen (InpFileName)) &&
+                    (InpFile = fopen (InpFileName, "rb")) == NULL)
+                {
+                        printf ("Failed to open file %s for TVS input!\n", InpFileName);
+                        handler (-1);
+                }
+                if ((OutFile = fopen (OutFileName, "wb")) == NULL)
+                {
+                        printf ("Failed to open file %s for TVS output!\n", OutFileName);
+                        handler (-1);
+                }
+                
+                fseek (CopyIn, 0, SEEK_END);
+                temp = ftell (CopyIn);
+                fseek (CopyIn, 0, SEEK_SET);
+        }
+        else
+        {
+	        temp = getc (CopyIn);
+	        if (temp < 2)
+	        {
+		        printf ("\nFile does not start with bootstrap code!\n");
+		        handler (-1);
+	        }
+        }
 	for (temp2=0; temp2<temp; temp2++)
 	{
 		writebyte_int ((MemStart+temp2), getc (CopyIn));
@@ -549,6 +601,10 @@ int main (int argc, char **argv)
 
 	/* Close boot file. */
 	fclose (CopyIn);
+        if (InpFile)
+                fclose (InpFile);
+        if (OutFile)
+                fclose (OutFile);
 
 #ifdef PROFILE
 	if (profiling)
@@ -597,6 +653,13 @@ void handler (int signal)
 	if (profiling)
 		fclose (ProfileFile);
 #endif
+
+        if (CopyIn)
+                fclose (CopyIn);
+        if (InpFile)
+                fclose (InpFile);
+        if (OutFile)
+                fclose (OutFile);
 
 #ifdef CURTERM
    	prepterm (0);

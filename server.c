@@ -102,12 +102,18 @@ typedef struct _FileDesc_ {
 FileDesc Files[MAX_FD];
 char *MessageTags[129];
 
+extern int32_t quit;
+extern int32_t quitstatus;
+
 extern int  copy;
 extern FILE *CopyIn;
 extern int  emudebug;
 extern int  msgdebug;
 extern char *dbgtrigger;
 extern void set_debug (void);
+
+extern int  usetvs;
+extern FILE *InpFile, *OutFile;
 
 extern int profiling;
 extern int32_t profile[10];
@@ -269,7 +275,7 @@ int server (void)
 	                printf ("-I-EMUSRV: To server buffer %d; From server buffer %d.\n", ToServerLen, FromServerLen);
         }
 
-	if (FromServerLen==0)
+	if ((FromServerLen==0) && (usetvs && (Link0InLength == 0)))
 	{
 		/* No messages leaving server, so server can handle the next incoming message. */
                 /* Check Link0Out for a valid process to see if there is a message.       */
@@ -279,18 +285,31 @@ int server (void)
 		if ((LinkWdesc != NotProcess_p) && Link0OutLength)
 		{
                         activity++;
-			/* Move message to ToServerBuffer. */
-			for (loop1=0; loop1<Link0OutLength; loop1++)
-			{
-				ToServerBuffer[ToServerLen] = byte_int (Link0OutSource);
-				ToServerLen++;
-				Link0OutSource++;
-				if (ToServerLen == 514)
-                                {
-					printf ("-E-EMUSRV: Help - overflowing ToServerBuffer!\n");
-                                        handler (-1);
-                                }
-			}
+                        if (usetvs)
+                        {
+                                if (msgdebug || emudebug)
+                                        printf ("-I-EMUSRV: TVS output. Link0OutLength = #%X.\n", Link0OutLength);
+			        for (loop1=0; loop1<Link0OutLength; loop1++)
+			        {
+				        putc (byte_int (Link0OutSource), OutFile);
+				        Link0OutSource++;
+			        }
+                        }
+                        else
+                        {
+			        /* Move message to ToServerBuffer. */
+			        for (loop1=0; loop1<Link0OutLength; loop1++)
+			        {
+				        ToServerBuffer[ToServerLen] = byte_int (Link0OutSource);
+				        ToServerLen++;
+				        Link0OutSource++;
+				        if (ToServerLen == 514)
+                                        {
+					        printf ("-E-EMUSRV: Help - overflowing ToServerBuffer!\n");
+                                                handler (-1);
+                                        }
+			        }
+                        }
 
                         if (msgdebug || emudebug)
 			        printf ("-I-EMUSRV: Satisfied comms request. Rescheduling process #%8X.\n", LinkWdesc);
@@ -302,7 +321,7 @@ int server (void)
 			schedule (LinkWdesc);
 
 			/* Check if incoming message is all here yet. */
-			if (ToServerLen>=2)
+			if (!usetvs && (ToServerLen>=2))
 			{
           			length = ToServerBuffer[0] + (256 * ToServerBuffer[1]);
           			if (length<6)
@@ -346,17 +365,50 @@ int server (void)
                                 printf ("-I-EMUSRV: FromServerLen = #%X.\n", FromServerLen);
                         /* XXX */
                         dump_message ("Reply.", FromServerBuffer, FromServerLen);
-			while ((loop1 < Link0InLength) && (FromServerLen > 0))
-			{
-				writebyte_int (Link0InDest, FromServerBuffer[loop1]);
-				Link0InDest++;
-				FromServerLen--;
-				loop1++;
-			}
+                        if (usetvs)
+                        {
+                                if (msgdebug || emudebug)
+                                        printf ("-I-EMUSRV: TVS input. Link0InLength = #%X.\n", Link0InLength);
 
-			/* Moved loop bytes. Correct FromServerBuffer. */
-			for (loop2=0; loop2<FromServerLen; loop2++)
-				FromServerBuffer[loop2] = FromServerBuffer[loop2+loop1];
+                                if (feof (InpFile))
+                                {
+                                        if (msgdebug || emudebug)
+                                                printf ("-I-EMUSRV: EOF on TVS input.\n");
+                                        quit = TRUE;
+                                }
+                                else
+                                {
+                                        while (loop1 < Link0InLength) 
+                                        {
+                                                if (feof (InpFile))
+                                                {
+                                                        if (msgdebug || emudebug)
+                                                                printf ("-I-EMUSRV: EOF during TVS input.\n");
+                                                        /* Terminate here. */
+                                                        quit = TRUE;
+                                                        break;
+                                                }
+				                writebyte_int (Link0InDest, getc (InpFile));
+				                Link0InDest++;
+				                loop1++;
+                                        }
+                                }
+                                loop1 = Link0InLength;
+                        }
+                        else
+                        {
+			        while ((loop1 < Link0InLength) && (FromServerLen > 0))
+			        {
+				        writebyte_int (Link0InDest, FromServerBuffer[loop1]);
+				        Link0InDest++;
+				        FromServerLen--;
+				        loop1++;
+			        }
+
+			        /* Moved loop bytes. Correct FromServerBuffer. */
+			        for (loop2=0; loop2<FromServerLen; loop2++)
+				        FromServerBuffer[loop2] = FromServerBuffer[loop2+loop1];
+                        }
 
                         if (msgdebug || emudebug)
                                 printf ("-I-EMUSRV: Link0InLength = #%X, loop = #%X.\n", Link0InLength, loop1);
@@ -1361,8 +1413,6 @@ void sp_system (void) /* XXX */
 void sp_exit (void)
 {
 	int32_t status;
-	extern int32_t quit;
-	extern int32_t quitstatus;
 
 	status = ToServerBuffer[3] + (ToServerBuffer[4]<<8);
 	status = status + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24);

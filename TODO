@@ -35,3 +35,20 @@ BOOT FILES
 
 -savageb
         200320AP  tbmaths version of Savage does NOT work (roundsn, unpacksn, postnormsn)
+-TVS1
+        200321AP  TVS1 results
+                FAIL bitrevnbits
+                FAIL crcbyte
+                FAIL crcword
+                FAIL cword
+                FAIL div
+                FAIL fmul
+                FAIL ldiv
+                FAIL mul
+                FAIL postnormsn
+                FAIL rem
+                FAIL roundsn
+                FAIL unpacksn
+                FAIL wcnt
+                FAIL xword
+

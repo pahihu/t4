@@ -1,6 +1,6 @@
 /*
  *
- * arithmetic.c
+ * fparithmetic.c
  *
  * Arithmetic support routines.
  *

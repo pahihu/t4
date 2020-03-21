@@ -61,6 +61,7 @@ extern uint32_t CoreSize;
 
 #define IsT800  (Txxx == 800)
 #define IsT414  (Txxx == 414)
+#define IsTVS   (Txxx == 1144)
 
 #define HiPriority	0x00000000
 #define LoPriority	0x00000001

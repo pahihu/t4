@@ -34,8 +34,6 @@ Failed tests from Mike's TVS
 * rem
 * roundsn
 * unpacksn
-* wcnt
-* xword
 
 Changes
 =======

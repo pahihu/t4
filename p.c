@@ -1630,14 +1630,14 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   IPtr++;
 			   schedule (AReg);
 			   break;
-		case 0x3a: /* XXX xword       */
-                           if ((AReg>BReg) && (INT(BReg) >= 0))
+		case 0x3a: /* xword       */
+                           if (0==(AReg&BReg))
 			   {
 				AReg = BReg;
 			   }
 			   else
 			   {
-				AReg = BReg - (2 * AReg);
+                                AReg = BReg | ~(AReg - 1);
 			   }
 			   BReg = CReg;
 			   IPtr++;
@@ -1673,7 +1673,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x3f: /* XXX wcnt        */
 			   CReg = BReg;
 			   BReg = AReg & ByteSelectMask;
-			   AReg = AReg >> 2;
+			   AReg = INT(AReg) >> 2;
 			   IPtr++;
 			   break;
 		case 0x40: /* shr         */

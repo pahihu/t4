@@ -26,7 +26,6 @@ Failed tests from Mike's TVS
 * crcword
 * cword
 * fmul
-* ldiv
 * postnormsn
 * roundsn
 * unpacksn

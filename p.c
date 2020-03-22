@@ -1339,6 +1339,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x1a: /* XXX ldiv        */
 			   if (CReg >= AReg)
 			   {
+                                AReg = BReg;
+                                BReg = CReg;
 				SetError;
 			   }
 			   else if (CReg != 0)

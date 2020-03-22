@@ -46,6 +46,8 @@ void handler (int);
 #define TRUE  0x0001
 #define FALSE 0x0000
 
+#define INT(x)  ((int32_t)x)
+
 extern uint32_t t4_carry;
 extern uint32_t t4_overflow;
 extern uint32_t t4_normlen;
@@ -351,22 +353,30 @@ uint32_t t4_emul32 (uint32_t A, uint32_t B)
 	/* A and B hold the 32 bit operands. */
 	/* The result is A*B+carry.          */
 	/* Overflow is checked.              */
-	uint32_t C;
+	uint32_t CLo, CHi;
 	uint32_t D;
+        uint32_t UA, UB;
 
-	C = t4_mul32 (A, B);
-	D = C & 0x80000000;
-	if ((t4_carry==0xffffffff)&&(D==0x80000000))
-		/* Did not overflow. */
-		;
-	else if ((t4_carry==0x00000000)&&(D==0x00000000))
-		/* Did not overflow. */
-		;
-	else
-		/* Did overflow. */
-		t4_overflow = TRUE;
+        UA = A & 0x80000000 ? 1 + ~A : A;
+        UB = B & 0x80000000 ? 1 + ~B : B;
 
-	return (C);
+	CLo = t4_mul32 (UA, UB);
+        CHi = t4_carry;
+
+        if ((A & 0x80000000) != (B & 0x80000000))
+        {
+                CLo = ~CLo;
+                CHi = ~CHi;
+                if (CLo == 0xffffffff)
+                        CHi = CHi + 1;
+                CLo = CLo + 1;
+        }
+
+        D = INT(CLo) >> 31;
+        if (CHi != D)
+                t4_overflow = TRUE;
+
+        return (CLo);
 }
 
 

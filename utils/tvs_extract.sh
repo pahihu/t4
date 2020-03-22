@@ -22,7 +22,7 @@ tst=$1
 echo "Extracting failed test cases for $tst..."
 
 # extract the input file
-inpfil=`grep $tst ./tvs_test.sh | awk '{print $4;}'`
+inpfil=`grep "/$tst.tbo" ./tvs_test.sh | awk '{print $4;}'`
 
 if [ "X$inpfil" = "X" ];
 then

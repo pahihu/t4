@@ -29,7 +29,6 @@ Failed tests from Mike's TVS
 * div
 * fmul
 * ldiv
-* mul
 * postnormsn
 * rem
 * roundsn

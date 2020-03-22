@@ -163,9 +163,10 @@ uint32_t IntEnabled;            /* Interrupt enabled */
 #define GetDescPriority(wdesc)  ((wdesc) & 0x00000001)
 #define GetDescWPtr(wdesc)      ((wdesc) & 0xfffffffe)
 
+#define BitsPerByte             8
 #define BytesPerWord            4
 #define ByteSelectMask          0x00000003
-#define BitsPerWord             (8*BytesPerWord)
+#define BitsPerWord             (BitsPerByte * BytesPerWord)
 #define WordsRead(addr,len)     (((addr&(BytesPerWord-1))?1:0)+(len+(BytesPerWord-1))/BytesPerWord)
 #define BytesRead(addr,len)     (WordsRead(addr,len)*BytesPerWord)
 
@@ -1336,7 +1337,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   CReg = t4_normlen;
 			   IPtr++;
 			   break;
-		case 0x1a: /* XXX ldiv        */
+		case 0x1a: /* ldiv        */
 			   if (CReg >= AReg)
 			   {
                                 AReg = BReg;
@@ -1369,7 +1370,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   BReg = CReg;
 			   IPtr++;
 			   break;
-		case 0x1d: /* XXX xdble       */
+		case 0x1d: /* xdble       */
 			   CReg = BReg;
 			   if (INT(AReg) < 0)
 			   {
@@ -1872,7 +1873,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   BReg = CReg;
 			   IPtr++;
 			   break;
-		case 0x4c: /* XXX csngl       */
+		case 0x4c: /* csngl       */
 			   if (((INT(AReg)<0) && (INT(BReg)!=-1)) ||
                                ((INT(AReg)>=0) && (BReg!=0)))
 			   {
@@ -1995,7 +1996,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   }
 			   IPtr++;
 			   break;
-		case 0x5a: /* XXX dup    */
+		case 0x5a: /* dup    */
 		           if (IsT414)
 		               goto BadCode;
                            CReg = BReg;
@@ -2173,7 +2174,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				SetError;
 			   IPtr++;
 			   break;
-		case 0x74: /* XXX crcword    */
+		case 0x74: /* crcword    */
 		           if (IsT414)
 		               goto BadCode;
                            for (temp = 0; temp < BitsPerWord; temp++)
@@ -2181,25 +2182,27 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			        AReg = t4_shl64 (BReg, AReg, 1);
                                 BReg = t4_carry;
                                 if (t4_carry64)
-                                        BReg ^= CReg;
+                                        BReg = BReg ^ CReg;
                            }
                            AReg = BReg;
                            BReg = CReg;
+                           CReg = AReg;
 		           IPtr++;
 		           break;
-		case 0x75: /* XXX crcbyte    */
+		case 0x75: /* crcbyte    */
 		           if (IsT414)
 		               goto BadCode;
                            /* Data must be in the most significant byte of the word. */
-                           for (temp = 0; temp < 8; temp++)
+                           for (temp = 0; temp < BitsPerByte; temp++)
                            {
 			        AReg = t4_shl64 (BReg, AReg, 1);
                                 BReg = t4_carry;
                                 if (t4_carry64)
-                                        BReg ^= CReg;
+                                        BReg = BReg ^ CReg;
                            }
                            AReg = BReg;
                            BReg = CReg;
+                           CReg = AReg;
 		           IPtr++;
 		           break;
 		case 0x76: /* bitcnt    */
@@ -2237,7 +2240,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            BReg = CReg;
 		           IPtr++;
 		           break;
-		case 0x81: /* XXXX wsubdb    */
+		case 0x81: /* wsubdb    */
 		           if (IsT414)
 		               goto BadCode;
 			   AReg = index (AReg, 2*BReg);
@@ -2758,7 +2761,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 BReg = CReg;
                            IPtr++;
                            break;
-                case 0x1ff: /* start    */
+                case 0x1ff: /* XXX start    */
                            quit = TRUE;
                            IPtr++;
                            break;

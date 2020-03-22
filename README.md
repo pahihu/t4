@@ -22,8 +22,6 @@ Non-goals
 Failed tests from Mike's TVS
 ============================
 
-* crcbyte
-* crcword
 * cword
 * fmul
 * postnormsn

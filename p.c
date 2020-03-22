@@ -643,8 +643,11 @@ void checkWPtr (char *where, uint32_t wptr)
 {
         if (wptr & ByteSelectMask)
         {
-                printf ("-E-EMU414: Error - byte selector of WPtr should be zero! (%s)\n", where);
-                handler (-1);
+                if (emudebug)
+                {
+                        printf ("-W-EMU414: Warning - byte selector of WPtr should be zero! (%s)\n", where);
+                        // handler (-1);
+                }
         }
 }
 
@@ -652,8 +655,11 @@ void checkWordAligned (char *where, uint32_t ptr)
 {
         if (ptr & ByteSelectMask)
         {
-                printf ("-E-EMU414: Error - byte selector of register should be zero! (%s)\n", where);
-                handler (-1);
+                if (emudebug)
+                {
+                        printf ("-W-EMU414: Warning - byte selector of register should be zero! (%s)\n", where);
+                        // handler (-1);
+                }
         }
 }
 
@@ -788,7 +794,7 @@ void mainloop (void)
 			   IPtr++;
 			   break;
 		case 0x30: /* ldnl  */
-                           checkWordAligned ("ldnl", AReg);
+                           checkWordAligned ("LDNL", AReg);
 			   AReg = word (index (AReg, OReg));
 			   IPtr++;
 			   OReg = 0; IntEnabled = TRUE;
@@ -802,7 +808,7 @@ void mainloop (void)
 			   break;
 		case 0x50: /* ldnlp */
                            /* NB. Minix demo uses unaligned AReg! */
-                           /* checkWordAligned ("ldnlp", AReg); */
+                           checkWordAligned ("LDNLP", AReg);
 			   AReg = index (AReg, OReg);
 			   IPtr++;
 			   OReg = 0; IntEnabled = TRUE;
@@ -876,7 +882,7 @@ void mainloop (void)
 			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0xe0: /* XXX stnl  */
-                           checkWordAligned ("stnl", AReg);
+                           checkWordAligned ("STNL", AReg);
 			   writeword (index (AReg, OReg), BReg);
 			   AReg = CReg;
 			   IPtr++;
@@ -917,7 +923,7 @@ void mainloop (void)
 
 				/* Do successor process. */
 				WPtr = AReg;
-                                checkWPtr ("endp", WPtr);
+                                checkWPtr ("ENDP", WPtr);
 				IPtr = word (index (AReg, 0));
 			   }
 			   else
@@ -956,7 +962,7 @@ void mainloop (void)
 OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
                            {
                                 if (msgdebug || emudebug)
-                                        printf ("-W-EMUDBG: Doing in on Link0Out.\n");
+                                        printf ("-W-EMUDBG: Warning - doing IN on Link0Out.\n");
                                 goto OprOut;
                            }
                            if (msgdebug || emudebug)
@@ -981,7 +987,7 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 				{
 					/* Ready. */
                                         otherWPtr = GetDescWPtr(otherWdesc);
-                                        checkWPtr ("in", otherWPtr);
+                                        checkWPtr ("IN", otherWPtr);
 					otherPtr = word (index (otherWPtr, Pointer_s));
                                         if (msgdebug || emudebug)
 					        printf ("-I-EMUDBG: In(3): Transferring message from #%08X.\n", otherPtr);
@@ -1031,7 +1037,7 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            {
                                 if (msgdebug || emudebug)
-                                        printf ("-W-EMUDBG: Doing out on Link0In.\n");
+                                        printf ("-W-EMUDBG: Warning - doing OUT on Link0In.\n");
                                 goto OprIn;
                            }
                            if (msgdebug || emudebug)
@@ -1131,7 +1137,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            {
                                 if (msgdebug || emudebug)
-			                printf ("-W-EMUDBG: Doing outbyte on Link0In.\n");
+			                printf ("-W-EMUDBG: Warning - doing OUTBYTE on Link0In.\n");
 				/* Link communication. */
 				writeword (BReg, Wdesc);
 				writeword (WPtr, AReg);
@@ -1155,7 +1161,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				{
 					/* Ready. */
                                         otherWPtr = GetDescWPtr(otherWdesc);
-                                        checkWPtr ("outbyte", otherWPtr);
+                                        checkWPtr ("OUTBYTE", otherWPtr);
 					altState = otherPtr = word (index (otherWPtr, Pointer_s));
 					if ((altState & 0xfffffffc) == MostNeg)
 					{
@@ -1201,7 +1207,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            {
                                 if (msgdebug || emudebug)
-			                printf ("-W-EMUDBG: outword(2): Doing outword on Link0In. Old channel word=#%08X.\n", word (BReg));
+			                printf ("-W-EMUDBG: Warning - doing OUTWORD on Link0In. Old channel word=#%08X.\n", word (BReg));
 				/* Link communication. */
 				writeword (BReg, Wdesc);
 				writeword (WPtr, AReg);
@@ -1229,7 +1235,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				{
 					/* Ready. */
                                         otherWPtr = GetDescWPtr(otherWdesc);
-                                        checkWPtr ("outword", otherWPtr);
+                                        checkWPtr ("OUTWORD", otherWPtr);
 					altState = otherPtr =  word (index (otherWPtr, State_s));
 					if ((altState & 0xfffffffc) == MostNeg)
 					{
@@ -1681,7 +1687,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   break;
 		case 0x3c: /* gajw        */
                            /* XXX: proc prio toggle trick of AReg lsb=1       */
-                           checkWordAligned ("gajw", AReg);
+                           checkWordAligned ("GAJW", AReg);
 			   temp = AReg;
 			   AReg = WPtr;
 			   WPtr = temp;
@@ -2217,6 +2223,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            else
                            {
                                 /* kudos to M.Bruestle */
+                                if (emudebug)
+                                        printf ("-W-EMUT414: Warning - BITREVNBITS undefined behavior!\n");
                                 if (AReg >= 2 * BitsPerWord)
                                         temp = 0;
                                 else
@@ -2236,7 +2244,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x82: /* XXX fpldnldbi    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("fpldnldbi", AReg);
+                           checkWordAligned ("FPLDNLDBI", AReg);
                            fp_pushdb (real64 (index (AReg, 2*BReg)));
                            AReg = CReg;
 		           IPtr++;
@@ -2253,7 +2261,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x84: /* XXX fpstnldb    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("fpstnldb", AReg);
+                           checkWordAligned ("FPSTNLDB", AReg);
                            if (FAReg.type == FP_REAL64)
                                 fp_popdb (&dbtemp1);
                            else
@@ -2269,7 +2277,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x86: /* XXX fpldnlsni    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("fpldnlsni", AReg);
+                           checkWordAligned ("FPLDNLSNI", AReg);
                            fp_pushsn (real32 (index (AReg, BReg)));
                            AReg = CReg;
 		           IPtr++;
@@ -2283,7 +2291,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x88: /* XXX fpstnlsn    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("fpstnlsn", AReg);
+                           checkWordAligned ("FPSTNLSN", AReg);
                            if (FAReg.type == FP_REAL32)
                                 fp_popsn (&sntemp1);
                            else
@@ -2305,7 +2313,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x8a: /* XXX fpldnldb    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("fpldnldb", AReg);
+                           checkWordAligned ("FPLDNLDB", AReg);
                            fp_pushdb (real64 (AReg));
                            AReg = BReg;
                            BReg = CReg;
@@ -2326,7 +2334,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x8e: /* XXX fpldnlsn    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("fpldnlsn", AReg);
+                           checkWordAligned ("FPLDNLSN", AReg);
                            fp_pushsn (real32 (AReg));
                            AReg = BReg;
                            BReg = CReg;
@@ -2549,7 +2557,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0xa6: /* XXX fpldnladddb    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("fpldnladddb", AReg);
+                           checkWordAligned ("FPLDNLADDDB", AReg);
                            dbtemp1 = real64 (AReg);
                            if (FAReg.type == FP_REAL64)
                                 FAReg.u.db = fp_adddb (FAReg.u.db, dbtemp1);
@@ -2566,7 +2574,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0xa8: /* XXX fpldnlmuldb    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("fpldnlmuldb", AReg);
+                           checkWordAligned ("FPLDNLMULDB", AReg);
                            dbtemp1 = real64 (AReg);
                            if (FAReg.type == FP_REAL64)
                                 FAReg.u.db = fp_muldb (FAReg.u.db, dbtemp1);
@@ -2583,7 +2591,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0xaa: /* XXX fpldnladdsn    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("fpldnladdsn", AReg);
+                           checkWordAligned ("FPLDNLADDSN", AReg);
                            sntemp1 = real32 (AReg);
                            if (FAReg.type == FP_REAL32)
                                 FAReg.u.sn = fp_addsn (FAReg.u.sn, sntemp1);
@@ -2728,7 +2736,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0xac: /* XXX fpldnlmulsn    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("fpldnlmulsn", AReg);
+                           checkWordAligned ("FPLDNLMULSN", AReg);
                            sntemp1 = real32 (AReg);
                            if (FAReg.type == FP_REAL32)
                                 FAReg.u.sn = fp_mulsn (FAReg.u.sn, sntemp1);

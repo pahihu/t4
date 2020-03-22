@@ -30,7 +30,6 @@ Failed tests from Mike's TVS
 * fmul
 * ldiv
 * postnormsn
-* rem
 * roundsn
 * unpacksn
 

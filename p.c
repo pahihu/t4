@@ -1378,13 +1378,25 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   AReg = ProcPriority;
 			   IPtr++;
 			   break;
-		case 0x1f: /* XXX rem         */
-			   if ((AReg==0) || ((AReg==-1) && (BReg==0x80000000)))
+		case 0x1f: /* rem         */
+			   if (AReg==0)
+                           {
+                                AReg = BReg;
+                                temp = CReg;
 				SetError;
+                           }
+                           else if ((INT(AReg)==-1) && (BReg==0x80000000))
+                           {
+                                AReg = 0x00000000;
+                                temp = AReg;
+                           }
 			   else
+                           {
 				AReg = INT(BReg) % INT(AReg);
-			   BReg = CReg;
-                           CReg = AReg;
+                                temp = abs (INT(AReg));
+                           }
+                           BReg = CReg;
+                           CReg = temp;
 			   IPtr++;
 			   break;
 		case 0x20: /* ret         */
@@ -1685,7 +1697,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   BReg = CReg;
 			   IPtr++;
 			   break;
-		case 0x3f: /* XXX wcnt        */
+		case 0x3f: /* wcnt        */
 			   CReg = BReg;
 			   BReg = AReg & ByteSelectMask;
 			   AReg = INT(AReg) >> 2;
@@ -1916,7 +1928,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   BReg = CReg;
 			   IPtr++;
 			   break;
-		case 0x53: /* XXX mul         */
+		case 0x53: /* mul         */
 			   t4_overflow = FALSE;
 			   t4_carry = 0;
 			   AReg = t4_emul32 (BReg, AReg);

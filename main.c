@@ -490,16 +490,17 @@ int main (int argc, char **argv)
 	/* Load bootstrap into emulator. */
         if (usetvs)
         {
+                printf ("-I-EMUTVS: Running test %s\n", CopyFileName);
                 /* Optional InpFileName. */
                 if ((0 != strlen (InpFileName)) &&
                     (InpFile = fopen (InpFileName, "rb")) == NULL)
                 {
-                        printf ("Failed to open file %s for TVS input!\n", InpFileName);
+                        printf ("-E-EMUTVS: Error - failed to open file %s for input!\n", InpFileName);
                         handler (-1);
                 }
                 if ((OutFile = fopen (OutFileName, "wb")) == NULL)
                 {
-                        printf ("Failed to open file %s for TVS output!\n", OutFileName);
+                        printf ("-E-EMUTVS: Error - failed to open file %s for output!\n", OutFileName);
                         handler (-1);
                 }
                 

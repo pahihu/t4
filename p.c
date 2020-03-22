@@ -223,9 +223,9 @@ struct prof *profile_head = NULL;
 void handler (int);
 
 #ifdef _MSC_VER
-#define t4_popcount(x)			__popcnt (x)
+#define t4_bitcount(x)			__popcnt (x)
 #else
-#define t4_popcount(x)			__builtin_popcount (x)
+#define t4_bitcount(x)			__builtin_popcount (x)
 #endif
 
 #ifdef __clang__
@@ -1631,7 +1631,22 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   schedule (AReg);
 			   break;
 		case 0x3a: /* xword       */
-                           if (0==(AReg&BReg))
+                           /* ACWG preconditions */
+                           /*   bitcount(AReg) = 1 /\ 2*AReg > BReg */
+                           if (t4_bitcount (AReg) != 1)
+                           {
+                                AReg = Undefined_p;
+                           }
+                           else if (0 == (BReg & (~(AReg | (AReg - 1)))))
+                                /* Bits are clear above the sign bit (AReg). */
+                           {
+                                if (AReg > BReg)
+                                        AReg = BReg;
+                                else
+                                        AReg = BReg - (2*AReg);
+                           }
+                           /* T425 implementation. */
+                           else if (0 == (AReg & BReg))
 			   {
 				AReg = BReg;
 			   }
@@ -2165,7 +2180,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x76: /* XXX bitcnt    */
 		           if (IsT414)
 		               goto BadCode;
-                           temp = t4_popcount (AReg);
+                           temp = t4_bitcount (AReg);
                            AReg = temp + BReg;
                            BReg = CReg;
 		           IPtr++;

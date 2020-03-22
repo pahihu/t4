@@ -1476,16 +1476,19 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				}
 			   }
 			   break;
-		case 0x2c: /* XXX div         */
-			   if ((AReg==0) || ((AReg==-1)&&(BReg==0x80000000)))
+		case 0x2c: /* div         */
+			   if ((AReg==0) || ((INT(AReg)==-1)&&(BReg==0x80000000)))
                            {
+                                temp = CReg;
 				SetError;
-                                temp = 0;
                            }
 			   else
                            {
-                                temp = INT(BReg) % INT(AReg);
-				AReg = INT(BReg) / INT(AReg);
+                                /* kudos to M.Bruestle */
+                                temp  = abs (INT(AReg));
+                                temp2 = abs (INT(BReg));
+				AReg  = INT(BReg) / INT(AReg);
+                                temp  = temp2 - (abs (INT(AReg)) | 1) * temp;
                            }
 			   BReg = CReg;
                            CReg = temp;

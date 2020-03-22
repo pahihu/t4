@@ -22,7 +22,6 @@ Non-goals
 Failed tests from Mike's TVS
 ============================
 
-* bitrevnbits
 * crcbyte
 * crcword
 * cword

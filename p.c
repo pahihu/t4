@@ -165,6 +165,7 @@ uint32_t IntEnabled;            /* Interrupt enabled */
 
 #define BytesPerWord            4
 #define ByteSelectMask          0x00000003
+#define BitsPerWord             (8*BytesPerWord)
 #define WordsRead(addr,len)     (((addr&(BytesPerWord-1))?1:0)+(len+(BytesPerWord-1))/BytesPerWord)
 #define BytesRead(addr,len)     (WordsRead(addr,len)*BytesPerWord)
 
@@ -1707,7 +1708,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   IPtr++;
 			   break;
 		case 0x40: /* shr         */
-			   if (AReg < 32)
+			   if (AReg < BitsPerWord)
 				AReg = BReg >> AReg;
 			   else
 				AReg = 0;
@@ -1715,7 +1716,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   IPtr++;
 			   break;
 		case 0x41: /* shl         */
-			   if (AReg < 32)
+			   if (AReg < BitsPerWord)
 				AReg = BReg << AReg;
 			   else
 				AReg = 0;
@@ -2151,7 +2152,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   if ((AReg==0x80000000)&&(BReg==0x80000000))
 				SetError;
 			   temp = t4_mul32 (AReg, BReg);
-			   AReg = t4_shr64 (t4_carry, temp, (uint32_t)31);
+			   AReg = t4_shr64 (t4_carry, temp, (uint32_t)BitsPerWord - 1);
 			   BReg = CReg;
                            CReg = temp;
 			   IPtr++;
@@ -2166,7 +2167,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x74: /* XXX crcword    */
 		           if (IsT414)
 		               goto BadCode;
-                           for (temp = 0; temp < 32; temp++)
+                           for (temp = 0; temp < BitsPerWord; temp++)
                            {
 			        AReg = t4_shl64 (BReg, AReg, 1);
                                 BReg = t4_carry;
@@ -2192,7 +2193,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            BReg = CReg;
 		           IPtr++;
 		           break;
-		case 0x76: /* XXX bitcnt    */
+		case 0x76: /* bitcnt    */
 		           if (IsT414)
 		               goto BadCode;
                            temp = t4_bitcount (AReg);
@@ -2200,19 +2201,28 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            BReg = CReg;
 		           IPtr++;
 		           break;
-		case 0x77: /* XXX bitrevword    */
+		case 0x77: /* bitrevword    */
 		           if (IsT414)
 		               goto BadCode;
                            AReg = t4_bitreverse (AReg);
 		           IPtr++;
 		           break;
-		case 0x78: /* XXX bitrevnbits    */
+		case 0x78: /* bitrevnbits    */
 		           if (IsT414)
 		               goto BadCode;
-                           if (AReg < 32)
-                                AReg = t4_bitreverse (BReg) >> (32 - AReg);
-                           else
+                           if (AReg == 0)
                                 AReg = 0;
+                           else if (AReg <= BitsPerWord)
+                                AReg = t4_bitreverse (BReg) >> (BitsPerWord - AReg);
+                           else
+                           {
+                                /* kudos to M.Bruestle */
+                                if (AReg >= 2 * BitsPerWord)
+                                        temp = 0;
+                                else
+                                        temp = t4_bitreverse (BReg) << (AReg - BitsPerWord);
+                                AReg = temp;
+                           }
                            BReg = CReg;
 		           IPtr++;
 		           break;

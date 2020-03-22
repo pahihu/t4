@@ -12,11 +12,14 @@ indirect()      # $1 variable name
   eval echo $`echo ${1}`
 }
 
+export TVS1=~/tvs1
+
 # clean up
 rm -f $tst.diff
 
 # get the instruction
 tst=$1
+echo "Extracting failed test cases for $tst..."
 
 # extract the input file
 inpfil=`grep $tst ./tvs_test.sh | awk '{print $4;}'`
@@ -28,7 +31,7 @@ then
 fi
  
 echo "Input file: $inpfil"
-inp=`basename $inpfil .bin`
+inp="`basename $inpfil`"
 
 #
 # convert input to HEX
@@ -87,31 +90,32 @@ inpcols="`indirect ${tstcas}_INP`"
 outcols="`indirect ${tstcas}_OUT`"
 inpcols=`expr 4 \* ${inpcols}`
 outcols=`expr 4 \* ${outcols}`
-echo "#input columns = $inpcols"
+echo " #input columns = $inpcols"
 echo "#output columns = $outcols"
 
 # convert ref and sim file to HEX
 echo "Converting ref and sim to HEX..."
-xxd -c $outcols ref/425/$tst.425 >ref.hex
-xxd -c $outcols tmp/$tst.sim >sim.hex
+xxd -c $outcols ref/425/$tst.425 ref.hex
+xxd -c $outcols tmp/$tst.sim sim.hex
 
 # combine files line-by-line
-echo "Combining files..."
-if [ $inpcols -ne 0 ];
+if [ "X$inpcols" != "X0" ];
 then
   echo "Converting input to HEX..."
-  xxd -c $inpcols inp/inp/$inp.bin >inp.hex
+  xxd -c $inpcols inp/inp/$inp inp.hex
 
-  paste inp.hex ref.hex>ref2.hex
-  paste inp.hex sim.hex>sim2.hex
+  echo "Combining files..."
+  paste inp.hex ref.hex >ref2.hex
+  paste inp.hex sim.hex >sim2.hex
 else
   cp ref.hex ref2.hex
   cp sim.hex sim2.hex
 fi
 
 # make difference
-echo "Differences..."
+echo -n "Differences..."
 diff ref2.hex sim2.hex>$tst.diff
+echo "$tst.diff"
 
 # count cases
 fails=`grep ':' $tst.diff | wc -l`

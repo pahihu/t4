@@ -1662,22 +1662,23 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 AReg = Undefined_p;
                            }
                            else if (0 == (BReg & (~(AReg | (AReg - 1)))))
-                                /* Bits are clear above the sign bit (AReg). */
                            {
+                                /* Bits are clear above the sign bit (AReg). */
                                 if (AReg > BReg)
                                         AReg = BReg;
                                 else
                                         AReg = BReg - (2*AReg);
                            }
-                           /* T425 implementation. */
-                           else if (0 == (AReg & BReg))
-			   {
-				AReg = BReg;
-			   }
-			   else
-			   {
-                                AReg = BReg | ~(AReg - 1);
-			   }
+                           else
+                           {
+                                /* T425 implementation. */
+                                if (emudebug)
+                                        printf ("-W-EMUT414: Warning - XWORD undefined behavior!\n");
+                                if (0 == (AReg & BReg))
+				        AReg = BReg;
+			        else
+                                        AReg = BReg | ~(AReg - 1);
+                           }
 			   BReg = CReg;
 			   IPtr++;
 			   break;

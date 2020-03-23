@@ -2114,18 +2114,25 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   CReg = CReg | temp2;
 			   IPtr++;
 			   break;
-		case 0x6c: /* XXX postnormsn  */
+		case 0x6c: /* postnormsn  */
                            if (IsT800)
                                 goto BadCode;
 			   temp = (INT(word (index (WPtr, 0))) - INT(CReg));
-			   if (temp > 0x000000ff)
+                           if (INT(temp) <= -BitsPerWord)
+                           {
+                                /* kudos to M.Bruestle: too small. */
+                                AReg = BReg = CReg = 0;
+                           }
+                           else if (INT(temp) > 0x000000ff)
 				CReg = 0x000000ff;
-			   else if (temp <= 0)
+			   else if (INT(temp) <= 0)
 			   {
-				temp = 1 - temp;
-				CReg = 0;
-				AReg = t4_shr64 (BReg, AReg, temp);
-				BReg = t4_carry;
+				temp  = 1 - INT(temp);
+				CReg  = 0;
+                                temp2 = AReg;
+				AReg  = t4_shr64 (BReg, AReg, temp);
+                                AReg  = AReg | temp2;
+				BReg  = t4_carry;
 			   }
 			   else
 				CReg = temp;

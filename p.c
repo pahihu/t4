@@ -2086,7 +2086,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 #undef m2dDestAddress
 #undef m2dSourceAddress
 
-		case 0x63: /* XXX unpacksn    */
+		case 0x63: /* unpacksn    */
                            if (IsT800)
                                 goto BadCode;
 			   temp = AReg;
@@ -2131,29 +2131,34 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				CReg = temp;
 			   IPtr++;
 			   break;
-		case 0x6d: /* XXX roundsn     */
+		case 0x6d: /* roundsn     */
                            if (IsT800)
                                 goto BadCode;
-			   temp = BReg & 0x00000080;
-			   AReg = BReg & 0x7fffffff;
-			   if (temp != 0)
-			   {
-				AReg = (BReg & 0x7fffffff) + 0x00000100;
-				if ((AReg & 0x80000000) != 0)
-					CReg++;
-			   }
 			   if (((CReg & 0x80000000) == 0) && (CReg >= 0x000000ff))
 			   {
 				AReg = t4_infinity ();
-				CReg = BReg << 1; /* ??? tis_cde-reg says BReg only. */
+				CReg = BReg << 1;
 			   }
 			   else
 			   {
-				AReg = (AReg & 0x7fffff00) >> 8;
+                                temp2 = CReg;
+			        temp  = BReg & 0x00000080;
+			        if (temp != 0)
+			        {
+                                        /* kudos to M.Bruestle for guard checking */
+                                        if ((AReg | (BReg & 0x0000007f)) != 0)
+				                BReg = (BReg & 0x7fffffff) + 0x00000100;
+                                        else if (BReg & 0x00000100)
+                                                BReg = (BReg & 0x7fffffff) + 0x00000100;
+				        if ((BReg & 0x80000000) != 0)
+					        CReg++;
+			        }
+				AReg = (BReg & 0x7fffff00) >> 8;
 				temp = (CReg & 0x000001ff) << 23;
 				AReg = AReg | temp;
 				BReg = AReg;
-				CReg = CReg >> 9;
+                                /* Original exponent shifted! */
+				CReg = temp2 >> 9; 
 			   }
 			   IPtr++;
 			   break;

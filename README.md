@@ -24,7 +24,6 @@ Failed tests from Mike's TVS
 
 * cword
 * postnormsn
-* roundsn
 
 Changes
 =======

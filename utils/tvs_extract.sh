@@ -57,7 +57,7 @@ IUT2="add and bcnt bitcnt bitrevnbits bitrevword bsub \
 IUT2_INP=3
 IUT2_OUT=4
 
-IUT3="postnornmsn"
+IUT3="postnormsn"
 IUT3_INP=4
 IUT3_OUT=4
 

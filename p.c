@@ -2092,7 +2092,6 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   temp = AReg;
 			   CReg = BReg << 2;
 			   AReg = (temp & 0x007fffff) << 8;
-			   AReg = AReg | 0x80000000;
 			   BReg = (temp & 0x7f800000) >> 23;
 			   if (t4_iszero (temp))
 				temp2 = 0x00000000;
@@ -2100,9 +2099,19 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				temp2 = 0x00000002;
 			   else if (t4_isnan (temp))
 				temp2 = 0x00000003;
-			   else
+			   else if ((0 == BReg) && (0 != AReg))
+                           {
+                                /* Denormalised. */
+                                temp2 = 0x00000001;
+                                BReg = 1;
+                           }
+                           else
+                           {
+                                /* Normalised. */
 				temp2 = 0x00000001;
-			   CReg = (CReg & 0xfffffffc) | temp2;
+                                AReg  = AReg | 0x80000000;
+                           }
+			   CReg = CReg | temp2;
 			   IPtr++;
 			   break;
 		case 0x6c: /* XXX postnormsn  */

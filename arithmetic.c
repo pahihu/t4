@@ -376,7 +376,45 @@ uint32_t t4_emul32 (uint32_t A, uint32_t B)
         if (CHi != D)
                 t4_overflow = TRUE;
 
+        t4_carry = CHi;
         return (CLo);
+}
+
+
+uint32_t t4_fmul (uint32_t A, uint32_t B)
+{
+        /* A and B hold the 32bit operands. */
+        /* The result is A FMUL B. */
+        /* t4_carry contains the unrounded low order bits of the result. */
+        uint32_t C;
+        uint32_t TempLo, TempHi, frac;
+        uint32_t carry;
+
+	TempLo = t4_emul32 (A, B);
+        TempHi = t4_carry;
+
+        carry  = t4_carry << 1;
+        if (TempLo & 0x80000000)
+                carry = carry + 1;
+
+        frac   = 0x7fffffff & TempLo;
+	C      = t4_shr64 (TempHi, TempLo, (uint32_t) 31);
+        if (frac)
+        {
+                if (frac < 0x40000000)
+                        ;
+                else if (frac > 0x40000000)
+                {
+                        C = C + 1;
+                }
+                else if (C & 1)
+                {
+                        C = C + 1;
+                }
+        }
+
+        t4_carry = carry;
+        return C;
 }
 
 

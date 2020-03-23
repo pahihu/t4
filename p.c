@@ -2156,15 +2156,18 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   AReg = t4_infinity ();
 			   IPtr++;
 			   break;
-		case 0x72: /* XXX: missing round-to-nearest  fmul        */
+		case 0x72: /* fmul        */
 			   t4_overflow = FALSE;
 			   t4_carry = 0;
 			   if ((AReg==0x80000000)&&(BReg==0x80000000))
+                           {
+                                t4_carry = AReg;
 				SetError;
-			   temp = t4_mul32 (AReg, BReg);
-			   AReg = t4_shr64 (t4_carry, temp, (uint32_t)BitsPerWord - 1);
+                           }
+                           else
+                                AReg = t4_fmul (AReg, BReg);
 			   BReg = CReg;
-                           CReg = temp;
+                           CReg = t4_carry;
 			   IPtr++;
 			   break;
 		case 0x73: /* cflerr      */
@@ -2623,7 +2626,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                       if (FAReg.type == FP_REAL64)
                                           FAReg.u.db = fp_sqrtfirstdb (FAReg.u.db);
                                       else if (FAReg.type == FP_REAL32)
-                                          FAReg.u.sn =fp_sqrtfirstsn (FAReg.u.sn);
+                                          FAReg.u.sn = fp_sqrtfirstsn (FAReg.u.sn);
                                       else
                                       {
                                           printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpusqrtfirst)\n");

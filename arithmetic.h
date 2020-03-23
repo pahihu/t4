@@ -63,3 +63,4 @@ uint32_t t4_infinity (void);
 uint32_t t4_isinf    (uint32_t);
 uint32_t t4_iszero   (uint32_t);
 uint32_t t4_isnan    (uint32_t);
+uint32_t t4_fmul     (uint32_t, uint32_t);

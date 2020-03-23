@@ -1494,10 +1494,10 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            }
 			   else
                            {
-                                /* kudos to M.Bruestle */
                                 temp  = abs (INT(AReg));
                                 temp2 = abs (INT(BReg));
 				AReg  = INT(BReg) / INT(AReg);
+                                /* kudos to M.Bruestle */
                                 temp  = temp2 - (abs (INT(AReg)) | 1) * temp;
                            }
 			   BReg = CReg;

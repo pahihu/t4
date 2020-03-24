@@ -27,6 +27,7 @@ Failed tests from Mike's TVS
 Changes
 =======
 
+* Savage runs with tbmaths.lib
 * added -sv flag to support Mike's TVS1
 * Windows port, added Win32/Win64 executables
 * added C and occam versions of Savage benchmark, fixed fpremfirst
@@ -46,7 +47,7 @@ Changes
 **NOTE**: There is the excellent [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) from Gavin Crate. Otherwise here is the code. Good luck!
 
 
-pahihu,  21 / 3 / 2020
+pahihu,  24 / 3 / 2020
 
 
 

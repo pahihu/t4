@@ -673,6 +673,7 @@ void mainloop (void)
         REAL32 sntemp1, sntemp2;
         REAL64 dbtemp1, dbtemp2;
         REAL   fptemp;
+        fpreal32_t r32temp;
 
         int   printIPtr, instrBytes;
         int   asmLines;
@@ -706,6 +707,7 @@ void mainloop (void)
                 otherWdesc = otherWPtr = otherPtr = altState = Undefined_p;
                 dbtemp1 = dbtemp2 = DRUndefined;
                 sntemp1 = sntemp2 = RUndefined;
+                r32temp.fp = RUndefined;
 #endif
                 /* Save current value of Error flag */
                 PrevError = ReadError;
@@ -2089,6 +2091,11 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x63: /* unpacksn    */
                            if (IsT800)
                                 goto BadCode;
+                           if (emudebug)
+                           {
+                                r32temp.bits = AReg;
+                                printf ("\t\t\t\t\t\t\t  AReg %08X (%.7e)\n", AReg, r32temp.fp);
+                           }
 			   temp = AReg;
 			   CReg = BReg << 2;
 			   AReg = (temp & 0x007fffff) << 8;
@@ -2141,32 +2148,29 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x6d: /* roundsn     */
                            if (IsT800)
                                 goto BadCode;
-			   if (((CReg & 0x80000000) == 0) && (CReg >= 0x000000ff))
+			   if (INT(CReg) >= 0x000000ff)
 			   {
 				AReg = t4_infinity ();
 				CReg = BReg << 1;
 			   }
 			   else
 			   {
-                                temp2 = CReg;
-			        temp  = BReg & 0x00000080;
-			        if (temp != 0)
-			        {
-                                        /* kudos to M.Bruestle for guard checking */
-                                        if ((AReg | (BReg & 0x0000007f)) != 0)
-				                BReg = (BReg & 0x7fffffff) + 0x00000100;
-                                        else if (BReg & 0x00000100)
-                                                BReg = (BReg & 0x7fffffff) + 0x00000100;
-				        if ((BReg & 0x80000000) != 0)
-					        CReg++;
-			        }
-				AReg = (BReg & 0x7fffff00) >> 8;
-				temp = (CReg & 0x000001ff) << 23;
-				AReg = AReg | temp;
+                                /* kudos to M.Bruestle */
+                                temp  = ((CReg & 0x000001ff) << 23)|((BReg & 0x7fffff00) >> 8);
+                                if ((BReg & 0x80) == 0)
+                                        AReg = temp;
+                                else if ((AReg | (BReg & 0x7f)) != 0)
+                                        AReg = temp + 1;
+                                else
+                                        AReg = temp + (temp & 1);
 				BReg = AReg;
-                                /* Original exponent shifted! */
-				CReg = temp2 >> 9; 
+				CReg = CReg >> 9;
 			   }
+                           if (emudebug)
+                           {
+                                r32temp.bits = AReg;
+                                printf ("\t\t\t\t\t\t\t  AReg %08X (%.7e)\n", AReg, r32temp.fp);
+                           }
 			   IPtr++;
 			   break;
 		case 0x71: /* ldinf       */

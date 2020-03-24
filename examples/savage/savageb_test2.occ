@@ -1,0 +1,52 @@
+#INCLUDE "hostio.inc"
+#USE "hostio.lib"
+#USE "tbmaths.lib"
+PROC Savage (CHAN OF SP fs, ts, []INT user.buffer)
+  REAL32 A, A7, B, C, DA :
+  VAL A7 IS #40E00001 :
+  INT32  AReg, BReg, CReg :
+  SEQ  
+    so.write.string.nl (fs, ts, "Savage benchmark...")
+
+    -- A := TAN(ATAN(EXP(ALOG(SQRT(A*A))))) + 1.0 (REAL32)  
+
+    B  := ALOG(7.0 (REAL32))
+    C  := EXP(B)
+    A  := C + 1.0 (REAL32)
+    DA := 8.0 (REAL32) - A
+
+    ASM
+      LDABC  A7, 0, 0
+      UNPACKSN
+      STL AReg
+      STL BReg
+      STL CReg
+
+    so.write.string    (fs, ts, " AReg = ")
+    so.write.hex.int32 (fs, ts, AReg, 8) 
+    so.write.nl        (fs, ts)
+    so.write.string    (fs, ts, " BReg = ")
+    so.write.hex.int32 (fs, ts, BReg, 8) 
+    so.write.nl        (fs, ts)
+    so.write.string    (fs, ts, " CReg = ")
+    so.write.hex.int32 (fs, ts, CReg, 8) 
+    so.write.nl        (fs, ts)
+
+    ASM
+      LDABC 0, #80000080, #82
+      ROUNDSN
+      STL   AReg
+
+    so.write.string    (fs, ts, " AReg = ")
+    so.write.hex.int32 (fs, ts, AReg, 8) 
+    so.write.nl        (fs, ts)
+
+    so.write.string (fs, ts, "   a =" )
+    so.write.real32 (fs, ts,     A, 1, 11)
+    so.write.nl (fs, ts)
+    so.write.string (fs, ts, "diff =" )
+    so.write.real32 (fs, ts, DA, 1, 11)
+    so.write.nl (fs, ts)
+
+    so.exit (fs, ts, sps.success)
+:

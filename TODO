@@ -33,8 +33,10 @@ BOOT FILES
         200318AP  works, T800 DATAN/DTAN gives the same results as T414 
                   double precision version
 
--savageb
++savageb
         200320AP  tbmaths version of Savage does NOT work (roundsn, unpacksn, postnormsn)
+        200324AP  although roundsn passed TVS1 it was buggy, so it took some hours to
+                  recover the problem in savageb...
 -TVS1
         200321AP  TVS1 results
                 FAIL bitrevnbits
@@ -57,4 +59,6 @@ BOOT FILES
                 FAIL postnormsn
                 FAIL roundsn
                 FAIL unpacksn
+        200324AP  TVS1 results
+                FAIL cword
 

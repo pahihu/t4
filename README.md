@@ -19,14 +19,15 @@ Non-goals
 * emulate multiple transputers
 * to be efficient
 
-Failed tests from Mike's TVS
-============================
+Failed tests from Mike's TVS1F
+==============================
 
-* cword
+* ???
 
 Changes
 =======
 
+* successfully runs Mike's TVS1
 * Savage runs with tbmaths.lib
 * added -sv flag to support Mike's TVS1
 * Windows port, added Win32/Win64 executables

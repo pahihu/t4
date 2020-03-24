@@ -1968,9 +1968,14 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 deschedule ();
 			   }
 			   break;
-		case 0x56: /* XXX cword       */
-			   if ((BReg>=AReg) || (BReg>=(-AReg)))
+		case 0x56: /* cword       */
+                           if (t4_bitcount (AReg) != 1)
+                                ;
+                           else if (AReg==MostNeg)
+                                ;
+                           else if ((INT(BReg)>=INT(AReg)) || (INT(BReg)<INT(-AReg)))
 			   {
+                                /* ST20CORE implementation. */
 				SetError;
 			   }
 			   AReg = BReg;

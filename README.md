@@ -78,7 +78,7 @@ Command line arguments
             -sm #bits            Memory size in address bits (default 21, 2Mbyte).
             -su                  Halt on not initialized memory read.
             -sv inp.tbo inp.bin out.bin
-                                 Select Mike's TSV: T800 + T414 FP support.
+                                 Select Mike's TVS: T800 + T414 FP support.
             -sw "string"         Trigger execution trace on SP_WRITE (string).
             -sx [number]         Execution trace (4 - mem ld/st, 2 - iserver, 1 - instructions).
 

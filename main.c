@@ -181,7 +181,7 @@ int main (int argc, char **argv)
                 printf("    -sm #bits            Memory size in address bits (default 21, 2Mbyte).\n");
                 printf("    -su                  Halt on not initialized memory read.\n");
                 printf("    -sv inp.tbo inp.bin out.bin\n");
-                printf("                         Select Mike's TSV: T800 + T414 FP support.\n");
+                printf("                         Select Mike's TVS: T800 + T414 FP support.\n");
                 printf("    -sw \"string\"         Trigger execution trace on SP_WRITE (string).\n");
                 printf("    -sx [number]         Execution trace (4 - mem ld/st, 2 - iserver, 1 - instructions).\n");
 		printf("\n");

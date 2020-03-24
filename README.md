@@ -22,7 +22,10 @@ Non-goals
 Failed tests from Mike's TVS1F
 ==============================
 
-* ???
+* call
+* enbs
+* T800 FP double 90 PASS - 106 FAIL
+* T800 FP single 87 PASS -  99 FAIL
 
 Changes
 =======

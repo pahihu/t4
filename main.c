@@ -503,20 +503,16 @@ int main (int argc, char **argv)
                         printf ("-E-EMUTVS: Error - failed to open file %s for output!\n", OutFileName);
                         handler (-1);
                 }
-                
-                fseek (CopyIn, 0, SEEK_END);
-                temp = ftell (CopyIn);
-                fseek (CopyIn, 0, SEEK_SET);
         }
-        else
-        {
-	        temp = getc (CopyIn);
-	        if (temp < 2)
-	        {
-		        printf ("\nFile does not start with bootstrap code!\n");
-		        handler (-1);
-	        }
-        }
+
+        /* TVS tbo code is bootstrap code. */
+	temp = getc (CopyIn);
+	if (temp < 2)
+	{
+		printf ("\nFile does not start with bootstrap code!\n");
+		handler (-1);
+	}
+
 	for (temp2=0; temp2<temp; temp2++)
 	{
 		writebyte_int ((MemStart+temp2), getc (CopyIn));

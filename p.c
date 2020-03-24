@@ -204,6 +204,7 @@ extern int emudebug;
 extern int memdebug;
 extern int memnotinit;
 extern int msgdebug;
+extern int usetvs;
 
 LinkIface Link[4];
 
@@ -1676,7 +1677,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            {
                                 /* T425 implementation. */
                                 if (emudebug)
-                                        printf ("-W-EMUT414: Warning - XWORD undefined behavior!\n");
+                                        printf ("-W-EMU414: Warning - XWORD undefined behavior!\n");
                                 if (0 == (AReg & BReg))
 				        AReg = BReg;
 			        else
@@ -2263,7 +2264,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            {
                                 /* kudos to M.Bruestle */
                                 if (emudebug)
-                                        printf ("-W-EMUT414: Warning - BITREVNBITS undefined behavior!\n");
+                                        printf ("-W-EMU414: Warning - BITREVNBITS undefined behavior!\n");
                                 if (AReg >= 2 * BitsPerWord)
                                         temp = 0;
                                 else
@@ -2305,9 +2306,11 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 fp_popdb (&dbtemp1);
                            else
                            {
-                                printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpstnldb)\n");
+                                if (!usetvs)
+                                        printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpstnldb)\n");
                                 dbtemp1 = DRUndefined;
                            }
+
                            writereal64 (AReg, dbtemp1);
                            AReg = BReg;
                            BReg = CReg;
@@ -2335,7 +2338,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 fp_popsn (&sntemp1);
                            else
                            {
-                                printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fpstnlsn)\n");
+                                if (!usetvs)
+                                        printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fpstnlsn)\n");
                                 sntemp1 = RUndefined;
                            }
                            writereal32 (AReg, sntemp1);

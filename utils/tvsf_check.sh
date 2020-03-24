@@ -3,11 +3,11 @@
 #
 echo "Checking test output..."
 
-export TVS1=~/tvs1
+export TVS1=~/tvs1f
 for sim in `ls $TVS1/tmp`
 do
   tst=`basename $sim .sim`
-  ref=ref/425/$tst.425
+  ref=ref/T801B/$tst.out
   cmp -s tmp/$sim $ref
   if [ $? -eq 0 ];
   then

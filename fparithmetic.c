@@ -209,7 +209,7 @@ void fp_setrounding (int mode)
                         fpu_mode = FE_TONEAREST;
                         break;
                 default     :
-                        printf ("-E-EMU414: Error - unknown rounding mode! (%d)\n", mode);
+                        printf ("-E-EMUW414: Error - unknown rounding mode! (%d)\n", mode);
 #ifndef FPA_STANDALONE
                         handler (-1);
 #endif
@@ -378,7 +378,7 @@ void fp_chkexcept (char *msg)
 /* Translate native FPU exception to FP_Error. */
 void translate_except (int excp)
 {
-#if 1
+#if 0
         printf ("-W-EMU414: FPExceptFlag   = %d\n", excp);
         printf ("-W-EMU414:   Invalid      %s\n", setclear (excp & FE_INVALID));
         printf ("-W-EMU414:   DivideByZero %s\n", setclear (excp & FE_DIVBYZERO));
@@ -715,6 +715,7 @@ REAL64 DQuotRem (REAL64 X, REAL64 Y, long *N)
 
         rem = remainder (X, Y);
         *N  = (X - rem) / Y;
+        fp_clrexcept ();
 
         return rem;
 }
@@ -725,6 +726,7 @@ REAL32 RQuotRem (REAL32 X, REAL32 Y, long *N)
 
         rem = remainder (X, Y);
         *N  = (X - rem) / Y;
+        fp_clrexcept ();
 
         return rem;
 }

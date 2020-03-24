@@ -111,6 +111,7 @@ REAL  FBRegSave;
 REAL  FCRegSave;
 int   FP_Error;                 /* not preserved over descheduling */
 int   RoundingMode;             /* current rounding mode */
+int   ResetRounding;            /* reset rounding mode ? */
 
 uint32_t m2dSourceStride;       /* move2d source stride */
 uint32_t m2dDestStride;         /* move2d destination stride */
@@ -362,6 +363,8 @@ void fp_dobinary (REAL64 (*dbop)(REAL64,REAL64), REAL32 (*snop)(REAL32,REAL32))
         REAL64 dbtemp1, dbtemp2;
         REAL32 sntemp1, sntemp2;
 
+        ResetRounding = TRUE;
+
         switch (FAReg.length)
         {
                 case FP_REAL64:
@@ -390,6 +393,8 @@ int fp_binary2word (int (*dbop)(REAL64,REAL64), int (*snop)(REAL32,REAL32))
         REAL32 sntemp1, sntemp2;
         int result;
 
+        ResetRounding = TRUE;
+
         switch (FAReg.length)
         {
                 case FP_REAL64:
@@ -416,6 +421,8 @@ void fp_dounary (REAL64 (*dbop)(REAL64), REAL32 (*snop)(REAL32))
 {
         REAL64 dbtemp;
         REAL32 sntemp;
+
+        ResetRounding = TRUE;
 
         switch (FAReg.length)
         {
@@ -717,6 +724,8 @@ void mainloop (void)
                         start_process ();
 
 		/* Execute an instruction. */
+        ResetRounding = FALSE;
+
 	Instruction = byte_int (IPtr);
 	Icode = Instruction & 0xf0;
 	Idata = Instruction & 0x0f;
@@ -735,7 +744,7 @@ void mainloop (void)
                                 if (IsT414)
                                         printf ("-IPtr------Code-----------------------Mnemonic------------HE---AReg-----BReg-----CReg-------WPtr-----WPtr[0]-\n");
                                 else
-                                        printf ("-IPtr------Code-----------------------Mnemonic------------HEF---AReg-----BReg-----CReg-------WPtr-----WPtr[0]-\n");
+                                        printf ("-IPtr------Code-----------------------Mnemonic------------HEFR---AReg-----BReg-----CReg-------WPtr-----WPtr[0]-\n");
                         }
                         printf ("%c%08X: ", HiPriority == ProcPriority ? 'H' : ' ', IPtr);
                         printIPtr = FALSE;
@@ -752,7 +761,7 @@ void mainloop (void)
                         printf("%-17s", mnemo);
 	                printf ("   %c%c", FLAG(ReadHaltOnError, 'H'), FLAG(      ReadError, 'E'));
                         if (IsT800 || IsTVS)
-	                        printf ("%c", FLAG(FP_Error, 'F'));
+	                        printf ("%c%c", FLAG(FP_Error, 'F'), RMODE[RoundingMode-1]);
                         printf ("   %8X %8X %8X   %08X %8X\n", 
                                 AReg, BReg, CReg, WPtr, word_int (WPtr));
                         if (IsT800 || IsTVS)
@@ -2293,6 +2302,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            {
                                 SetError;
                            }
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0x84: /* XXX fpstnldb    */
@@ -2318,6 +2328,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            checkWordAligned ("FPLDNLSNI", AReg);
                            fp_pushsn (real32 (index (AReg, BReg)));
                            AReg = CReg;
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0x87: /* XXX fpadd    */
@@ -2340,6 +2351,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            writereal32 (AReg, sntemp1);
                            AReg = BReg;
                            BReg = CReg;
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0x89: /* XXX fpsub    */
@@ -2395,6 +2407,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            CReg = BReg;
                            BReg = AReg;
                            AReg = false_t;
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0x91: /* XXX fpnan    */
@@ -2410,6 +2423,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            CReg = BReg;
                            BReg = AReg;
                            AReg = temp ? true_t : false_t;
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0x92: /* XXX fpordered    */
@@ -2431,6 +2445,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            CReg = BReg;
                            BReg = AReg;
                            AReg = temp;
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0x93: /* XXX fpnotfinite    */
@@ -2446,6 +2461,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            CReg = BReg;
                            BReg = AReg;
                            AReg = temp ? true_t : false_t;
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0x94: /* XXX fpgt    */
@@ -2473,6 +2489,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            fp_pushsn ((REAL32) INT(temp));
                            AReg = BReg;
                            BReg = CReg;
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0x98: /* XXX fpi32tor64    */
@@ -2482,6 +2499,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            fp_pushdb ((REAL64) INT(temp));
                            AReg = BReg;
                            BReg = CReg;
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0x9a: /* XXX fpb32tor64    */
@@ -2491,6 +2509,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            fp_pushdb ((REAL64) temp);
                            AReg = BReg;
                            BReg = CReg;
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0x9c: /* XXX fptesterr    */
@@ -2504,6 +2523,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            CReg = BReg;
                            BReg = AReg;
                            AReg = temp;
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0x9d: /* XXX fprtoi32    */
@@ -2524,6 +2544,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 FAReg.length = FP_UNKNOWN;
                                 FAReg.u.sn = RUndefined;
                            }
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0x9e: /* XXX fpstnli32    */
@@ -2548,18 +2569,21 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            writeword (AReg, temp);
                            AReg = BReg;
                            BReg = CReg;
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0x9f: /* XXX fpldzerosn    */
 		           if (IsT414)
 		               goto BadCode;
                            fp_pushsn (0.0F);
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0xa0: /* XXX fpldzerodb    */
 		           if (IsT414)
 		               goto BadCode;
                            fp_pushdb (0.0);
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0xa1: /* XXX fpint    */
@@ -2575,6 +2599,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 FAReg.length = FP_UNKNOWN;
                                 FAReg.u.db = DRUndefined;
                            }
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0xa3: /* XXX fpdup    */
@@ -2582,6 +2607,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		               goto BadCode;
                            FCReg = FBReg;
                            FBReg = FAReg;
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0xa4: /* XXX fprev    */
@@ -2590,6 +2616,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            fptemp = FAReg;
                            FAReg  = FBReg;
                            FBReg  = fptemp;
+                           ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0xa6: /* XXX fpldnladddb    */
@@ -2664,26 +2691,28 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                       }
                                       /* FBReg.length = FP_UNKNOWN; */
                                       /* FCReg.length = FP_UNKNOWN; */
+                                      ResetRounding = TRUE;
 			              break;
 			   case 0x02: /* fpusqrtstep    */
                                       /* FBReg.length = FP_UNKNOWN; */
                                       /* FCReg.length = FP_UNKNOWN; */
+                                      ResetRounding = TRUE;
 			              break;
 			   case 0x03: /* fpusqrtlast    */
                                       fp_dounary (fp_sqrtlastdb, fp_sqrtlastsn);
 			              break;
 			   case 0x04: /* XXX fpurp    */
-                                      fp_setrounding (ROUND_P);
+                                      fp_setrounding ("fpurp", ROUND_P);
                                       /* Do not reset rounding mode. */
-			              OReg = 0; continue;
+			              break;
 			   case 0x05: /* XXX fpurm    */
-                                      fp_setrounding (ROUND_M);
+                                      fp_setrounding ("fpurm", ROUND_M);
                                       /* Do not reset rounding mode. */
-			              OReg = 0; continue;
+			              break;
 			   case 0x06: /* XXX fpurz    */
-                                      fp_setrounding (ROUND_Z);
+                                      fp_setrounding ("fpurz", ROUND_Z);
                                       /* Do not reset rounding mode. */
-			              OReg = 0; continue;
+			              break;
 			   case 0x07: /* XXX fpur32tor64    */
                                       if (FAReg.length == FP_REAL32)
                                       {
@@ -2696,6 +2725,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                           FAReg.length = FP_UNKNOWN;
                                           FAReg.u.db = DRUndefined;
                                       }
+                                      ResetRounding = TRUE;
 			              break;
 			   case 0x08: /* XXX fpur64tor32    */
                                       if (FAReg.length == FP_REAL64)
@@ -2709,6 +2739,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                           FAReg.length = FP_UNKNOWN;
                                           FAReg.u.sn = RUndefined;
                                       }
+                                      ResetRounding = TRUE;
 			              break;
 			   case 0x09: /* XXX fpuexpdec32    */
                                       fp_dounary (fp_expdec32db, fp_expdec32sn);
@@ -2731,6 +2762,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                           FAReg.length = FP_UNKNOWN;
                                           FAReg.u.sn = RUndefined;
                                       }
+                                      ResetRounding = TRUE;
 			              break;
 			   case 0x0e: /* XXX fpuchki32    */
                                       if (FAReg.length == FP_REAL64)
@@ -2739,6 +2771,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                           fp_chki32sn (FAReg.u.sn);
                                       else
                                           printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpuchki32)\n");
+                                      ResetRounding = TRUE;
 			              break;
 			   case 0x0f: /* XXX fpuchki64    */
                                       if (FAReg.length == FP_REAL64)
@@ -2747,6 +2780,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                           fp_chki64sn (FAReg.u.sn);
                                       else
                                           printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpuchki64)\n");
+                                      ResetRounding = TRUE;
 			              break;
 			   case 0x11: /* XXX fpudivby2    */
                                       fp_dounary (fp_divby2db, fp_divby2sn);
@@ -2755,14 +2789,16 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                       fp_dounary (fp_mulby2db, fp_mulby2sn);
 			              break;
 			   case 0x22: /* XXX fpurn    */
-                                      fp_setrounding (ROUND_N);
+                                      fp_setrounding ("fpurn", ROUND_N);
                                       /* Do not reset rounding mode. */
-			              OReg = 0; continue;
+			              break;
 			   case 0x23: /* XXX fpuseterr    */
                                       FP_Error = TRUE;
+                                      ResetRounding = TRUE;
 			              break;
 			   case 0x9c: /* XXX fpuclrerr    */
                                       FP_Error = FALSE;
+                                      ResetRounding = TRUE;
 			              break;
                            default  :  
                                       printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg, AReg));
@@ -2813,8 +2849,8 @@ BadCode:
 			   break;
 	} /* switch (Icode) */
                 /* Reset rounding mode to round nearest. */
-                if ((IsT800 || IsTVS) && (RoundingMode != ROUND_N))
-                        fp_setrounding (ROUND_N);
+                if ((IsT800 || IsTVS) && ResetRounding && (RoundingMode != ROUND_N))
+                        fp_setrounding ("reset", ROUND_N);
 #ifdef PROFILE
 		if (profiling)
 			profile[0]++;
@@ -3576,6 +3612,8 @@ REAL32 real32 (uint32_t ptr)
 {
         fpreal32_t x;
 
+        ResetRounding = TRUE;
+
         x.bits = word (ptr);
         return x.fp;
 }
@@ -3584,6 +3622,8 @@ REAL32 real32 (uint32_t ptr)
 void writereal32 (uint32_t ptr, REAL32 value)
 {
         fpreal32_t x;
+
+        ResetRounding = TRUE;
 
         x.fp = value;
         writeword (ptr, x.bits);
@@ -3594,6 +3634,8 @@ REAL64 real64 (uint32_t ptr)
 {
         fpreal64_t x;
         uint32_t lobits, hibits;
+
+        ResetRounding = TRUE;
 
         lobits = word (ptr);
         hibits = word (ptr + 4);
@@ -3606,6 +3648,8 @@ REAL64 real64 (uint32_t ptr)
 void writereal64 (uint32_t ptr, REAL64 value)
 {
         fpreal64_t x;
+
+        ResetRounding = TRUE;
 
         x.fp = value;
         writeword (ptr,     x.bits & 0xffffffff);

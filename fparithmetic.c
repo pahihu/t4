@@ -26,22 +26,20 @@
 /* #define FE_T800_EXCEPT  (FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW | FE_INEXACT) */
 #define FE_T800_EXCEPT  (FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW)
 
-#define REAL64_SIGN     0x8000000000000000LL
-#define REAL64_EXP      0x7FF0000000000000LL
-#define REAL64_FRAC_MSB 0x0010000000000000LL
-#define REAL64_FRAC     0x000FFFFFFFFFFFFFLL
+#define REAL64_SIGN     0x8000000000000000ULL
+#define REAL64_EXP      0x7FF0000000000000ULL
+#define REAL64_FRAC     0x000FFFFFFFFFFFFFULL
 
-#define REAL64_UNDEFINED ((uint64_t)0x7ff2bad2bad2bad2LL)
+#define REAL64_UNDEFINED ((uint64_t)0x7ff2bad2bad2bad2ULL)
 
 #define INT64(x)        ((int64_t)(x))
 #define INT32(x)        ((int32_t)(x))
 
-#define REAL32_SIGN     0x80000000L
-#define REAL32_EXP      0x7F800000L
-#define REAL32_FRAC     0x007FFFFFL
-#define REAL32_FRAC_MSB 0x00800000L
+#define REAL32_SIGN     0x80000000UL
+#define REAL32_EXP      0x7F800000UL
+#define REAL32_FRAC     0x007FFFFFUL
 
-#define REAL32_UNDEFINED ((uint32_t)0x7f82bad2)
+#define REAL32_UNDEFINED ((uint32_t)0x7f82bad2UL)
 
 #define NAN32_DivZeroByZero     ((uint32_t)0x7fc00000UL)
 #define NAN32_DivInfByInf       ((uint32_t)0x7fa00000UL)
@@ -67,6 +65,8 @@
 #undef FALSE
 #define FALSE   0x0000
 #define TRUE    0x0001
+
+const char *RMODE = "PMZN";
 
 REAL32 RInf;
 REAL32 RMinusInf;
@@ -111,6 +111,7 @@ static REAL64 DConversion_NaN;
 static REAL64 DRemFromInf_NaN;
 static REAL64 DRemByZero_NaN;
 
+extern int emudebug;
 extern int FP_Error;
 extern int RoundingMode;
 extern void fp_pushdb (REAL64);
@@ -131,9 +132,9 @@ void fp_init (void)
 
         rc = feholdexcept (&fpenv);
         if (rc)
-                printf ("-W-EMU414: Warning - cannot initialize FP environment!\n");
+                printf ("-W-EMUFPU: Warning - cannot initialize FP environment!\n");
 
-        fp_setrounding (ROUND_N);
+        fp_setrounding ("fpinit", ROUND_N);
 
         sn_setbits (&RInf,           PINFINITY32);
         sn_setbits (&RMinusInf,      MINFINITY32);
@@ -188,7 +189,7 @@ void sn_setbits (REAL32 *ptr, uint32_t bits)
         *rawPtr = bits;
 }
 
-void fp_setrounding (int mode)
+void fp_setrounding (const char *where, int mode)
 {
         int fpu_mode;
         int rc;
@@ -209,7 +210,7 @@ void fp_setrounding (int mode)
                         fpu_mode = FE_TONEAREST;
                         break;
                 default     :
-                        printf ("-E-EMUW414: Error - unknown rounding mode! (%d)\n", mode);
+                        printf ("-E-EMUFPU: Error - unknown rounding mode! (%d)\n", mode);
 #ifndef FPA_STANDALONE
                         handler (-1);
 #endif
@@ -217,10 +218,13 @@ void fp_setrounding (int mode)
         
 #ifndef FPA_STANDALONE
         RoundingMode = mode;
+        if (emudebug)
+                printf ("-I-EMUFPU: RoundingMode set to '%c' (%s).\n", RMODE[mode - 1], where);
 #endif
+
         rc = fesetround (fpu_mode);
         if (rc != 0)
-                printf ("-W-EMU414: Warning - cannot set rounding mode! (%d)\n", mode);
+                printf ("-W-EMUFPU: Warning - cannot set rounding mode! (%d)\n", mode);
 }
 
 int db_sign (uint64_t fpbits)
@@ -272,7 +276,8 @@ int fp_zerodb(REAL64 fp)
         fpreal64_t r64;
 
         r64.fp = fp;
-        return (r64.bits == ZERO64);
+        /* Minus zero is the same as plus zero. */
+        return ((r64.bits & ~REAL64_SIGN) == ZERO64);
 }
 
 int sn_sign (uint32_t fpbits)
@@ -324,7 +329,8 @@ int fp_zerosn(REAL32 fp)
         fpreal32_t r32;
 
         r32.fp = fp;
-        return (r32.bits == ZERO32);
+        /* Minus zero is the same as plus zero. */
+        return ((r32.bits & ~REAL32_SIGN) == ZERO32);
 }
 
 void db_dump (char *msg, REAL64 fp)
@@ -358,7 +364,7 @@ void fp_clrexcept (void)
 
         rc = feclearexcept (FE_T800_EXCEPT);
         if (rc)
-                printf ("-W-EMU414: Warning - cannot clear native FPU exceptions!\n");
+                printf ("-W-EMUFPU: Warning - cannot clear native FPU exceptions!\n");
 }
 
 /* Check native FPU exceptions. */
@@ -369,7 +375,7 @@ void fp_chkexcept (char *msg)
         exc = fetestexcept (FE_T800_EXCEPT);
         if (exc)
         {
-                printf ("-W-EMU414: Warning - FPU exception flags are set! (%s)\n", msg);
+                printf ("-W-EMUFPU: Warning - FPU exception flags are set! (%s)\n", msg);
         }
 }
 
@@ -379,12 +385,12 @@ void fp_chkexcept (char *msg)
 void translate_except (int excp)
 {
 #if 0
-        printf ("-W-EMU414: FPExceptFlag   = %d\n", excp);
-        printf ("-W-EMU414:   Invalid      %s\n", setclear (excp & FE_INVALID));
-        printf ("-W-EMU414:   DivideByZero %s\n", setclear (excp & FE_DIVBYZERO));
-        printf ("-W-EMU414:   Overflow     %s\n", setclear (excp & FE_OVERFLOW));
-        printf ("-W-EMU414:   Underflow    %s\n", setclear (excp & FE_UNDERFLOW));
-        printf ("-W-EMU414:   Inexact      %s\n", setclear (excp & FE_INEXACT));
+        printf ("-W-EMUFPU: FPExceptFlag   = %d\n", excp);
+        printf ("-W-EMUFPU:   Invalid      %s\n", setclear (excp & FE_INVALID));
+        printf ("-W-EMUFPU:   DivideByZero %s\n", setclear (excp & FE_DIVBYZERO));
+        printf ("-W-EMUFPU:   Overflow     %s\n", setclear (excp & FE_OVERFLOW));
+        printf ("-W-EMUFPU:   Underflow    %s\n", setclear (excp & FE_UNDERFLOW));
+        printf ("-W-EMUFPU:   Inexact      %s\n", setclear (excp & FE_INEXACT));
 #endif
 
         if (excp & FE_INVALID)
@@ -404,11 +410,11 @@ REAL64 db_check_except (REAL64 result)
                 return result;
 
 #if 0
-        printf  ("-W-EMU414: Native FPU exception!\n");
-        printf  ("-W-EMU414: Operation arguments.\n");
-        db_dump ("-W-EMU414:   Barg", BargDB);
-        db_dump ("-W-EMU414:   Aarg", AargDB);
-        db_dump ("-W-EMU414: Result", ResultDB);
+        printf  ("-W-EMUFPU: Native FPU exception!\n");
+        printf  ("-W-EMUFPU: Operation arguments.\n");
+        db_dump ("-W-EMUFPU:   Barg", BargDB);
+        db_dump ("-W-EMUFPU:   Aarg", AargDB);
+        db_dump ("-W-EMUFPU: Result", ResultDB);
 #endif
 
         translate_except (excp);
@@ -430,11 +436,11 @@ REAL32 sn_check_except (REAL32 result)
                 return result;
 
 #if 0
-        printf  ("-W-EMU414: Native FPU exception!\n");
-        printf  ("-W-EMU414: Operation arguments.\n");
-        sn_dump ("-W-EMU414:   Barg", BargSN);
-        sn_dump ("-W-EMU414:   Aarg", AargSN);
-        sn_dump ("-W-EMU414: Result", ResultSN);
+        printf  ("-W-EMUFPU: Native FPU exception!\n");
+        printf  ("-W-EMUFPU: Operation arguments.\n");
+        sn_dump ("-W-EMUFPU:   Barg", BargSN);
+        sn_dump ("-W-EMUFPU:   Aarg", AargSN);
+        sn_dump ("-W-EMUFPU: Result", ResultSN);
 #endif
 
         translate_except (excp);
@@ -464,16 +470,26 @@ REAL64 db_binary (REAL64 fb, REAL64 fa, REAL64 (*opr)(REAL64, REAL64))
         BargDB = fb; AargDB = fa; ResultDB = DRUndefined;
 #endif
 
+        /* Set FP_Error on NaN. */
         if (fp_nandb (fb) && fp_nandb (fb))
         {
+                FP_Error = TRUE;
                 fracb = fp_fracdb (fb);
                 fraca = fp_fracdb (fa);
+                if (fracb == fraca)
+                        return fb;
                 return (fracb > fraca) ? fb : fa;
         }
         else if (fp_nandb (fb))
+        {
+                FP_Error = TRUE;
                 return fb;
+        }
         else if (fp_nandb (fa))
+        {
+                FP_Error = TRUE;
                 return fa;
+        }
 
         if (opr == db_add)
         {
@@ -500,19 +516,6 @@ REAL64 db_binary (REAL64 fb, REAL64 fa, REAL64 (*opr)(REAL64, REAL64))
                 {
                         FP_Error = TRUE;
                         return DMulZeroByInf_NaN;
-                }
-        }
-        else if (opr == db_div)
-        {
-                if (fp_zerodb (fb) && fp_zerodb (fa))
-                {
-                        FP_Error = TRUE;
-                        return DDivZeroByZero_NaN;
-                }
-                else if (fp_infdb (fb) && fp_infdb (fa))
-                {
-                        FP_Error = TRUE;
-                        return DDivInfByInf_NaN;
                 }
         }
 
@@ -562,7 +565,10 @@ REAL64 db_unary (REAL64 fa, REAL64 (*opr)(REAL64))
         AargDB = fa; ResultDB = DRUndefined;
 #endif
         if (fp_nandb (fa))
+        {
+                FP_Error = TRUE;
                 return fa;
+        }
 
         if (fp_infdb (fa))
                 FP_Error = TRUE;
@@ -594,16 +600,26 @@ REAL32 sn_binary (REAL32 fb, REAL32 fa, REAL32 (*opr)(REAL32, REAL32))
         BargSN = fb; AargSN = fa; ResultSN = RUndefined;
 #endif
 
+        /* Set FP_Error on NaN. */
         if (fp_nansn (fb) && fp_nansn (fa))
         {
+                FP_Error = TRUE;
                 fracb = fp_fracsn (fb);
                 fraca = fp_fracsn (fa);
+                if (fracb == fraca)
+                        return fb;
                 return (fracb > fraca) ? fb : fa;
         }
         else if (fp_nansn (fb))
+        {
+                FP_Error = TRUE;
                 return fb;
+        }
         else if (fp_nansn (fa))
+        {
+                FP_Error = TRUE;
                 return fa;
+        }
 
         if (opr == sn_add)
         {
@@ -630,19 +646,6 @@ REAL32 sn_binary (REAL32 fb, REAL32 fa, REAL32 (*opr)(REAL32, REAL32))
                 {
                         FP_Error = TRUE;
                         return MulZeroByInf_NaN;
-                }
-        }
-        else if (opr == sn_div)
-        {
-                if (fp_zerosn (fb) && fp_zerosn (fa))
-                {
-                        FP_Error = TRUE;
-                        return DivZeroByZero_NaN;
-                }
-                else if (fp_infsn (fb) && fp_infsn (fa))
-                {
-                        FP_Error = TRUE;
-                        return DivInfByInf_NaN;
                 }
         }
 
@@ -693,7 +696,10 @@ REAL32 sn_unary (REAL32 fa, REAL32 (*opr)(REAL32))
 #endif
 
         if (fp_nandb (fa))
+        {
+                FP_Error = TRUE;
                 return fa;
+        }
 
         if (fp_infdb (fa))
                 FP_Error = TRUE;
@@ -737,7 +743,40 @@ REAL32 RQuotRem (REAL32 X, REAL32 Y, long *N)
 REAL64 db_add(REAL64 fb, REAL64 fa)      { return fb + fa; }
 REAL64 db_sub(REAL64 fb, REAL64 fa)      { return fb - fa; }
 REAL64 db_mul(REAL64 fb, REAL64 fa)      { return fb * fa; }
-REAL64 db_div(REAL64 fb, REAL64 fa)      { return fb / fa; }
+REAL64 db_div(REAL64 fb, REAL64 fa)
+{ 
+        REAL64 result;
+        fpreal64_t r64;
+
+        if (fp_zerodb (fb) && fp_zerodb (fa))
+        {
+                FP_Error = TRUE;
+                return DDivZeroByZero_NaN;
+        }
+        else if (fp_infdb (fb) && fp_infdb (fa))
+        {
+                FP_Error = TRUE;
+                return DDivInfByInf_NaN;
+        }
+
+        result = fb / fa;
+
+        if (fp_signdb (fb) == fp_signdb (fa))
+        {
+                r64.fp    = result;
+                r64.bits &= ~REAL64_SIGN;
+                result    = r64.fp;
+        }
+        else
+        {
+                r64.fp    = result;
+                r64.bits |= REAL64_SIGN;
+                result    = r64.fp;
+        }
+
+        return result;
+}
+
 REAL64 db_mulby2 (REAL64 fa)             { return ldexp (fa,  1); }
 REAL64 db_divby2 (REAL64 fa)             { return ldexp (fa, -1); }
 REAL64 db_expinc32 (REAL64 fa)           { return ldexp (fa,  32); }
@@ -754,7 +793,39 @@ int    db_eq (REAL64 fb, REAL64 fa)      { return fb == fa; }
 REAL32 sn_add (REAL32 fb, REAL32 fa)     { return fb + fa; }
 REAL32 sn_sub (REAL32 fb, REAL32 fa)     { return fb - fa; }
 REAL32 sn_mul (REAL32 fb, REAL32 fa)     { return fb * fa; }
-REAL32 sn_div (REAL32 fb, REAL32 fa)     { return fb / fa; }
+REAL32 sn_div (REAL32 fb, REAL32 fa)
+{ 
+        REAL32 result;
+        fpreal32_t r32;
+
+        if (fp_zerosn (fb) && fp_zerosn (fa))
+        {
+                FP_Error = TRUE;
+                return DivZeroByZero_NaN;
+        }
+        else if (fp_infsn (fb) && fp_infsn (fa))
+        {
+                FP_Error = TRUE;
+                return DivInfByInf_NaN;
+        }
+
+        result = fb / fa;
+
+        if (fp_signsn (fb) == fp_signsn (fa))
+        {
+                r32.fp    = result;
+                r32.bits &= ~REAL32_SIGN;
+                result    = r32.fp;
+        }
+        else
+        {
+                r32.fp    = result;
+                r32.bits |= REAL32_SIGN;
+                result    = r32.fp;
+        }
+
+        return result;
+}
 REAL32 sn_mulby2 (REAL32 fa)             { return ldexpf (fa,   1); }
 REAL32 sn_divby2 (REAL32 fa)             { return ldexpf (fa,  -1); }
 REAL32 sn_expinc32 (REAL32 fa)           { return ldexpf (fa,  32); }
@@ -821,7 +892,9 @@ REAL64 fp_remfirstdb (REAL64 fb, REAL64 fa)
         fp_pushdb (fp_divdb (fp_subdb (fb, result), fa));
 #else
         result = DQuotRem (fb, fa, &N);
+#ifndef FPA_STANDALONE
         fp_pushdb ((REAL64) N);
+#endif
 #endif
 
         return result;
@@ -1047,7 +1120,9 @@ REAL32 fp_remfirstsn (REAL32 fb, REAL32 fa)
         fp_pushsn (fp_divsn (fp_subsn (fb, result), fa));
 #else
         result = RQuotRem (fb, fa, &N);
+#ifndef FPA_STANDALONE
         fp_pushsn ((REAL32) N);
+#endif
 #endif
 
         return result;

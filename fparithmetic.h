@@ -67,7 +67,8 @@ void fp_clrexcept (void);
 #define ROUND_Z         3
 #define ROUND_N         4
 
-void fp_setrounding (int mode);
+void fp_setrounding (const char *where, int mode);
+extern const char *RMODE;
 
 
 

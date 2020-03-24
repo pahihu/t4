@@ -21,6 +21,14 @@ int main(int argc, char*argv[])
         REAL32 fa, fb, result;
         long b;
 
+        sn_setbits (&fb, 0x80000000);
+        sn_setbits (&fa, 0x7fc00000);
+
+        fesetround (FE_TONEAREST);
+        result = fb / fa;
+        sn_dump ("fb + fa", result);
+        return 0;
+
         FP_Error = FALSE;
         fb = atof (argv[1]);
         fa = atof (argv[2]);

@@ -24,8 +24,8 @@ Failed tests from Mike's TVS1F
 
 * call
 * enbs
-* T800 FP double 141 PASS -  55 FAIL
-* T800 FP single 140 PASS -  46 FAIL
+* T800 FP double 151 PASS -  45 FAIL
+* T800 FP single 150 PASS -  36 FAIL
 
 Changes
 =======

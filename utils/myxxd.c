@@ -4,14 +4,14 @@
 
 void usage ()
 {
-        fprintf (stderr, "usage: myxxd [-c cols] [-s skip] [infile] [outfile]\n");
+        fprintf (stderr, "usage: myxxd [-b skipebg] [-c cols] [-e skipend] [-s skip] [infile] [outfile]\n");
         exit (1);
 }
 
 int main(int argc, char*argv[])
 {
         FILE *fin, *fout;
-        int  cols, skip;
+        int  cols, skip, skipbeg, skipend;
         int  i, done;
         unsigned int offs;
         char InFileName[256], OutFileName[256];
@@ -20,6 +20,8 @@ int main(int argc, char*argv[])
         OutFileName[0] = '\0';
         cols = 16;
         skip = 0;
+        skipbeg = 0;
+        skipend = 0;
 
         for (i = 1; i < argc; i++)
         {
@@ -30,6 +32,16 @@ int main(int argc, char*argv[])
                         i++;
                         if (i == argc) usage ();
                         cols = atol (argv[i]);
+                        break;
+                case 'b':
+                        i++;
+                        if (i == argc) usage ();
+                        skipbeg = atol (argv[i]);
+                        break;
+                case 'e':
+                        i++;
+                        if (i == argc) usage ();
+                        skipend = atol (argv[i]);
                         break;
                 case 'h':
                         usage ();
@@ -51,12 +63,17 @@ int main(int argc, char*argv[])
                 }
         }
 
-        if (abs (skip) >= cols)
+        if (skip > 0)
+                skipbeg = skip;
+        else if (skip < 0)
+                skipend = -skip;
+
+        if (skipbeg + skipend >= cols)
         {
-                fprintf (stderr, "skip should be less than cols!\n");
+                fprintf (stderr, "skips should be less than cols!\n");
                 exit (1);
         }
-        cols = cols - abs (skip);
+        cols = cols - (skipbeg + skipend);
 
         fin  = stdin;
         fout = stdout;
@@ -85,8 +102,8 @@ int main(int argc, char*argv[])
         while (!done)
         {
                 fprintf (fout, "%08x:", offs);
-                if (skip > 0)
-                        for (i = 0; i < skip; i++)
+                if (skipbeg)
+                        for (i = 0; i < skipbeg; i++)
                                 getc (fin);
                 for (i = 0; i < cols; i++)
                 {
@@ -102,8 +119,8 @@ int main(int argc, char*argv[])
                 }
                 fprintf (fout, "\n");
                 offs += cols;
-                if (skip < 0)
-                        for (i = 0; i < abs (skip); i++)
+                if (skipend)
+                        for (i = 0; i < skipend; i++)
                                 getc (fin);
         }
         fclose (fin);

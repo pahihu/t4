@@ -2650,12 +2650,16 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		           if (IsT414)
 		               goto BadCode;
                            checkWordAligned ("FPLDNLADDDB", AReg);
-                           dbtemp1 = real64 (AReg);
+                           fp_pushdb (real64 (AReg));
                            if (FAReg.length == FP_REAL64)
-                                DB(FAReg) = fp_adddb (DB(FAReg), dbtemp1);
+                           {
+                                fp_pop2db (&dbtemp1, &dbtemp2);
+                                fp_pushdb (fp_adddb (dbtemp1, dbtemp2));
+                           }
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpldnladddb)\n");
+                                fp_drop ();
                                 FAReg.length = FP_UNKNOWN;
                                 DB(FAReg)    = DRUndefined;
                            }
@@ -2667,12 +2671,16 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		           if (IsT414)
 		               goto BadCode;
                            checkWordAligned ("FPLDNLMULDB", AReg);
-                           dbtemp1 = real64 (AReg);
+                           fp_pushdb (real64 (AReg));
                            if (FAReg.length == FP_REAL64)
-                                DB(FAReg) = fp_muldb (DB(FAReg), dbtemp1);
+                           {
+                                fp_pop2db (&dbtemp1, &dbtemp2);
+                                fp_pushdb (fp_muldb (dbtemp1, dbtemp2));
+                           }
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpldnlmuldb)\n");
+                                fp_drop ();
                                 FAReg.length = FP_UNKNOWN;
                                 DB(FAReg)    = DRUndefined;
                            }
@@ -2684,12 +2692,16 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		           if (IsT414)
 		               goto BadCode;
                            checkWordAligned ("FPLDNLADDSN", AReg);
-                           sntemp1 = real32 (AReg);
+                           fp_pushsn (real32 (AReg));
                            if (FAReg.length == FP_REAL32)
-                                SN(FAReg) = fp_addsn (SN(FAReg), sntemp1);
+                           {
+                                fp_pop2sn (&sntemp1, &sntemp2);
+                                fp_pushsn (fp_addsn (sntemp1, sntemp2));
+                           }
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fpldnladdsn)\n");
+                                fp_drop ();
                                 FAReg.length = FP_UNKNOWN;
                                 SN(FAReg)    = RUndefined;
                            }
@@ -2838,12 +2850,16 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		           if (IsT414)
 		               goto BadCode;
                            checkWordAligned ("FPLDNLMULSN", AReg);
-                           sntemp1 = real32 (AReg);
+                           fp_pushsn (real32 (AReg));
                            if (FAReg.length == FP_REAL32)
-                                SN(FAReg) = fp_mulsn (SN(FAReg), sntemp1);
+                           {
+                                fp_pop2sn (&sntemp1, &sntemp2);
+                                fp_pushsn (fp_mulsn (sntemp1, sntemp2));
+                           }
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fpldnlmulsn)\n");
+                                fp_drop ();
                                 FAReg.length = FP_UNKNOWN;
                                 SN(FAReg)    = RUndefined;
                            }

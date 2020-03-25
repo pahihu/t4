@@ -472,6 +472,17 @@ REAL64 db_correct_sign (REAL64 result, REAL64 fb, REAL64 fa)
         return result;
 }
 
+REAL64 db_change_sign (REAL64 fp)
+{
+        fpreal64_t r64;
+
+        r64.fp    = fp;
+        r64.bits ^= REAL64_SIGN;
+        fp        = r64.fp;
+
+        return fp;
+}
+
 REAL32 sn_correct_sign (REAL32 result, REAL32 fb, REAL32 fa)
 {
         fpreal32_t r32;
@@ -489,6 +500,17 @@ REAL32 sn_correct_sign (REAL32 result, REAL32 fb, REAL32 fa)
                 result    = r32.fp;
         }
         return result;
+}
+
+REAL32 sn_change_sign (REAL32 fp)
+{
+        fpreal32_t r32;
+
+        r32.fp    = fp;
+        r32.bits ^= REAL32_SIGN;
+        fp        = r32.fp;
+
+        return fp;
 }
 
 
@@ -719,9 +741,9 @@ REAL64 db_sub(REAL64 fb, REAL64 fa)
                 fracb = fp_fracdb (fb);
                 fraca = fp_fracdb (fa);
                 if (fracb >= fraca)
-                        result = fracb;
+                        result = fb;
                 else
-                        result = fraca;
+                        result = db_change_sign (fa);
                 return result;
         }
         else if (fp_nandb (fb))
@@ -732,7 +754,7 @@ REAL64 db_sub(REAL64 fb, REAL64 fa)
         else if (fp_nandb (fa))
         {
                 FP_Error = TRUE;
-                return fa;
+                return db_change_sign (fa);
         }
 
         if (fp_infdb (fb) && fp_infdb (fa))
@@ -874,9 +896,11 @@ REAL32 sn_sub (REAL32 fb, REAL32 fa)
                 FP_Error = TRUE;
                 fracb = fp_fracsn (fb);
                 fraca = fp_fracsn (fa);
-                if (fracb == fraca)
-                        return fb;
-                return (fracb > fraca) ? fb : fa;
+                if (fracb >= fraca)
+                        result = fb;
+                else
+                        result = sn_change_sign (fa);
+                return result;
         }
         else if (fp_nansn (fb))
         {
@@ -886,7 +910,7 @@ REAL32 sn_sub (REAL32 fb, REAL32 fa)
         if (fp_nansn (fa))
         {
                 FP_Error = TRUE;
-                return fa;
+                return sn_change_sign (fa);
         }
 
         if (fp_infsn (fb) && fp_infsn (fa))

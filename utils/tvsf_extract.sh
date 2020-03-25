@@ -65,7 +65,7 @@ XALT="alt talt"
 XALT_INP=0
 XALT_OUT=10
 
-FPT1="fpadd__sn fpaddrmsn fpdiv__sn"
+FPT1="fpadd__sn fpaddrmsn fpdiv__sn, fpsub__sn"
 FPT1_INP=8
 FPT1_OUT=8
 

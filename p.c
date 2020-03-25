@@ -60,8 +60,6 @@
 #define TRUE  0x0001
 #define FALSE 0x0000
 
-#define INT(x)          ((int32_t)(x))
-
 
 /* Processor specific parameters. */
 int Txxx = 414;
@@ -98,10 +96,13 @@ typedef struct _REAL {
         uint32_t length;        /* FP_REAL32 or FP_REAL64 */
         uint32_t rsvd;
         union {
-                REAL32  sn;
-                REAL64  db;
+                fpreal32_t  sn;
+                fpreal64_t  db;
         } u;
 } REAL;
+
+#define SN(reg)   (reg.u.sn)
+#define DB(reg)   (reg.u.db)
 
 REAL  FAReg;
 REAL  FBReg;
@@ -260,10 +261,10 @@ void fp_drop2 (void)
 }
 
 /* Pop a REAL64 from the floating point stack. */
-void fp_popdb (REAL64 *fp)
+void fp_popdb (fpreal64_t *fp)
 {
         if (FAReg.length == FP_REAL64)
-                *fp = FAReg.u.db;
+                *fp = DB(FAReg);
         else
         {
                 printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fp_popdb)\n");
@@ -274,12 +275,12 @@ void fp_popdb (REAL64 *fp)
 
 
 /* Peek two REAL64s on the floating point stack. */
-void fp_peek2db (REAL64 *fb, REAL64 *fa)
+void fp_peek2db (fpreal64_t *fb, fpreal64_t *fa)
 {
         if (FBReg.length == FP_REAL64 && FAReg.length == FP_REAL64)
         {
-                *fb = FBReg.u.db;
-                *fa = FAReg.u.db;
+                *fb = DB(FBReg);
+                *fa = DB(FAReg);
         }
         else
         {
@@ -291,7 +292,7 @@ void fp_peek2db (REAL64 *fb, REAL64 *fa)
 
 
 /* Pop two REAL64s from the floating point stack. */
-void fp_pop2db (REAL64 *fb, REAL64 *fa)
+void fp_pop2db (fpreal64_t *fb, fpreal64_t *fa)
 {
         fp_peek2db (fb, fa);
         fp_drop2 ();
@@ -299,20 +300,20 @@ void fp_pop2db (REAL64 *fb, REAL64 *fa)
 
 
 /* Push a REAL64 to the floating point stack. */
-void fp_pushdb (REAL64 fp)
+void fp_pushdb (fpreal64_t fp)
 {
         FCReg = FBReg;
         FBReg = FAReg;
         FAReg.length = FP_REAL64;
-        FAReg.u.db = fp;
+        DB(FAReg) = fp;
 }
 
 
 /* Pop a REAL32 from the floating point stack. */
-void fp_popsn (REAL32 *fp)
+void fp_popsn (fpreal32_t *fp)
 {
         if (FP_REAL32 == FAReg.length)
-                *fp = FAReg.u.sn;
+                *fp = SN(FAReg);
         else
         {
                 printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fp_popsn)\n");
@@ -323,12 +324,12 @@ void fp_popsn (REAL32 *fp)
 
 
 /* Peek two REAL32s on the floating point stack. */
-void fp_peek2sn (REAL32 *fb, REAL32 *fa)
+void fp_peek2sn (fpreal32_t *fb, fpreal32_t *fa)
 {
         if (FBReg.length == FP_REAL32 && FAReg.length == FP_REAL32)
         {
-                *fb = FBReg.u.sn;
-                *fa = FAReg.u.sn;
+                *fb = SN(FBReg);
+                *fa = SN(FAReg);
         }
         else
         {
@@ -340,7 +341,7 @@ void fp_peek2sn (REAL32 *fb, REAL32 *fa)
 
 
 /* Pop two REAL32s from the floating point stack. */
-void fp_pop2sn (REAL32 *fb, REAL32 *fa)
+void fp_pop2sn (fpreal32_t *fb, fpreal32_t *fa)
 {
         fp_peek2sn (fb, fa);
         fp_drop2 ();
@@ -348,20 +349,21 @@ void fp_pop2sn (REAL32 *fb, REAL32 *fa)
 
 
 /* Push a REAL32 to the floating point stack. */
-void fp_pushsn (REAL32 fp)
+void fp_pushsn (fpreal32_t fp)
 {
         FCReg = FBReg;
         FBReg = FAReg;
         FAReg.length = FP_REAL32;
-        FAReg.u.sn = fp;
+        SN(FAReg) = fp;
 }
 
 
 /* Do a binary floating point operation. */
-void fp_dobinary (REAL64 (*dbop)(REAL64,REAL64), REAL32 (*snop)(REAL32,REAL32))
+void fp_dobinary (fpreal64_t (*dbop)(fpreal64_t,fpreal64_t),
+                  fpreal32_t (*snop)(fpreal32_t,fpreal32_t))
 {
-        REAL64 dbtemp1, dbtemp2;
-        REAL32 sntemp1, sntemp2;
+        fpreal64_t dbtemp1, dbtemp2;
+        fpreal32_t sntemp1, sntemp2;
 
         ResetRounding = TRUE;
 
@@ -387,10 +389,11 @@ void fp_dobinary (REAL64 (*dbop)(REAL64,REAL64), REAL32 (*snop)(REAL32,REAL32))
 
 
 /* Do a binary floating point operation. */
-int fp_binary2word (int (*dbop)(REAL64,REAL64), int (*snop)(REAL32,REAL32))
+int fp_binary2word (int (*dbop)(fpreal64_t,fpreal64_t),
+                    int (*snop)(fpreal32_t,fpreal32_t))
 {
-        REAL64 dbtemp1, dbtemp2;
-        REAL32 sntemp1, sntemp2;
+        fpreal64_t dbtemp1, dbtemp2;
+        fpreal32_t sntemp1, sntemp2;
         int result;
 
         ResetRounding = TRUE;
@@ -417,10 +420,10 @@ int fp_binary2word (int (*dbop)(REAL64,REAL64), int (*snop)(REAL32,REAL32))
 
 
 /* Do an unary floating point operation. */
-void fp_dounary (REAL64 (*dbop)(REAL64), REAL32 (*snop)(REAL32))
+void fp_dounary (fpreal64_t (*dbop)(fpreal64_t), fpreal32_t (*snop)(fpreal32_t))
 {
-        REAL64 dbtemp;
-        REAL32 sntemp;
+        fpreal64_t dbtemp;
+        fpreal32_t sntemp;
 
         ResetRounding = TRUE;
 
@@ -490,24 +493,48 @@ void print_fpreg (char *ident, char name, REAL *fpreg, int printempty)
 {
         fpreal64_t r64;
         fpreal32_t r32;
+        char tmp[32];
 
+#ifndef NDEBUG
+        fp_chkexcept ("Enter print_fpreg ()");
+#endif
+
+        tmp[0] = '\0';
         if (fpreg->length == FP_REAL64)
         {
-                r64.fp = fpreg->u.db;
-                printf ("%sF%cReg          #%016llX   (%.15le)\n", ident, name, r64.bits, fpreg->u.db);
+                r64 = fpreg->u.db;
+                if (db_inf (r64.bits))
+                        strcpy (tmp, "(inf)");
+                else if (db_nan (r64.bits))
+                        strcpy (tmp, "(nan)");
+/*
+                else
+                        sprintf (tmp, "%.15le", r64.fp);
+*/
+                printf ("%sF%cReg          #%016llX   (%s)\n", ident, name, r64.bits, tmp);
         }
         else if (fpreg->length == FP_REAL32)
         {
-                r32.fp = fpreg->u.sn;
-                printf ("%sF%cReg                  #%08X   (%.7e)\n", ident, name, r32.bits, fpreg->u.sn);
+                r32 = fpreg->u.sn;
+                if (sn_inf (r32.bits))
+                        strcpy (tmp, "(inf)");
+                else if (sn_nan (r32.bits))
+                        strcpy (tmp, "(nan)");
+/*
+                else
+                        sprintf (tmp, "%.7e", r32.fp);
+*/
+                printf ("%sF%cReg                  #%08X   (%s)\n", ident, name, r32.bits, tmp);
         } 
         else if (printempty)
         {
-                r64.fp = fpreg->u.db;
+                r64 = fpreg->u.db;
                 printf ("%sF%cReg          #%016llX   (Empty)\n", ident, name, r64.bits);
         }
 
-        fp_clrexcept ();
+#ifndef NDEBUG
+        fp_chkexcept ("Leave print_fpreg ()");
+#endif
 }
 
 /* Print processor state. */
@@ -675,9 +702,9 @@ void mainloop (void)
         uint32_t otherWdesc, otherWPtr, otherPtr, altState;
         uint32_t PrevError;
         unsigned char pixel;
-        REAL32 sntemp1, sntemp2;
-        REAL64 dbtemp1, dbtemp2;
-        REAL   fptemp;
+        fpreal32_t sntemp1, sntemp2;
+        fpreal64_t dbtemp1, dbtemp2;
+        REAL       fptemp;
         fpreal32_t r32temp;
 
         int   printIPtr, instrBytes;
@@ -712,7 +739,7 @@ void mainloop (void)
                 otherWdesc = otherWPtr = otherPtr = altState = Undefined_p;
                 dbtemp1 = dbtemp2 = DRUndefined;
                 sntemp1 = sntemp2 = RUndefined;
-                r32temp.fp = RUndefined;
+                r32temp = RUndefined;
 #endif
                 /* Save current value of Error flag */
                 PrevError = ReadError;
@@ -781,7 +808,7 @@ void mainloop (void)
 
 #ifdef PROFILE
 	if (profiling)
-		add_profile (INT(Icode) - 0x100);
+		add_profile (INT32(Icode) - 0x100);
 #endif
 
 	switch (Icode)
@@ -1027,7 +1054,7 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 			   IPtr++;
 			   break;
 		case 0x09: /* gt          */
-			   if (INT(BReg) > INT(AReg))
+			   if (INT32(BReg) > INT32(AReg))
 			   {
 				AReg = true_t;
 			   }
@@ -1381,7 +1408,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   break;
 		case 0x1d: /* xdble       */
 			   CReg = BReg;
-			   if (INT(AReg) < 0)
+			   if (INT32(AReg) < 0)
 			   {
 				BReg = -1;
 			   }
@@ -1404,15 +1431,15 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 temp = CReg;
 				SetError;
                            }
-                           else if ((INT(AReg)==-1) && (BReg==0x80000000))
+                           else if ((INT32(AReg)==-1) && (BReg==0x80000000))
                            {
                                 AReg = 0x00000000;
                                 temp = AReg;
                            }
 			   else
                            {
-				AReg = INT(BReg) % INT(AReg);
-                                temp = abs (INT(AReg));
+				AReg = INT32(BReg) % INT32(AReg);
+                                temp = abs (INT32(AReg));
                            }
                            BReg = CReg;
                            CReg = temp;
@@ -1476,7 +1503,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   IPtr++;
 			   if (ProcPriority == HiPriority)
 			   {
-				if (INT(ClockReg0 - AReg) > 0)
+				if (INT32(ClockReg0 - AReg) > 0)
 					;
 				else
 				{
@@ -1486,7 +1513,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   }
 			   else
 			   {
-				if (INT(ClockReg1 - AReg) > 0)
+				if (INT32(ClockReg1 - AReg) > 0)
 					;
 				else
 				{
@@ -1496,18 +1523,18 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   }
 			   break;
 		case 0x2c: /* div         */
-			   if ((AReg==0) || ((INT(AReg)==-1)&&(BReg==0x80000000)))
+			   if ((AReg==0) || ((INT32(AReg)==-1)&&(BReg==0x80000000)))
                            {
                                 temp = CReg;
 				SetError;
                            }
 			   else
                            {
-                                temp  = abs (INT(AReg));
-                                temp2 = abs (INT(BReg));
-				AReg  = INT(BReg) / INT(AReg);
+                                temp  = abs (INT32(AReg));
+                                temp2 = abs (INT32(BReg));
+				AReg  = INT32(BReg) / INT32(AReg);
                                 /* kudos to M.Bruestle */
-                                temp  = temp2 - (abs (INT(AReg)) | 1) * temp;
+                                temp  = temp2 - (abs (INT32(AReg)) | 1) * temp;
                            }
 			   BReg = CReg;
                            CReg = temp;
@@ -1520,7 +1547,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				temp = ClockReg0;
 			   else
 				temp = ClockReg1;
-			   if ((BReg==true_t) && (INT(temp-CReg)>=0) && (word(index(WPtr,0))==NoneSelected_o))
+			   if ((BReg==true_t) && (INT32(temp-CReg)>=0) && (word(index(WPtr,0))==NoneSelected_o))
 			   {
                                 if (emudebug)
 				        printf ("-I-EMUDBG: dist(2): Taking branch #%8X.\n", AReg);
@@ -1723,7 +1750,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x3f: /* wcnt        */
 			   CReg = BReg;
 			   BReg = AReg & ByteSelectMask;
-			   AReg = INT(AReg) >> 2;
+			   AReg = INT32(AReg) >> 2;
 			   IPtr++;
 			   break;
 		case 0x40: /* shr         */
@@ -1795,7 +1822,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   }
 			   else if ((AReg == true_t) &&
                                     (word (index (WPtr, TLink_s)) == TimeSet_p) &&
-                                    (INT(BReg - word (index (WPtr, Time_s))) >= 0))
+                                    (INT32(BReg - word (index (WPtr, Time_s))) >= 0))
 			   {
                                 if (emudebug)
 				        printf ("-I-EMUDBG: enbt(2): Time already set earlier than or equal to this one.\n");
@@ -1863,7 +1890,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   IPtr++;
 			   break;
 		case 0x4a: /* move        */
-                           if (INT(AReg) > 0)
+                           if (INT32(AReg) > 0)
                            {
 			        for (temp=0;temp<AReg;temp++)
 			        {
@@ -1883,8 +1910,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   IPtr++;
 			   break;
 		case 0x4c: /* csngl       */
-			   if (((INT(AReg)<0) && (INT(BReg)!=-1)) ||
-                               ((INT(AReg)>=0) && (BReg!=0)))
+			   if (((INT32(AReg)<0) && (INT32(BReg)!=-1)) ||
+                               ((INT32(AReg)>=0) && (BReg!=0)))
 			   {
 				SetError;
 			   }
@@ -1980,7 +2007,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 ;
                            else if (AReg==MostNeg)
                                 ;
-                           else if ((INT(BReg)>=INT(AReg)) || (INT(BReg)<INT(-AReg)))
+                           else if ((INT32(BReg)>=INT32(AReg)) || (INT32(BReg)<INT32(-AReg)))
 			   {
                                 /* ST20CORE implementation. */
 				SetError;
@@ -2033,7 +2060,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x5c: /* XXX move2dall    */
 		           if (IsT414)
 		               goto BadCode;
-                           if (INT(m2dWidth) >= 0 && INT(m2dLength) >= 0)
+                           if (INT32(m2dWidth) >= 0 && INT32(m2dLength) >= 0)
                            {
                                 for (temp = 0; temp < m2dLength; temp++)
                                 {
@@ -2054,7 +2081,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x5d: /* XXX move2dnonzero    */
 		           if (IsT414)
 		               goto BadCode;
-                           if (INT(m2dWidth) >= 0 && INT(m2dLength) >= 0)
+                           if (INT32(m2dWidth) >= 0 && INT32(m2dLength) >= 0)
                            {
                                 for (temp = 0; temp < m2dLength; temp++)
                                 {
@@ -2076,7 +2103,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x5e: /* XXX move2dzero    */
 		           if (IsT414)
 		               goto BadCode;
-                           if (INT(m2dWidth) >= 0 && INT(m2dLength) >= 0)
+                           if (INT32(m2dWidth) >= 0 && INT32(m2dLength) >= 0)
                            {
                                 for (temp = 0; temp < m2dLength; temp++)
                                 {
@@ -2136,17 +2163,17 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x6c: /* postnormsn  */
                            if (IsT800)
                                 goto BadCode;
-			   temp = (INT(word (index (WPtr, 0))) - INT(CReg));
-                           if (INT(temp) <= -BitsPerWord)
+			   temp = (INT32(word (index (WPtr, 0))) - INT32(CReg));
+                           if (INT32(temp) <= -BitsPerWord)
                            {
                                 /* kudos to M.Bruestle: too small. */
                                 AReg = BReg = CReg = 0;
                            }
-                           else if (INT(temp) > 0x000000ff)
+                           else if (INT32(temp) > 0x000000ff)
 				CReg = 0x000000ff;
-			   else if (INT(temp) <= 0)
+			   else if (INT32(temp) <= 0)
 			   {
-				temp  = 1 - INT(temp);
+				temp  = 1 - INT32(temp);
 				CReg  = 0;
                                 temp2 = AReg;
 				AReg  = t4_shr64 (BReg, AReg, temp);
@@ -2160,7 +2187,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x6d: /* roundsn     */
                            if (IsT800)
                                 goto BadCode;
-			   if (INT(CReg) >= 0x000000ff)
+			   if (INT32(CReg) >= 0x000000ff)
 			   {
 				AReg = t4_infinity ();
 				CReg = BReg << 1;
@@ -2415,9 +2442,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		               goto BadCode;
                            temp = true_t;
                            if (FAReg.length == FP_REAL64)
-                                temp = fp_nandb (FAReg.u.db);
+                                temp = fp_nandb (DB(FAReg));
                            else if (FAReg.length == FP_REAL32)
-                                temp = fp_nansn (FAReg.u.sn);
+                                temp = fp_nansn (SN(FAReg));
                            else
                                 printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpnan)\n");
                            CReg = BReg;
@@ -2453,9 +2480,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		               goto BadCode;
                            temp = true_t;
                            if (FAReg.length == FP_REAL64)
-                                temp = fp_notfinitedb (FAReg.u.db);
+                                temp = fp_notfinitedb (DB(FAReg));
                            else if (FAReg.length == FP_REAL32)
-                                temp = fp_notfinitesn (FAReg.u.sn);
+                                temp = fp_notfinitesn (SN(FAReg));
                            else
                                 printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpnotfinite)\n");
                            CReg = BReg;
@@ -2486,7 +2513,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		           if (IsT414)
 		               goto BadCode;
                            temp = word (AReg);
-                           fp_pushsn ((REAL32) INT(temp));
+                           fp_pushsn (fp_i32tor32 (temp));
                            AReg = BReg;
                            BReg = CReg;
                            ResetRounding = TRUE;
@@ -2496,7 +2523,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		           if (IsT414)
 		               goto BadCode;
                            temp = word (AReg);
-                           fp_pushdb ((REAL64) INT(temp));
+                           fp_pushdb (fp_i32tor64 (temp));
                            AReg = BReg;
                            BReg = CReg;
                            ResetRounding = TRUE;
@@ -2506,7 +2533,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		           if (IsT414)
 		               goto BadCode;
                            temp = word (AReg);
-                           fp_pushdb ((REAL64) temp);
+                           fp_pushdb (fp_b32tor64 (temp));
                            AReg = BReg;
                            BReg = CReg;
                            ResetRounding = TRUE;
@@ -2530,9 +2557,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		           if (IsT414)
 		               goto BadCode;
                            if (FAReg.length == FP_REAL64)
-                                FAReg.u.db = fp_rtoi32db (FAReg.u.db);
+                                DB(FAReg) = fp_rtoi32db (DB(FAReg));
                            else if (FAReg.length == FP_REAL32)
-                                FAReg.u.sn = fp_rtoi32sn (FAReg.u.sn);
+                                SN(FAReg) = fp_rtoi32sn (SN(FAReg));
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is undefined! (fprtoi32)\n");
@@ -2542,7 +2569,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 emudebug = TRUE;
                                 */
                                 FAReg.length = FP_UNKNOWN;
-                                FAReg.u.sn = RUndefined;
+                                SN(FAReg)    = RUndefined;
                            }
                            ResetRounding = TRUE;
 		           IPtr++;
@@ -2575,14 +2602,14 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x9f: /* XXX fpldzerosn    */
 		           if (IsT414)
 		               goto BadCode;
-                           fp_pushsn (0.0F);
+                           fp_pushsn (Zero);
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0xa0: /* XXX fpldzerodb    */
 		           if (IsT414)
 		               goto BadCode;
-                           fp_pushdb (0.0);
+                           fp_pushdb (DZero);
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
@@ -2590,14 +2617,14 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		           if (IsT414)
 		               goto BadCode;
                            if (FAReg.length == FP_REAL64)
-                                FAReg.u.db = fp_intdb (FAReg.u.db);
+                                DB(FAReg) = fp_intdb (DB(FAReg));
                            else if (FAReg.length == FP_REAL32)
-                                FAReg.u.sn = fp_intsn (FAReg.u.sn);
+                                SN(FAReg) = fp_intsn (SN(FAReg));
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpint)\n");
                                 FAReg.length = FP_UNKNOWN;
-                                FAReg.u.db = DRUndefined;
+                                DB(FAReg)    = DRUndefined;
                            }
                            ResetRounding = TRUE;
 		           IPtr++;
@@ -2625,12 +2652,12 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            checkWordAligned ("FPLDNLADDDB", AReg);
                            dbtemp1 = real64 (AReg);
                            if (FAReg.length == FP_REAL64)
-                                FAReg.u.db = fp_adddb (FAReg.u.db, dbtemp1);
+                                DB(FAReg) = fp_adddb (DB(FAReg), dbtemp1);
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpldnladddb)\n");
                                 FAReg.length = FP_UNKNOWN;
-                                FAReg.u.db = DRUndefined;
+                                DB(FAReg)    = DRUndefined;
                            }
                            AReg = BReg;
                            BReg = CReg;
@@ -2642,12 +2669,12 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            checkWordAligned ("FPLDNLMULDB", AReg);
                            dbtemp1 = real64 (AReg);
                            if (FAReg.length == FP_REAL64)
-                                FAReg.u.db = fp_muldb (FAReg.u.db, dbtemp1);
+                                DB(FAReg) = fp_muldb (DB(FAReg), dbtemp1);
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpldnlmuldb)\n");
                                 FAReg.length = FP_UNKNOWN;
-                                FAReg.u.db = DRUndefined;
+                                DB(FAReg)    = DRUndefined;
                            }
                            AReg = BReg;
                            BReg = CReg;
@@ -2659,12 +2686,12 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            checkWordAligned ("FPLDNLADDSN", AReg);
                            sntemp1 = real32 (AReg);
                            if (FAReg.length == FP_REAL32)
-                                FAReg.u.sn = fp_addsn (FAReg.u.sn, sntemp1);
+                                SN(FAReg) = fp_addsn (SN(FAReg), sntemp1);
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fpldnladdsn)\n");
                                 FAReg.length = FP_UNKNOWN;
-                                FAReg.u.sn = RUndefined;
+                                SN(FAReg)    = RUndefined;
                            }
                            AReg = BReg;
                            BReg = CReg;
@@ -2680,14 +2707,14 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            switch (temp) {
 			   case 0x01: /* fpusqrtfirst    */
                                       if (FAReg.length == FP_REAL64)
-                                          FAReg.u.db = fp_sqrtfirstdb (FAReg.u.db);
+                                          DB(FAReg) = fp_sqrtfirstdb (DB(FAReg));
                                       else if (FAReg.length == FP_REAL32)
-                                          FAReg.u.sn = fp_sqrtfirstsn (FAReg.u.sn);
+                                          SN(FAReg) = fp_sqrtfirstsn (SN(FAReg));
                                       else
                                       {
                                           printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpusqrtfirst)\n");
                                           FAReg.length = FP_UNKNOWN;
-                                          FAReg.u.db = DRUndefined;
+                                          DB(FAReg)    = DRUndefined;
                                       }
                                       /* FBReg.length = FP_UNKNOWN; */
                                       /* FCReg.length = FP_UNKNOWN; */
@@ -2717,13 +2744,13 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                       if (FAReg.length == FP_REAL32)
                                       {
                                           FAReg.length = FP_REAL64;
-                                          FAReg.u.db = fp_r32tor64 (FAReg.u.sn);
+                                          DB(FAReg)    = fp_r32tor64 (SN(FAReg));
                                       }
                                       else
                                       {
                                           printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fpur32tor64)\n");
                                           FAReg.length = FP_UNKNOWN;
-                                          FAReg.u.db = DRUndefined;
+                                          DB(FAReg)    = DRUndefined;
                                       }
                                       ResetRounding = TRUE;
 			              break;
@@ -2731,13 +2758,13 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                       if (FAReg.length == FP_REAL64)
                                       {
                                           FAReg.length = FP_REAL32;
-                                          FAReg.u.sn = fp_r64tor32 (FAReg.u.db);
+                                          SN(FAReg) = fp_r64tor32 (DB(FAReg));
                                       }
                                       else
                                       {
                                           printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpur64tor32)\n");
                                           FAReg.length = FP_UNKNOWN;
-                                          FAReg.u.sn = RUndefined;
+                                          SN(FAReg)    = RUndefined;
                                       }
                                       ResetRounding = TRUE;
 			              break;
@@ -2754,30 +2781,30 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                       if (FAReg.length == FP_REAL64)
                                       {
                                           FAReg.length = FP_REAL32;
-                                          FAReg.u.sn = fp_norounddb (FAReg.u.db);
+                                          SN(FAReg) = fp_norounddb (DB(FAReg));
                                       }
                                       else
                                       {
                                           printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpunoround)\n");
                                           FAReg.length = FP_UNKNOWN;
-                                          FAReg.u.sn = RUndefined;
+                                          SN(FAReg)    = RUndefined;
                                       }
                                       ResetRounding = TRUE;
 			              break;
 			   case 0x0e: /* XXX fpuchki32    */
                                       if (FAReg.length == FP_REAL64)
-                                          fp_chki32db (FAReg.u.db);
+                                          fp_chki32db (DB(FAReg));
                                       else if (FAReg.length == FP_REAL32)
-                                          fp_chki32sn (FAReg.u.sn);
+                                          fp_chki32sn (SN(FAReg));
                                       else
                                           printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpuchki32)\n");
                                       ResetRounding = TRUE;
 			              break;
 			   case 0x0f: /* XXX fpuchki64    */
                                       if (FAReg.length == FP_REAL64)
-                                          fp_chki64db (FAReg.u.db);
+                                          fp_chki64db (DB(FAReg));
                                       else if (FAReg.length == FP_REAL32)
-                                          fp_chki64sn (FAReg.u.sn);
+                                          fp_chki64sn (SN(FAReg));
                                       else
                                           printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpuchki64)\n");
                                       ResetRounding = TRUE;
@@ -2813,12 +2840,12 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            checkWordAligned ("FPLDNLMULSN", AReg);
                            sntemp1 = real32 (AReg);
                            if (FAReg.length == FP_REAL32)
-                                FAReg.u.sn = fp_mulsn (FAReg.u.sn, sntemp1);
+                                SN(FAReg) = fp_mulsn (SN(FAReg), sntemp1);
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fpldnlmulsn)\n");
                                 FAReg.length = FP_UNKNOWN;
-                                FAReg.u.sn = RUndefined;
+                                SN(FAReg)    = RUndefined;
                            }
                            AReg = BReg;
                            BReg = CReg;
@@ -2861,6 +2888,10 @@ BadCode:
 			break;
 		if (quit == TRUE)
 			break;
+
+#ifndef NDEBUG
+                fp_chkexcept ("mainloop");
+#endif
 	}
 
 	if (ReadError)
@@ -3276,7 +3307,7 @@ void insert (uint32_t time)
 	{
 		/* One or more entries. */
 		timetemp = word (index (ptr, Time_s));
-		if (INT(timetemp - time) > 0)
+		if (INT32(timetemp - time) > 0)
 		{
 			/* Put in front of first entry. */
 			writeword (index (WPtr, TLink_s), ptr);
@@ -3292,7 +3323,7 @@ void insert (uint32_t time)
 			nextptr = word (index (ptr, TLink_s));
 			if (nextptr != NotProcess_p)
 				timetemp = word (index (nextptr, Time_s));
-			while ((INT(time - timetemp) > 0) && (nextptr != NotProcess_p))
+			while ((INT32(time - timetemp) > 0) && (nextptr != NotProcess_p))
 			{
 				ptr = nextptr;
 				nextptr = word (index (ptr, TLink_s));
@@ -3392,7 +3423,7 @@ INLINE void update_time (void)
                     ((ProcPriority == HiPriority) || IntEnabled))
                 {
 		        temp3 = word (index (TPtrLoc0, Time_s));
-		        while ((INT(ClockReg0 - temp3) > 0) && (TPtrLoc0 != NotProcess_p))
+		        while ((INT32(ClockReg0 - temp3) > 0) && (TPtrLoc0 != NotProcess_p))
 		        {
 			        schedule (TPtrLoc0 | HiPriority);
 
@@ -3414,7 +3445,7 @@ INLINE void update_time (void)
                             ((ProcPriority == HiPriority) || IntEnabled))
                         {
 			        temp3 = word (index (TPtrLoc1, Time_s));
-			        while ((INT(ClockReg1 - temp3) > 0) && (TPtrLoc1 != NotProcess_p))
+			        while ((INT32(ClockReg1 - temp3) > 0) && (TPtrLoc1 != NotProcess_p))
 			        {
                                         schedule (TPtrLoc1 | LoPriority);
 
@@ -3447,7 +3478,7 @@ uint32_t word_int (uint32_t ptr)
 #warning Using little-endian access!
         uint32_t *wptr;
 
-        if (INT(ptr) < INT(ExtMemStart))
+        if (INT32(ptr) < INT32(ExtMemStart))
                 wptr = (uint32_t *)(core + (MemWordMask & ptr));
         else
         {
@@ -3459,7 +3490,7 @@ uint32_t word_int (uint32_t ptr)
 	unsigned char val[4];
 
 	/* Get bytes, ensuring memory references are in range. */
-        if (INT(ptr) < INT(ExtMemStart))
+        if (INT32(ptr) < INT32(ExtMemStart))
         {
 	        val[0] = core[(ptr & MemWordMask)];
 	        val[1] = core[(ptr & MemWordMask)+1];
@@ -3512,7 +3543,7 @@ void writeword_int (uint32_t ptr, uint32_t value)
 #warning Using little-endian access!
         uint32_t *wptr;
 
-        if (INT(ptr) < INT(ExtMemStart))
+        if (INT32(ptr) < INT32(ExtMemStart))
                 wptr = (uint32_t *) (core + (MemWordMask & ptr));
         else
         {
@@ -3529,7 +3560,7 @@ void writeword_int (uint32_t ptr, uint32_t value)
 	val[3] = ((value & 0xff000000)>>24);
 
 	/* Write bytes, ensuring memory references are in range. */
-        if (INT(ptr) < INT(ExtMemStart))
+        if (INT32(ptr) < INT32(ExtMemStart))
         {
 	        core[(ptr & MemWordMask)]   = val[0];
 	        core[(ptr & MemWordMask)+1] = val[1];
@@ -3564,7 +3595,7 @@ unsigned char byte_int (uint32_t ptr)
 	unsigned char result;
 
 	/* Get byte, ensuring memory reference is in range. */
-        if (INT(ptr) < INT(ExtMemStart))
+        if (INT32(ptr) < INT32(ExtMemStart))
 	        result = core[(ptr & MemByteMask)];
         else
         {
@@ -3590,7 +3621,7 @@ unsigned char byte (uint32_t ptr)
 INLINE void writebyte_int (uint32_t ptr, unsigned char value)
 {
 	/* Write byte, ensuring memory reference is in range. */
-        if (INT(ptr) < INT(ExtMemStart))
+        if (INT32(ptr) < INT32(ExtMemStart))
                 core[(ptr & MemByteMask)] = value;
         else
         {
@@ -3608,29 +3639,26 @@ void writebyte (uint32_t ptr, unsigned char value)
 }
 
 /* Read a REAL32 from memory. */
-REAL32 real32 (uint32_t ptr)
+fpreal32_t real32 (uint32_t ptr)
 {
         fpreal32_t x;
 
         ResetRounding = TRUE;
 
         x.bits = word (ptr);
-        return x.fp;
+        return x;
 }
 
 /* Write a REAL32 to memory. */
-void writereal32 (uint32_t ptr, REAL32 value)
+void writereal32 (uint32_t ptr, fpreal32_t value)
 {
-        fpreal32_t x;
-
         ResetRounding = TRUE;
 
-        x.fp = value;
-        writeword (ptr, x.bits);
+        writeword (ptr, value.bits);
 }
 
 /* Read a REAL64 from memory. */
-REAL64 real64 (uint32_t ptr)
+fpreal64_t real64 (uint32_t ptr)
 {
         fpreal64_t x;
         uint32_t lobits, hibits;
@@ -3641,19 +3669,16 @@ REAL64 real64 (uint32_t ptr)
         hibits = word (ptr + 4);
 
         x.bits = ((uint64_t)(hibits) << 32) | lobits;
-        return x.fp;
+        return x;
 }
 
 /* Write a REAL64 to memory. */
-void writereal64 (uint32_t ptr, REAL64 value)
+void writereal64 (uint32_t ptr, fpreal64_t value)
 {
-        fpreal64_t x;
-
         ResetRounding = TRUE;
 
-        x.fp = value;
-        writeword (ptr,     x.bits & 0xffffffff);
-        writeword (ptr + 4, (x.bits >> 32) & 0xffffffff);
+        writeword (ptr,     value.bits & 0xffffffff);
+        writeword (ptr + 4, (value.bits >> 32) & 0xffffffff);
 }
 
 /* Add an executing instruction to the profile list. */

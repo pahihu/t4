@@ -232,6 +232,7 @@ int server (void)
         static int do_init = 1;
         int activity;
         uint32_t LinkWdesc; 
+        int data;
 
         /* M.Bruestle 15.2.2012
          *
@@ -290,11 +291,20 @@ int server (void)
                         {
                                 if (msgdebug || emudebug)
                                         printf ("-I-EMUSRV: TVS output. Link0OutLength = #%X.\n", Link0OutLength);
+                                ToServerLen = 0;
 			        for (loop1=0; loop1<Link0OutLength; loop1++)
 			        {
-				        putc (byte_int (Link0OutSource), OutFile);
+                                        data = byte_int (Link0OutSource);
+				        putc (data, OutFile);
 				        Link0OutSource++;
+                                        ToServerBuffer[ToServerLen++] = data;
 			        }
+                                if (msgdebug)
+                                {
+                                        DumpMessage = TRUE;
+                                        dump_message ("TVS Output.", ToServerBuffer, ToServerLen);
+                                }
+                                ToServerLen = 0;
                         }
                         else
                         {
@@ -364,7 +374,6 @@ int server (void)
 			loop1 = 0;
                         if (msgdebug || emudebug)
                                 printf ("-I-EMUSRV: FromServerLen = #%X.\n", FromServerLen);
-                        /* XXX */
                         dump_message ("Reply.", FromServerBuffer, FromServerLen);
                         if (usetvs)
                         {
@@ -379,6 +388,7 @@ int server (void)
                                 }
                                 else
                                 {
+                                        FromServerLen = 0;
                                         while (loop1 < Link0InLength) 
                                         {
                                                 if (feof (InpFile))
@@ -389,12 +399,21 @@ int server (void)
                                                         quit = TRUE;
                                                         break;
                                                 }
-				                writebyte_int (Link0InDest, getc (InpFile));
+                                                data = getc (InpFile); 
+				                writebyte_int (Link0InDest, data);
 				                Link0InDest++;
+                                                FromServerBuffer[FromServerLen++] = data;
 				                loop1++;
                                         }
                                 }
                                 loop1 = Link0InLength;
+
+                                if (msgdebug)
+                                {
+                                        DumpMessage = TRUE;
+                                        dump_message ("TVS Input.", FromServerBuffer, FromServerLen);
+                                }
+                                FromServerLen = 0;
                         }
                         else
                         {

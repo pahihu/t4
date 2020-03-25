@@ -51,12 +51,12 @@ int main(int argc, char*argv[])
                 }
         }
 
-        if (skip >= cols)
+        if (abs (skip) >= cols)
         {
                 fprintf (stderr, "skip should be less than cols!\n");
                 exit (1);
         }
-        cols = cols - skip;
+        cols = cols - abs (skip);
 
         fin  = stdin;
         fout = stdout;
@@ -85,8 +85,9 @@ int main(int argc, char*argv[])
         while (!done)
         {
                 fprintf (fout, "%08x:", offs);
-                for (i = 0; i < skip; i++)
-                        getc (fin);
+                if (skip > 0)
+                        for (i = 0; i < skip; i++)
+                                getc (fin);
                 for (i = 0; i < cols; i++)
                 {
                         int ch = 0;
@@ -100,7 +101,10 @@ int main(int argc, char*argv[])
                         fprintf (fout, "%02x", 0xff & ch);
                 }
                 fprintf (fout, "\n");
-                offs += 16;
+                offs += cols;
+                if (skip < 0)
+                        for (i = 0; i < abs (skip); i++)
+                                getc (fin);
         }
         fclose (fin);
         fclose (fout);

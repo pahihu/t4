@@ -30,25 +30,29 @@ typedef union {
 /*
  * REAL32 constants.
  */
+/*
 extern REAL32 RInf;
 extern REAL32 RMinusInf;
 extern REAL32 undefined_NaN;
 extern REAL32 unstable_NaN;
 extern REAL32 inexact_NaN;
-extern REAL32 Zero;
-extern REAL32 RUndefined;
+*/
+extern fpreal32_t Zero;
+extern fpreal32_t RUndefined;
 
 
 /*
  * REAL64 constants.
  */
+/*
 extern REAL64 DRInf;
 extern REAL64 DRMinusInf;
 extern REAL64 Dundefined_NaN;
 extern REAL64 Dunstable_NaN;
 extern REAL64 Dinexact_NaN;
-extern REAL64 DZero;
-extern REAL64 DRUndefined;
+*/
+extern fpreal64_t DZero;
+extern fpreal64_t DRUndefined;
 
 
 /*
@@ -75,66 +79,73 @@ extern const char *RMODE;
 /*
  * REAL64 operations.
  */
-int fp_signdb (REAL64);
-int fp_expdb  (REAL64);
-uint64_t fp_fracdb (REAL64);
-int fp_nandb  (REAL64);
-int fp_infdb  (REAL64);
+int fp_signdb (fpreal64_t);
+int fp_expdb  (fpreal64_t);
+uint64_t fp_fracdb (fpreal64_t);
+int fp_nandb  (fpreal64_t);
+int fp_infdb  (fpreal64_t);
+int db_nan    (uint64_t);
+int db_inf    (uint64_t);
 
-REAL64 fp_adddb (REAL64, REAL64);
-REAL64 fp_subdb (REAL64, REAL64);
-REAL64 fp_muldb (REAL64, REAL64);
-REAL64 fp_divdb (REAL64, REAL64);
-REAL64 fp_mulby2db (REAL64);
-REAL64 fp_divby2db (REAL64);
-REAL64 fp_expinc32db (REAL64);
-REAL64 fp_expdec32db (REAL64);
-REAL64 fp_absdb (REAL64);
-REAL64 fp_sqrtfirstdb (REAL64);
-REAL64 fp_sqrtlastdb (REAL64);
-REAL64 fp_remfirstdb (REAL64, REAL64);
-int    fp_notfinitedb (REAL64);
-int    fp_gtdb (REAL64, REAL64);
-int    fp_eqdb (REAL64, REAL64);
-int    fp_ordereddb (REAL64, REAL64);
-REAL64 fp_r32tor64 (REAL32);
-REAL64 fp_intdb (REAL64);
-int    fp_chki32db (REAL64);
-int    fp_chki64db (REAL64);
-REAL64 fp_rtoi32db (REAL64);
-REAL32 fp_norounddb (REAL64);
-uint32_t fp_stnli32db (REAL64);
+fpreal64_t fp_adddb (fpreal64_t, fpreal64_t);
+fpreal64_t fp_subdb (fpreal64_t, fpreal64_t);
+fpreal64_t fp_muldb (fpreal64_t, fpreal64_t);
+fpreal64_t fp_divdb (fpreal64_t, fpreal64_t);
+fpreal64_t fp_mulby2db (fpreal64_t);
+fpreal64_t fp_divby2db (fpreal64_t);
+fpreal64_t fp_expinc32db (fpreal64_t);
+fpreal64_t fp_expdec32db (fpreal64_t);
+fpreal64_t fp_absdb (fpreal64_t);
+fpreal64_t fp_sqrtfirstdb (fpreal64_t);
+fpreal64_t fp_sqrtlastdb (fpreal64_t);
+fpreal64_t fp_remfirstdb (fpreal64_t, fpreal64_t);
+int        fp_notfinitedb (fpreal64_t);
+int        fp_gtdb (fpreal64_t, fpreal64_t);
+int        fp_eqdb (fpreal64_t, fpreal64_t);
+int        fp_ordereddb (fpreal64_t, fpreal64_t);
+fpreal64_t fp_r32tor64 (fpreal32_t);
+fpreal64_t fp_intdb (fpreal64_t);
+int        fp_chki32db (fpreal64_t);
+int        fp_chki64db (fpreal64_t);
+fpreal64_t fp_rtoi32db (fpreal64_t);
+fpreal32_t fp_norounddb (fpreal64_t);
+uint32_t   fp_stnli32db (fpreal64_t);
+fpreal64_t fp_i32tor64 (uint32_t);
+fpreal64_t fp_b32tor64 (uint32_t);
 
 
 /*
  * REAL32 operations.
  */
-int fp_signsn (REAL32);
-int fp_expsn  (REAL32);
-uint32_t fp_fracsn (REAL32);
-int fp_nansn  (REAL32);
-int fp_infsn  (REAL32);
+int fp_signsn (fpreal32_t);
+int fp_expsn  (fpreal32_t);
+uint32_t fp_fracsn (fpreal32_t);
+int fp_nansn  (fpreal32_t);
+int fp_infsn  (fpreal32_t);
+int sn_nan (uint32_t);
+int sn_inf (uint32_t);
 
-REAL32 fp_addsn (REAL32, REAL32);
-REAL32 fp_subsn (REAL32, REAL32);
-REAL32 fp_mulsn (REAL32, REAL32);
-REAL32 fp_divsn (REAL32, REAL32);
-REAL32 fp_mulby2sn (REAL32);
-REAL32 fp_divby2sn (REAL32);
-REAL32 fp_expinc32sn (REAL32);
-REAL32 fp_expdec32sn (REAL32);
-REAL32 fp_abssn (REAL32);
-REAL32 fp_sqrtfirstsn (REAL32);
-REAL32 fp_sqrtlastsn (REAL32);
-REAL32 fp_remfirstsn (REAL32, REAL32);
-int    fp_notfinitesn (REAL32);
-int    fp_gtsn (REAL32, REAL32);
-int    fp_eqsn (REAL32, REAL32);
-int    fp_orderedsn (REAL32, REAL32);
-REAL32 fp_r64tor32 (REAL64);
-REAL32 fp_intsn (REAL32);
-int    fp_chki32sn (REAL32);
-int    fp_chki64sn (REAL32);
-REAL32 fp_rtoi32sn (REAL32);
-uint32_t fp_stnli32sn (REAL32);
+fpreal32_t fp_addsn (fpreal32_t, fpreal32_t);
+fpreal32_t fp_subsn (fpreal32_t, fpreal32_t);
+fpreal32_t fp_mulsn (fpreal32_t, fpreal32_t);
+fpreal32_t fp_divsn (fpreal32_t, fpreal32_t);
+fpreal32_t fp_mulby2sn (fpreal32_t);
+fpreal32_t fp_divby2sn (fpreal32_t);
+fpreal32_t fp_expinc32sn (fpreal32_t);
+fpreal32_t fp_expdec32sn (fpreal32_t);
+fpreal32_t fp_abssn (fpreal32_t);
+fpreal32_t fp_sqrtfirstsn (fpreal32_t);
+fpreal32_t fp_sqrtlastsn (fpreal32_t);
+fpreal32_t fp_remfirstsn (fpreal32_t, fpreal32_t);
+int        fp_notfinitesn (fpreal32_t);
+int        fp_gtsn (fpreal32_t, fpreal32_t);
+int        fp_eqsn (fpreal32_t, fpreal32_t);
+int        fp_orderedsn (fpreal32_t, fpreal32_t);
+fpreal32_t fp_r64tor32 (fpreal64_t);
+fpreal32_t fp_intsn (fpreal32_t);
+int        fp_chki32sn (fpreal32_t);
+int        fp_chki64sn (fpreal32_t);
+fpreal32_t fp_rtoi32sn (fpreal32_t);
+uint32_t   fp_stnli32sn (fpreal32_t);
+fpreal32_t fp_i32tor32 (uint32_t);
 

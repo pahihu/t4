@@ -69,6 +69,8 @@ extern uint32_t CoreSize;
 #define true_t		1
 #define false_t		0
 
+#define INT32(x)        ((int32_t)(x))
+
 /* Function prototypes. */
 void mainloop      (void);
 void execute       (void);
@@ -87,12 +89,12 @@ void     writeword     (uint32_t, uint32_t);
 unsigned char byte (uint32_t);
 INLINE
 void writebyte     (uint32_t, unsigned char);
-REAL32 real32 (uint32_t);
-void   writereal32 (uint32_t, REAL32);
-REAL64 real64 (uint32_t);
-void   writereal64 (uint32_t, REAL64);
-uint32_t word_int (uint32_t);
-void     writeword_int (uint32_t, uint32_t);
+fpreal32_t real32 (uint32_t);
+void    writereal32 (uint32_t, fpreal32_t);
+fpreal64_t real64 (uint32_t);
+void    writereal64 (uint32_t, fpreal64_t);
+uint32_t   word_int (uint32_t);
+void    writeword_int (uint32_t, uint32_t);
 unsigned char byte_int (uint32_t);
 void writebyte_int (uint32_t, unsigned char);
 void add_profile   (int32_t);

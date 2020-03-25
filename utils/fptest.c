@@ -21,12 +21,14 @@ int main(int argc, char*argv[])
         REAL32 fa, fb, result;
         long b;
 
-        sn_setbits (&fb, 0x80000000);
+        sn_setbits (&fb, 0x3f000000);
         sn_setbits (&fa, 0x7fc00000);
 
-        fesetround (FE_TONEAREST);
-        result = fb / fa;
-        sn_dump ("fb + fa", result);
+        fp_init ();
+        FP_Error = FALSE;
+        result = fp_divby2sn (fb);
+        sn_dump ("divby2 (fb)", result);
+        printf ("FP_Error = %d\n", FP_Error);
         return 0;
 
         FP_Error = FALSE;

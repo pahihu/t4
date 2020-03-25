@@ -453,71 +453,55 @@ REAL32 sn_check_except (REAL32 result)
         return result;
 }
 
-REAL64 db_add(REAL64, REAL64);
-REAL64 db_sub(REAL64, REAL64);
-REAL64 db_mul(REAL64, REAL64);
-REAL64 db_div(REAL64, REAL64);
+REAL64 db_correct_sign (REAL64 result, REAL64 fb, REAL64 fa)
+{
+        fpreal64_t r64;
+
+        if (fp_signdb (fb) == fp_signdb (fa))
+        {
+                r64.fp    = result;
+                r64.bits &= ~REAL64_SIGN;
+                result    = r64.fp;
+        }
+        else
+        {
+                r64.fp    = result;
+                r64.bits |= REAL64_SIGN;
+                result    = r64.fp;
+        }
+        return result;
+}
+
+REAL32 sn_correct_sign (REAL32 result, REAL32 fb, REAL32 fa)
+{
+        fpreal32_t r32;
+
+        if (fp_signsn (fb) == fp_signsn (fa))
+        {
+                r32.fp    = result;
+                r32.bits &= ~REAL32_SIGN;
+                result    = r32.fp;
+        }
+        else
+        {
+                r32.fp    = result;
+                r32.bits |= REAL32_SIGN;
+                result    = r32.fp;
+        }
+        return result;
+}
+
 
 /* Do a binary REAL64 operation, return REAL64 result. */
 REAL64 db_binary (REAL64 fb, REAL64 fa, REAL64 (*opr)(REAL64, REAL64))
 {
         REAL64 result;
-        uint64_t fracb, fraca;
 
         fp_chkexcept ("Enter db_binary ()");
 
 #ifndef NDEBUG
         BargDB = fb; AargDB = fa; ResultDB = DRUndefined;
 #endif
-
-        /* Set FP_Error on NaN. */
-        if (fp_nandb (fb) && fp_nandb (fb))
-        {
-                FP_Error = TRUE;
-                fracb = fp_fracdb (fb);
-                fraca = fp_fracdb (fa);
-                if (fracb == fraca)
-                        return fb;
-                return (fracb > fraca) ? fb : fa;
-        }
-        else if (fp_nandb (fb))
-        {
-                FP_Error = TRUE;
-                return fb;
-        }
-        else if (fp_nandb (fa))
-        {
-                FP_Error = TRUE;
-                return fa;
-        }
-
-        if (opr == db_add)
-        {
-                if (fp_infdb (fb) && fp_infdb (fa))
-                {
-                        FP_Error = TRUE;
-                        if (fp_signdb (fb) != fp_signdb (fa))
-                                return DAddOppositeInf_NaN;
-                }
-        }
-        else if (opr == db_sub)
-        {
-                if (fp_infdb (fb) && fp_infdb (fa))
-                {
-                        FP_Error = TRUE;
-                        if (fp_signdb (fb) == fp_signdb (fa))
-                                return DSubSameInf_NaN;
-                }
-        }
-        else if (opr == db_mul)
-        {
-                if ((fp_zerodb (fb) && fp_infdb (fa)) ||
-                    (fp_infdb (fb)  && fp_zerodb (fa)))
-                {
-                        FP_Error = TRUE;
-                        return DMulZeroByInf_NaN;
-                }
-        }
 
         if (fp_infdb (fa) || fp_infdb (fb))
                 FP_Error = TRUE;
@@ -583,71 +567,17 @@ REAL64 db_unary (REAL64 fa, REAL64 (*opr)(REAL64))
         return result;
 }
 
-REAL32 sn_add(REAL32, REAL32);
-REAL32 sn_sub(REAL32, REAL32);
-REAL32 sn_mul(REAL32, REAL32);
-REAL32 sn_div(REAL32, REAL32);
 
 /* Do a binary REAL64 operation, return REAL64 result. */
 REAL32 sn_binary (REAL32 fb, REAL32 fa, REAL32 (*opr)(REAL32, REAL32))
 {
         REAL32 result;
-        uint32_t fracb, fraca;
 
         fp_chkexcept ("Enter sn_binary ()");
 
 #ifndef NDEBUG
         BargSN = fb; AargSN = fa; ResultSN = RUndefined;
 #endif
-
-        /* Set FP_Error on NaN. */
-        if (fp_nansn (fb) && fp_nansn (fa))
-        {
-                FP_Error = TRUE;
-                fracb = fp_fracsn (fb);
-                fraca = fp_fracsn (fa);
-                if (fracb == fraca)
-                        return fb;
-                return (fracb > fraca) ? fb : fa;
-        }
-        else if (fp_nansn (fb))
-        {
-                FP_Error = TRUE;
-                return fb;
-        }
-        else if (fp_nansn (fa))
-        {
-                FP_Error = TRUE;
-                return fa;
-        }
-
-        if (opr == sn_add)
-        {
-                if (fp_infsn (fb) && fp_infsn (fa))
-                {
-                        FP_Error = TRUE;
-                        if (fp_signsn (fb) != fp_signsn (fa))
-                                return AddOppositeInf_NaN;
-                }
-        }
-        else if (opr == sn_sub)
-        {
-                if (fp_infsn (fb) && fp_infsn (fa))
-                {
-                        FP_Error = TRUE;
-                        if (fp_signsn (fb) == fp_signsn (fa))
-                                return SubSameInf_NaN;
-                }
-        }
-        else if (opr == sn_mul)
-        {
-                if ((fp_zerosn (fb) && fp_infsn (fa)) ||
-                    (fp_infsn (fb)  && fp_zerosn (fa)))
-                {
-                        FP_Error = TRUE;
-                        return MulZeroByInf_NaN;
-                }
-        }
 
         if (fp_infsn (fb) || fp_infsn (fa))
                 FP_Error = TRUE;
@@ -740,15 +670,137 @@ REAL32 RQuotRem (REAL32 X, REAL32 Y, long *N)
 /* 
  * REAL64 basic operations.
  */
-REAL64 db_add(REAL64 fb, REAL64 fa)      { return fb + fa; }
-REAL64 db_sub(REAL64 fb, REAL64 fa)      { return fb - fa; }
-REAL64 db_mul(REAL64 fb, REAL64 fa)      { return fb * fa; }
+REAL64 db_add(REAL64 fb, REAL64 fa)
+{
+        REAL64 result;
+        uint64_t fraca, fracb;
+
+        if (fp_nandb (fb) && fp_nandb (fb))
+        {
+                FP_Error = TRUE;
+                fracb = fp_fracdb (fb);
+                fraca = fp_fracdb (fa);
+                if (fracb >= fraca)
+                        result = fb;
+                else
+                        result = fa;
+                return result;
+        }
+        else if (fp_nandb (fb))
+        {
+                FP_Error = TRUE;
+                return fb;
+        }
+        else if (fp_nandb (fa))
+        {
+                FP_Error = TRUE;
+                return fa;
+        }
+
+        if (fp_infdb (fb) && fp_infdb (fa))
+        {
+                FP_Error = TRUE;
+                if (fp_signdb (fb) != fp_signdb (fa))
+                        return DAddOppositeInf_NaN;
+        }
+
+        result = fb + fa;
+
+        return result;
+}
+REAL64 db_sub(REAL64 fb, REAL64 fa)
+{
+        REAL64 result;
+        uint64_t fracb, fraca;
+
+        if (fp_nandb (fb) && fp_nandb (fb))
+        {
+                FP_Error = TRUE;
+                fracb = fp_fracdb (fb);
+                fraca = fp_fracdb (fa);
+                if (fracb >= fraca)
+                        result = fracb;
+                else
+                        result = fraca;
+                return result;
+        }
+        else if (fp_nandb (fb))
+        {
+                FP_Error = TRUE;
+                return fb;
+        }
+        else if (fp_nandb (fa))
+        {
+                FP_Error = TRUE;
+                return fa;
+        }
+
+        if (fp_infdb (fb) && fp_infdb (fa))
+        {
+                FP_Error = TRUE;
+                if (fp_signdb (fb) == fp_signdb (fa))
+                        return DSubSameInf_NaN;
+        }
+
+        result = fb - fa;
+
+        return result;
+}
+REAL64 db_mul(REAL64 fb, REAL64 fa)
+{
+        REAL64 result;
+        uint64_t fracb, fraca;
+
+        if (fp_nandb (fb) && fp_nandb (fb))
+        {
+                FP_Error = TRUE;
+                fracb = fp_fracdb (fb);
+                fraca = fp_fracdb (fa);
+                if (fracb >= fraca)
+                        result = fb;
+                else
+                        result = fa;
+                return db_correct_sign (result, fb, fa);
+        }
+        else if (fp_nandb (fb))
+        {
+                FP_Error = TRUE;
+                return fb;
+        }
+        else if (fp_nandb (fa))
+        {
+                FP_Error = TRUE;
+                return fa;
+        }
+
+        if ((fp_zerodb (fb) && fp_infdb (fa)) ||
+                (fp_infdb (fb)  && fp_zerodb (fa)))
+        {
+                FP_Error = TRUE;
+                return DMulZeroByInf_NaN;
+        }
+
+        result = fb * fa;
+
+        return result;
+}
 REAL64 db_div(REAL64 fb, REAL64 fa)
 { 
         REAL64 result;
-        fpreal64_t r64;
+        uint64_t fracb, fraca;
 
-        if (fp_zerodb (fb) && fp_zerodb (fa))
+        if (fp_nandb (fb) && fp_nandb (fb))
+        {
+                FP_Error = TRUE;
+                fracb = fp_fracdb (fb);
+                fraca = fp_fracdb (fa);
+                if (fracb >= fraca)
+                        result = fb;
+                else
+                        result = fa;
+                return db_correct_sign (result, fb, fa);
+        }
+        else if (fp_zerodb (fb) && fp_zerodb (fa))
         {
                 FP_Error = TRUE;
                 return DDivZeroByZero_NaN;
@@ -761,22 +813,8 @@ REAL64 db_div(REAL64 fb, REAL64 fa)
 
         result = fb / fa;
 
-        if (fp_signdb (fb) == fp_signdb (fa))
-        {
-                r64.fp    = result;
-                r64.bits &= ~REAL64_SIGN;
-                result    = r64.fp;
-        }
-        else
-        {
-                r64.fp    = result;
-                r64.bits |= REAL64_SIGN;
-                result    = r64.fp;
-        }
-
         return result;
 }
-
 REAL64 db_mulby2 (REAL64 fa)             { return ldexp (fa,  1); }
 REAL64 db_divby2 (REAL64 fa)             { return ldexp (fa, -1); }
 REAL64 db_expinc32 (REAL64 fa)           { return ldexp (fa,  32); }
@@ -790,13 +828,142 @@ int    db_eq (REAL64 fb, REAL64 fa)      { return fb == fa; }
 /* 
  * REAL32 basic operations.
  */
-REAL32 sn_add (REAL32 fb, REAL32 fa)     { return fb + fa; }
-REAL32 sn_sub (REAL32 fb, REAL32 fa)     { return fb - fa; }
-REAL32 sn_mul (REAL32 fb, REAL32 fa)     { return fb * fa; }
+REAL32 sn_add (REAL32 fb, REAL32 fa)
+{
+        REAL32 result;
+        uint32_t fracb, fraca;
+
+        if (fp_nansn (fb) && fp_nansn (fa))
+        {
+                FP_Error = TRUE;
+                fracb = fp_fracsn (fb);
+                fraca = fp_fracsn (fa);
+                if (fracb == fraca)
+                        return fb;
+                return (fracb > fraca) ? fb : fa;
+        }
+        else if (fp_nansn (fb))
+        {
+                FP_Error = TRUE;
+                return fb;
+        }
+        else if (fp_nansn (fa))
+        {
+                FP_Error = TRUE;
+                return fa;
+        }
+
+        if (fp_infsn (fb) && fp_infsn (fa))
+        {
+                FP_Error = TRUE;
+                if (fp_signsn (fb) != fp_signsn (fa))
+                        return AddOppositeInf_NaN;
+        }
+
+        result = fb + fa;
+
+        return result;
+}
+REAL32 sn_sub (REAL32 fb, REAL32 fa)
+{
+        REAL32 result;
+        uint32_t fracb, fraca;
+
+        if (fp_nansn (fb) && fp_nansn (fa))
+        {
+                FP_Error = TRUE;
+                fracb = fp_fracsn (fb);
+                fraca = fp_fracsn (fa);
+                if (fracb == fraca)
+                        return fb;
+                return (fracb > fraca) ? fb : fa;
+        }
+        else if (fp_nansn (fb))
+        {
+                FP_Error = TRUE;
+                return fb;
+        }
+        if (fp_nansn (fa))
+        {
+                FP_Error = TRUE;
+                return fa;
+        }
+
+        if (fp_infsn (fb) && fp_infsn (fa))
+        {
+                FP_Error = TRUE;
+                if (fp_signsn (fb) == fp_signsn (fa))
+                        return SubSameInf_NaN;
+        }
+        
+        result = fb - fa;
+
+        return result;
+}
+REAL32 sn_mul (REAL32 fb, REAL32 fa)
+{
+        REAL32 result;
+        uint32_t fracb, fraca;
+
+        if (fp_nansn (fb) && fp_nansn (fa))
+        {
+                FP_Error = TRUE;
+                fracb = fp_fracsn (fb);
+                fraca = fp_fracsn (fa);
+                if (fracb >= fraca)
+                        result = fb;
+                else
+                        result = fa;
+                return sn_correct_sign (result, fb, fa);
+        }
+        else if (fp_nansn (fb))
+        {
+                FP_Error = TRUE;
+                return sn_correct_sign (fb, fb, fa);
+        }
+        else if (fp_nansn (fa))
+        {
+                FP_Error = TRUE;
+                return sn_correct_sign (fa, fb, fa);
+        }
+
+        if ((fp_zerosn (fb) && fp_infsn (fa)) ||
+                (fp_infsn (fb)  && fp_zerosn (fa)))
+        {
+                FP_Error = TRUE;
+                return MulZeroByInf_NaN;
+        }
+
+        result = fb * fa;
+
+        return result;
+}
 REAL32 sn_div (REAL32 fb, REAL32 fa)
 { 
         REAL32 result;
-        fpreal32_t r32;
+        uint32_t fracb, fraca;
+
+        if (fp_nansn (fb) && fp_nansn (fa))
+        {
+                FP_Error = TRUE;
+                fracb = fp_fracsn (fb);
+                fraca = fp_fracsn (fa);
+                if (fracb >= fraca)
+                        result = fb;
+                else
+                        result = fa;
+                return sn_correct_sign (result, fb, fa);
+        }
+        else if (fp_nansn (fb))
+        {
+                FP_Error = TRUE;
+                return sn_correct_sign (fb, fb, fa);
+        }
+        else if (fp_nansn (fa))
+        {
+                FP_Error = TRUE;
+                return sn_correct_sign (fa, fb, fa);
+        }
 
         if (fp_zerosn (fb) && fp_zerosn (fa))
         {
@@ -810,19 +977,6 @@ REAL32 sn_div (REAL32 fb, REAL32 fa)
         }
 
         result = fb / fa;
-
-        if (fp_signsn (fb) == fp_signsn (fa))
-        {
-                r32.fp    = result;
-                r32.bits &= ~REAL32_SIGN;
-                result    = r32.fp;
-        }
-        else
-        {
-                r32.fp    = result;
-                r32.bits |= REAL32_SIGN;
-                result    = r32.fp;
-        }
 
         return result;
 }
@@ -887,14 +1041,10 @@ REAL64 fp_remfirstdb (REAL64 fb, REAL64 fa)
                 return DRemFromInf_NaN;
         if (fp_zerodb (fa))
                 return DRemByZero_NaN;
-#if 0
-        result = db_binary (fb, fa, db_remfirst);
-        fp_pushdb (fp_divdb (fp_subdb (fb, result), fa));
-#else
+
         result = DQuotRem (fb, fa, &N);
 #ifndef FPA_STANDALONE
         fp_pushdb ((REAL64) N);
-#endif
 #endif
 
         return result;
@@ -903,7 +1053,7 @@ int    fp_gtdb (REAL64 fb, REAL64 fa)
 {
         fpreal64_t rb, ra;
 
-        /* ACWG pp.158: checks (Inf U NaN) membership, db_binary2word (fb, fa, db_gt) */
+        /* ACWG pp.158: checks (Inf U NaN) membership */
         /* ACWG pp.106 B.2.7: binary comparison on total ordering */
         rb.fp = fb;
         ra.fp = fa;
@@ -913,7 +1063,7 @@ int    fp_eqdb (REAL64 fb, REAL64 fa)
 {
         fpreal64_t rb, ra;
 
-        /* ACWG pp.158: checks (Inf U NaN) membership, db_binary2word (fb, fa, db_eq) */
+        /* ACWG pp.158: checks (Inf U NaN) membership */
         /* ACWG pp.106 B.2.7: binary comparison on total ordering */
         rb.fp = fb;
         ra.fp = fa;
@@ -1115,14 +1265,9 @@ REAL32 fp_remfirstsn (REAL32 fb, REAL32 fa)
         if (fp_zerosn (fa))
                 return RemByZero_NaN;
 
-#if 0
-        result = sn_binary (fb, fa, sn_remfirst);
-        fp_pushsn (fp_divsn (fp_subsn (fb, result), fa));
-#else
         result = RQuotRem (fb, fa, &N);
 #ifndef FPA_STANDALONE
         fp_pushsn ((REAL32) N);
-#endif
 #endif
 
         return result;
@@ -1131,7 +1276,7 @@ int    fp_gtsn (REAL32 fb, REAL32 fa)
 {
         fpreal32_t rb, ra;
 
-        /* ACWG pp.158: checks (Inf U NaN) membership, sn_binary2word (fb, fa, sn_gt) */
+        /* ACWG pp.158: checks (Inf U NaN) membership */
         /* ACWG pp.106 B.2.7: binary comparison on total ordering */
         rb.fp = fb;
         ra.fp = fa;
@@ -1141,7 +1286,7 @@ int    fp_eqsn (REAL32 fb, REAL32 fa)
 {
         fpreal32_t rb, ra;
 
-        /* ACWG pp.158: checks (Inf U NaN) membership, sn_binary2word (fb, fa, sn_eq) */
+        /* ACWG pp.158: checks (Inf U NaN) membership */
         /* ACWG pp.106 B.2.7: binary comparison on total ordering */
         rb.fp = fb;
         ra.fp = fa;

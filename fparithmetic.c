@@ -1405,6 +1405,7 @@ fpreal32_t fp_norounddb (fpreal64_t fp)
         exp  = fp_expdb  (fp);
         frac = fp_fracdb (fp);
 
+        /* kudos to M.Bruestle for the exponent transformation. */
         if (exp)
         {
                 exp = exp - 1023;

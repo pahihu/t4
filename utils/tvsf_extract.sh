@@ -82,7 +82,8 @@ FPT2="fpldnladdsn__sn fpur64tor32__db \
         fprtoi32rmdb \
         fprtoi32rzdb \
         fpstnli32__sn \
-        fprem__db"
+        fprem__db \
+        fpunoround__db"
 FPT2_INP=12
 FPT2_OUT=12
 

@@ -1402,16 +1402,14 @@ fpreal32_t fp_norounddb (fpreal64_t fp)
         uint64_t frac;
 
         sign = fp_signdb (fp);
-        exp  = fp_expdb (fp);
+        exp  = fp_expdb  (fp);
         frac = fp_fracdb (fp);
 
-        exp -= 1023;
-        if ((exp < -126) || (exp > 127))
+        if (exp)
         {
-                exp = 128;
-                frac = 0;
+                exp = exp - 1023;
+                exp = exp +  127;
         }
-        exp = (exp + 127) & 0xff;
         r32.bits = (sign ? REAL32_SIGN : 0) + 
                    (REAL32_EXP  & (exp  << 23)) +
                    (REAL32_FRAC & (frac >> 29));

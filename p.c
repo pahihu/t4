@@ -2728,13 +2728,13 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                           FAReg.length = FP_UNKNOWN;
                                           DB(FAReg)    = DRUndefined;
                                       }
-                                      /* FBReg.length = FP_UNKNOWN; */
-                                      /* FCReg.length = FP_UNKNOWN; */
+                                      FBReg.length = FP_UNKNOWN;
+                                      FCReg.length = FP_UNKNOWN;
                                       ResetRounding = TRUE;
 			              break;
 			   case 0x02: /* fpusqrtstep    */
-                                      /* FBReg.length = FP_UNKNOWN; */
-                                      /* FCReg.length = FP_UNKNOWN; */
+                                      FBReg.length = FP_UNKNOWN;
+                                      FCReg.length = FP_UNKNOWN;
                                       ResetRounding = TRUE;
 			              break;
 			   case 0x03: /* fpusqrtlast    */

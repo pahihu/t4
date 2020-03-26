@@ -65,7 +65,8 @@ XALT="alt talt"
 XALT_INP=0
 XALT_OUT=10
 
-FPT1="fpadd__sn fpaddrmsn fpdiv__sn fpsub__sn fpeq__sn fpgt__sn fpudivby2__sn"
+FPT1="fpadd__sn fpaddrmsn fpdiv__sn fpsub__sn fpeq__sn fpgt__sn fpudivby2__sn \
+      fpusqrt__sn"
 FPT1_INP=8
 FPT1_OUT=8
 
@@ -103,8 +104,8 @@ echo "#output columns = $outcols"
 
 # convert ref and sim file to HEX
 echo "Converting ref and sim to HEX..."
-myxxd -e 16 -c $outcols ref/T801B/$tst.out ref.hex
-myxxd -e 16 -c $outcols tmp/$tst.sim sim.hex
+myxxd -b 16 -c $outcols ref/T801B/$tst.out ref.hex
+myxxd -b 16 -c $outcols tmp/$tst.sim sim.hex
 
 # combine files line-by-line
 if [ "X$inpcols" != "X0" ];

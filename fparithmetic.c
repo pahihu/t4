@@ -890,7 +890,19 @@ fpreal64_t db_mulby2 (fpreal64_t fa)            { fpreal64_t result; result.fp =
 fpreal64_t db_divby2 (fpreal64_t fa)            { fpreal64_t result; result.fp = ldexp (fa.fp, -1); return result; }
 fpreal64_t db_expinc32 (fpreal64_t fa)          { fpreal64_t result; result.fp = ldexp (fa.fp,  32); return result; }
 fpreal64_t db_expdec32 (fpreal64_t fa)          { fpreal64_t result; result.fp = ldexp (fa.fp, -32); return result; }
-fpreal64_t db_sqrt (fpreal64_t fa)              { fpreal64_t result; result.fp = sqrt (fa.fp); return result; }
+fpreal64_t db_sqrt (fpreal64_t fa)
+{
+        fpreal64_t result;
+
+        if (fp_notfinitedb (fa))
+                return fa;
+        else if (fp_zerodb (fa))
+                return fa;
+
+        result.fp = sqrt (fa.fp);
+
+        return result;
+}
 fpreal64_t db_remfirst (fpreal64_t fb, fpreal64_t fa) { fpreal64_t result; result.fp = fmod (fb.fp, fa.fp); return result; }
 int    db_gt (fpreal64_t fb, fpreal64_t fa)     { return fb.fp  > fa.fp; }
 int    db_eq (fpreal64_t fb, fpreal64_t fa)     { return fb.fp == fa.fp; }
@@ -1055,7 +1067,19 @@ fpreal32_t sn_mulby2 (fpreal32_t fa)             { fpreal32_t result; result.fp 
 fpreal32_t sn_divby2 (fpreal32_t fa)             { fpreal32_t result; result.fp = ldexpf (fa.fp,  -1); return result; }
 fpreal32_t sn_expinc32 (fpreal32_t fa)           { fpreal32_t result; result.fp = ldexpf (fa.fp,  32); return result; }
 fpreal32_t sn_expdec32 (fpreal32_t fa)           { fpreal32_t result; result.fp = ldexpf (fa.fp, -32); return result; }
-fpreal32_t sn_sqrt (fpreal32_t fa)               { fpreal32_t result; result.fp = sqrtf (fa.fp); return result; }
+fpreal32_t sn_sqrt (fpreal32_t fa)
+{
+        fpreal32_t result;
+
+        if (fp_notfinitesn (fa))
+                return fa;
+        else if (fp_zerosn (fa))
+                return fa;
+
+        result.fp = sqrtf (fa.fp);
+
+        return result;
+}
 fpreal32_t sn_remfirst (fpreal32_t fb, fpreal32_t fa){ fpreal32_t result; result.fp = fmodf (fb.fp, fa.fp); return result; }
 int    sn_gt (fpreal32_t fb, fpreal32_t fa)      { return fb.fp  > fa.fp; }
 int    sn_eq (fpreal32_t fb, fpreal32_t fa)      { return fb.fp == fa.fp; }
@@ -1093,10 +1117,21 @@ fpreal64_t fp_absdb (fpreal64_t fa)
 }
 fpreal64_t fp_sqrtfirstdb (fpreal64_t fa)
 {
-        if (fp_notfinitedb (fa))
+        if (fp_zerodb (fa))
+        {
+                /* Pass thru negative zero. */
+                return fa;
+        }
+        else if (fp_nandb (fa))
+        {
                 FP_Error = TRUE;
-        if (fp_signdb (fa))
+                return fa;
+        }
+        else if (fp_signdb (fa))
+        {
+                FP_Error = TRUE;
                 return DNegativeSqrt_NaN;
+        }
 
         return fa;
 }
@@ -1376,10 +1411,21 @@ fpreal32_t fp_abssn (fpreal32_t fa)
 }
 fpreal32_t fp_sqrtfirstsn (fpreal32_t fa)
 {
-        if (fp_notfinitesn (fa))
+        if (fp_zerosn (fa))
+        {
+                /* Pass thru negative zero. */
+                return fa;
+        }
+        else if (fp_nansn (fa))
+        {
                 FP_Error = TRUE;
-        if (fp_signsn (fa))
+                return fa;
+        }
+        else if (fp_signsn (fa))
+        {
+                FP_Error = TRUE;
                 return NegativeSqrt_NaN;
+        }
 
         return fa;
 }

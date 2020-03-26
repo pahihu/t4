@@ -70,8 +70,8 @@ const char *RMODE = "PMZN";
 
 fpreal32_t Zero;
 fpreal32_t RUndefined;
-REAL32 RInt32Min = (REAL32) __INT32_MIN__;
-REAL32 RInt32Max = (REAL32) __INT32_MAX__;
+fpreal32_t RInt32Min;
+fpreal32_t RInt32Max;
 
 fpreal64_t DZero;
 fpreal64_t DRUndefined;
@@ -130,6 +130,8 @@ void fp_init (void)
 
         Zero.bits = ZERO32;
         RUndefined.bits = REAL32_UNDEFINED;
+        RInt32Min.bits = 0xcf000000UL;
+        RInt32Max.bits = 0x4f000000UL;
 
         DivZeroByZero_NaN.bits  = NAN32_DivZeroByZero;
         DivInfByInf_NaN.bits    = NAN32_DivInfByInf;
@@ -1346,6 +1348,7 @@ fpreal64_t fp_rtoi32db (fpreal64_t fp)
         fp_chki32db (fp);
         result = fp_intdb (fp);
 
+#ifndef FPA_STANDALONE
         if (fp.bits == (DInt32Min.bits + 1))
         {
                 switch (RoundingMode) {
@@ -1377,6 +1380,7 @@ fpreal64_t fp_rtoi32db (fpreal64_t fp)
                         break;
                 }
         }
+#endif
 
         return result;
 }
@@ -1405,17 +1409,58 @@ fpreal32_t fp_norounddb (fpreal64_t fp)
 }
 uint32_t fp_stnli32db (fpreal64_t fp)
 {
-        REAL64 r64;
-        union {
-                int32_t i;
-                uint32_t u;
-        } result;
+        int     exp;
+        int64_t frac;
+        uint32_t result;
 
-        r64 = trunc (fp.fp);
-        result.i = (int32_t) r64;
-        fp_clrexcept ();
+        if (fp_notfinitedb (fp))
+        {
+                /* Inf or NaN. */
+                return 0;
+        }
+        else if (fp_zerodb (fp))
+        {
+                /* +0, -0 */
+                return 0;
+        }
 
-        return result.u;
+        /* Original implementation used floor () and checks for
+         * too large/too small numbers, but 6 failed test cases
+         * remained in TVS1F.
+         */
+
+        /* Kudos for M.Bruestle for this implementation. */
+        exp  = fp_expdb (fp) - 1023;
+        frac = fp_fracdb (fp) | (REAL64_FRAC + 1);
+        if (fp_signdb (fp))
+                frac = -frac;
+
+        if (exp < 0)
+        {
+                /* Denormalized or <1. */
+                result = fp_signdb (fp) ? 0xffffffff : 0;
+        }
+        else if (exp >= (52 + 32))
+        {
+                /* Big number, Inf or NaN. */
+                result = 0;
+        }
+        else if (exp == 52)
+        {
+                /* Integer. */
+                result = frac;
+        }
+        else if (exp > 52)
+        {
+                /* 83 - 53 */
+                result = (frac << (exp - 52));
+        }
+        else
+        {
+                /* 51 -  0 */
+                result = (frac >> (52 - exp));
+        }
+        return result;
 }
 fpreal64_t fp_i32tor64 (uint32_t i)
 {
@@ -1686,17 +1731,59 @@ fpreal32_t fp_rtoi32sn (fpreal32_t fp)
 }
 uint32_t fp_stnli32sn (fpreal32_t fp)
 {
-        REAL32 r32;
-        union {
-                int32_t i;
-                uint32_t u;
-        } result;
+        int exp;
+        int32_t frac;
+        uint32_t result;
 
-        r32 = truncf (fp.fp);
-        result.i = (int32_t) r32;
-        fp_clrexcept ();
+        if (fp_notfinitesn (fp))
+        {
+                /* Inf or NaN. */
+                return 0;
+        }
+        else if (fp_zerosn (fp))
+        {
+                /* +0, -0 */
+                return 0;
+        }
 
-        return result.u;
+        /* Original implementation used floor () and checks for
+         * too large/too small numbers, but 6 failed test cases
+         * remained in TVS1F.
+         */
+
+        /* Kudos for M.Bruestle for this implementation. */
+        exp  = fp_expsn (fp) - 127;
+        frac = fp_fracsn (fp) | (REAL32_FRAC + 1);
+        if (fp_signsn (fp))
+                frac = -frac;
+
+        if (exp < 0)
+        {
+                /* Denormalized or <1. */
+                result = fp_signsn (fp) ? 0xffffffff : 0;
+        }
+        else if (exp >= (23 + 32))
+        {
+                /* Big number, Inf or NaN. */
+                result = 0;
+        }
+        else if (exp == 23)
+        {
+                /* Integer. */
+                result = frac;
+        }
+        else if (exp > 23)
+        {
+                /* 54 - 24 */
+                result = frac << (exp - 23);
+        }
+        else
+        {
+                /* 22 -  0 */
+                result = frac >> (23 - exp);
+        }
+
+        return result;
 }
 fpreal32_t fp_i32tor32 (uint32_t i)
 {

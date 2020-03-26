@@ -14,27 +14,38 @@ uint32_t FP_Error;
 #define TRUE    1
 
 extern void db_dump(char*, fpreal64_t);
+extern void sn_dump(char*, fpreal32_t);
+
+#define __INT32_MIN__   (-__INT32_MAX__-1)
 
 
 int main(int argc, char*argv[])
 {
-        fpreal64_t fa, fb, result;
+        fpreal32_t fa, fb, result;
         long b;
 
         // fb.bits = 0xc1e0000000000001ULL;
         // fa.bits = 0x41dfffffffffffffULL;
-        fb.bits = 0x41e0000000000000ULL;
-        fa.bits = 0x41e0000000000001ULL;
+        fb.bits = 0xc0490fdbUL;
+        fa.bits = 0xbfb504f3UL;
+        fb.fp = __INT32_MAX__;
+        fa.fp = __INT32_MIN__;
+        fb.bits = 0x4f000001UL;
+        fa.bits = 0xcf000001UL;
+        fb.bits = 0x50d55531UL;
+        fa.bits = 0xd0d55531UL;
 
         fp_init ();
         FP_Error = FALSE;
-        db_dump ("fb", fb);
-        fp_chki32db (fb);
+        sn_dump ("fb", fb);
+        result.fp = truncf (fb.fp);
+        sn_dump ("result", result);
         printf ("FP_Error = %d\n", FP_Error);
 
         FP_Error = FALSE;
-        db_dump ("fa", fa);
-        fp_chki32db (fa);
+        sn_dump ("fa", fa);
+        result.fp = truncf (fa.fp);
+        sn_dump ("result", result);
         printf ("FP_Error = %d\n", FP_Error);
         return 0;
 }

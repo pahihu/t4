@@ -73,7 +73,9 @@ FPT1="fpadd__sn fpaddrmsn fpdiv__sn fpsub__sn fpeq__sn fpgt__sn fpudivby2__sn \
 FPT1_INP=8
 FPT1_OUT=8
 
-FPT2="fpldnladdsn__sn fpur64tor32__db"
+FPT2="fpldnladdsn__sn fpur64tor32__db \
+        fpuchki32__db \
+        fpuchki64__db"
 FPT2_INP=12
 FPT2_OUT=12
 
@@ -111,8 +113,8 @@ echo "#output columns = $outcols"
 
 # convert ref and sim file to HEX
 echo "Converting ref and sim to HEX..."
-myxxd -c $outcols ref/T801B/$tst.out ref.hex
-myxxd -c $outcols tmp/$tst.sim sim.hex
+myxxd -b 16 -c $outcols ref/T801B/$tst.out ref.hex
+myxxd -b 16 -c $outcols tmp/$tst.sim sim.hex
 
 # combine files line-by-line
 if [ "X$inpcols" != "X0" ];

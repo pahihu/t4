@@ -89,8 +89,10 @@ REAL64 Dinexact_NaN;
 */
 fpreal64_t DZero;
 fpreal64_t DRUndefined;
-REAL64 DInt32Min = (REAL64) __INT32_MIN__;
-REAL64 DInt32Max = (REAL64) __INT32_MAX__;
+fpreal64_t DInt32Min;
+fpreal64_t DInt32Max;
+fpreal64_t DInt64Min;
+fpreal64_t DInt64Max;
 
 /*
  * T800 FPU Not-a-numbers.
@@ -169,6 +171,12 @@ void fp_init (void)
 */
         DZero.bits = ZERO64;
         DRUndefined.bits = REAL64_UNDEFINED;
+
+        DInt32Min.bits = 0xc1e0000000000000ULL;
+        DInt32Max.bits = 0x41dfffffffffffffULL;
+
+        DInt64Min.bits = 0xc3e0000000000000ULL;
+        DInt64Max.bits = 0x43dfffffffffffffULL;
 
         DDivZeroByZero_NaN.bits  = NAN64_DivZeroByZero;
         DDivInfByInf_NaN.bits    = NAN64_DivInfByInf;
@@ -1275,7 +1283,7 @@ fpreal64_t fp_intdb (fpreal64_t fp)
 }
 void fp_chki32db (fpreal64_t fp)
 {
-        long result;
+        REAL64 result;
 
 #ifndef NDEBUG
         AargDB = fp; ResultDB = DRUndefined;
@@ -1286,6 +1294,27 @@ void fp_chki32db (fpreal64_t fp)
                 FP_Error = TRUE;
                 return;
         }
+        else if ((fp.bits == DInt32Min.bits) || (fp.bits == DInt32Max.bits))
+        {
+                /* The range guards are OK. */
+                return;
+        }
+        else if (fp_signdb (fp))
+        {
+                if (fp_expfracdb (fp) > fp_expfracdb (DInt32Min))
+                {
+                        FP_Error = TRUE;
+                        return;
+                }
+        }
+        else
+        {
+                if (fp_expfracdb (fp) > fp_expfracdb (DInt32Max))
+                {
+                        FP_Error = TRUE;
+                        return;
+                }
+        }
 
         result = lrint (fp.fp);
 
@@ -1294,13 +1323,6 @@ void fp_chki32db (fpreal64_t fp)
 #endif
 
         db_check_except (DZero);
-        if (FP_Error)
-                return;
-
-        if ((__INT32_MIN__ <= result) && (result <= __INT32_MAX__))
-                ;
-        else
-                FP_Error = TRUE;
 }
 void fp_chki64db (fpreal64_t fp)
 {
@@ -1314,6 +1336,27 @@ void fp_chki64db (fpreal64_t fp)
         {
                 FP_Error = TRUE;
                 return;
+        }
+        else if ((fp.bits == DInt64Min.bits) || (fp.bits == DInt64Max.bits))
+        {
+                /* The range guards are OK. */
+                return;
+        }
+        else if (fp_signdb (fp))
+        {
+                if (fp_expfracdb (fp) > fp_expfracdb (DInt64Min))
+                {
+                        FP_Error = TRUE;
+                        return;
+                }
+        }
+        else
+        {
+                if (fp_expfracdb (fp) > fp_expfracdb (DInt64Max))
+                {
+                        FP_Error = TRUE;
+                        return;
+                }
         }
 
         result = llrintf (fp.fp);

@@ -74,8 +74,10 @@ FPT1_INP=8
 FPT1_OUT=8
 
 FPT2="fpldnladdsn__sn fpur64tor32__db \
-        fpuchki32__db \
-        fpuchki64__db"
+        fpuchki32__db fpuchki64__db \
+        fprtoi32__db \
+        fprtoi32rmdb \
+        fprtoi32rzdb"
 FPT2_INP=12
 FPT2_OUT=12
 

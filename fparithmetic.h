@@ -30,13 +30,6 @@ typedef union {
 /*
  * REAL32 constants.
  */
-/*
-extern REAL32 RInf;
-extern REAL32 RMinusInf;
-extern REAL32 undefined_NaN;
-extern REAL32 unstable_NaN;
-extern REAL32 inexact_NaN;
-*/
 extern fpreal32_t Zero;
 extern fpreal32_t RUndefined;
 
@@ -44,13 +37,6 @@ extern fpreal32_t RUndefined;
 /*
  * REAL64 constants.
  */
-/*
-extern REAL64 DRInf;
-extern REAL64 DRMinusInf;
-extern REAL64 Dundefined_NaN;
-extern REAL64 Dunstable_NaN;
-extern REAL64 Dinexact_NaN;
-*/
 extern fpreal64_t DZero;
 extern fpreal64_t DRUndefined;
 

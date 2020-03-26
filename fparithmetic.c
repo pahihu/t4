@@ -1369,8 +1369,44 @@ void fp_chki64db (fpreal64_t fp)
 }
 fpreal64_t fp_rtoi32db (fpreal64_t fp)
 {
+        fpreal64_t result;
+
         fp_chki32db (fp);
-        return fp_intdb (fp);
+        result = fp_intdb (fp);
+
+        if (fp.bits == (DInt32Min.bits + 1))
+        {
+                switch (RoundingMode) {
+                case ROUND_P:
+                        FP_Error = FALSE;
+                        break;
+                case ROUND_M:
+                        break;
+                case ROUND_Z:
+                        FP_Error = FALSE;
+                        break;
+                case ROUND_N:
+                        FP_Error = FALSE;
+                        break;
+                }
+        }
+        else if (fp.bits == DInt32Max.bits)
+        {
+                switch (RoundingMode) {
+                case ROUND_P:
+                        FP_Error = TRUE;
+                        break;
+                case ROUND_M:
+                        break;
+                case ROUND_Z:
+                        break;
+                case ROUND_N:
+                        FP_Error = TRUE;
+                        break;
+                }
+        }
+
+        return result;
 }
 fpreal32_t fp_norounddb (fpreal64_t fp)
 {

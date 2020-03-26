@@ -1232,7 +1232,13 @@ fpreal32_t  fp_r64tor32 (fpreal64_t fp)
 #endif
 
         if (fp_notfinitedb (fp))
+        {
                 FP_Error = TRUE;
+        }
+        if (fp_nandb (fp))
+        {
+                return Conversion_NaN;
+        }
 
         result.fp = (REAL32) fp.fp;
 
@@ -1241,8 +1247,6 @@ fpreal32_t  fp_r64tor32 (fpreal64_t fp)
 #endif
 
         result = sn_check_except (result);
-        if (fp_nandb (fp) && fp_infsn (result))
-                result = Conversion_NaN;
 
         return result;
 }
@@ -1535,7 +1539,10 @@ fpreal64_t  fp_r32tor64 (fpreal32_t fp)
                         result.bits |= REAL64_SIGN;
                 result.bits |= REAL64_EXP;
                 result.bits |= ((uint64_t)(REAL32_FRAC & fp.bits)) << 29;
+
+                /* Signals FP exception. */
                 fp_clrexcept ();
+
                 return result;
         }
 

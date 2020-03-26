@@ -21,8 +21,11 @@ rm -f $tst.diff
 tst=$1
 echo "Extracting failed test cases for $tst..."
 
+# extract precision
+prec=`echo $tst | tail -c 3`
+
 # extract the input file
-inpfil=`grep "/$tst.tbo" ./tvsf_testdb.sh | awk '{print $4;}'`
+inpfil=`grep "/$tst.tbo" ./tvsf_test${prec}.sh | awk '{print $4;}'`
 
 if [ "X$inpfil" = "X" ];
 then
@@ -66,7 +69,7 @@ XALT_INP=0
 XALT_OUT=10
 
 FPT1="fpadd__sn fpaddrmsn fpdiv__sn fpsub__sn fpeq__sn fpgt__sn fpudivby2__sn \
-      fpusqrt__sn"
+      fpusqrt__sn fpuchki32__sn"
 FPT1_INP=8
 FPT1_OUT=8
 
@@ -108,8 +111,8 @@ echo "#output columns = $outcols"
 
 # convert ref and sim file to HEX
 echo "Converting ref and sim to HEX..."
-myxxd -b 16 -e 24 -c $outcols ref/T801B/$tst.out ref.hex
-myxxd -b 16 -e 24 -c $outcols tmp/$tst.sim sim.hex
+myxxd -c $outcols ref/T801B/$tst.out ref.hex
+myxxd -c $outcols tmp/$tst.sim sim.hex
 
 # combine files line-by-line
 if [ "X$inpcols" != "X0" ];

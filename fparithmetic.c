@@ -1273,7 +1273,7 @@ fpreal64_t fp_intdb (fpreal64_t fp)
         result = db_check_except (result);
         return result;
 }
-int fp_chki32db (fpreal64_t fp)
+void fp_chki32db (fpreal64_t fp)
 {
         long result;
 
@@ -1284,7 +1284,7 @@ int fp_chki32db (fpreal64_t fp)
         if (fp_notfinitedb (fp))
         {
                 FP_Error = TRUE;
-                return FALSE;
+                return;
         }
 
         result = lrint (fp.fp);
@@ -1295,11 +1295,14 @@ int fp_chki32db (fpreal64_t fp)
 
         db_check_except (DZero);
         if (FP_Error)
-                return FALSE;
+                return;
 
-        return (__INT32_MIN__ <= result) && (result <= __INT32_MAX__);
+        if ((__INT32_MIN__ <= result) && (result <= __INT32_MAX__))
+                ;
+        else
+                FP_Error = TRUE;
 }
-int fp_chki64db (fpreal64_t fp)
+void fp_chki64db (fpreal64_t fp)
 {
         long long result;
 
@@ -1310,7 +1313,7 @@ int fp_chki64db (fpreal64_t fp)
         if (fp_notfinitedb (fp))
         {
                 FP_Error = TRUE;
-                return FALSE;
+                return;
         }
 
         result = llrintf (fp.fp);
@@ -1320,9 +1323,6 @@ int fp_chki64db (fpreal64_t fp)
 #endif
 
         db_check_except (DZero);
-        if (FP_Error)
-                return FALSE;
-        return TRUE;
 }
 fpreal64_t fp_rtoi32db (fpreal64_t fp)
 {
@@ -1578,7 +1578,7 @@ fpreal32_t fp_intsn (fpreal32_t fp)
         result = sn_check_except (result);
         return result;
 }
-int fp_chki32sn (fpreal32_t fp)
+void fp_chki32sn (fpreal32_t fp)
 {
         long result;
 
@@ -1589,7 +1589,7 @@ int fp_chki32sn (fpreal32_t fp)
         if (fp_notfinitesn (fp))
         {
                 FP_Error = TRUE;
-                return FALSE;
+                return;
         }
 
         result = lrintf (fp.fp);
@@ -1600,10 +1600,14 @@ int fp_chki32sn (fpreal32_t fp)
 
         sn_check_except (Zero);
         if (FP_Error)
-                return FALSE;
-        return (__INT32_MIN__ <= result) && (result <= __INT32_MAX__);
+                return;
+
+        if ((__INT32_MIN__ <= result) && (result <= __INT32_MAX__))
+                ;
+        else
+                FP_Error = TRUE;
 }
-int fp_chki64sn (fpreal32_t fp)
+void fp_chki64sn (fpreal32_t fp)
 {
         long long result;
 
@@ -1614,7 +1618,7 @@ int fp_chki64sn (fpreal32_t fp)
         if (fp_notfinitesn (fp))
         {
                 FP_Error = TRUE;
-                return FALSE;
+                return;
         }
         result = llrintf (fp.fp);
 
@@ -1623,9 +1627,6 @@ int fp_chki64sn (fpreal32_t fp)
 #endif
 
         sn_check_except (Zero);
-        if (FP_Error)
-                return FALSE;
-        return TRUE;
 }
 fpreal32_t fp_rtoi32sn (fpreal32_t fp)
 {

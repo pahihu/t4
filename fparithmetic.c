@@ -267,6 +267,16 @@ uint64_t fp_fracdb (fpreal64_t fp)
         return db_frac (fp.bits);
 }
 
+uint64_t db_expfrac (uint64_t fpbits)
+{
+        return ((REAL64_EXP | REAL64_FRAC) & fpbits);
+}
+
+uint64_t fp_expfracdb (fpreal64_t fp)
+{
+        return db_expfrac (fp.bits);
+}
+
 int db_inf (uint64_t fpbits)
 {
         return (2047 == db_exp (fpbits)) && (0LL == db_frac (fpbits));
@@ -336,6 +346,16 @@ uint32_t sn_frac (uint32_t fpbits)
 uint32_t fp_fracsn(fpreal32_t fp)
 {
         return sn_frac (fp.bits);
+}
+
+uint32_t sn_expfrac (uint32_t fpbits)
+{
+        return ((REAL32_EXP | REAL32_FRAC) & fpbits);
+}
+
+uint32_t fp_expfracsn (fpreal32_t fp)
+{
+        return sn_expfrac (fp.bits);
 }
 
 int sn_inf (uint32_t fpbits)
@@ -1086,11 +1106,39 @@ fpreal64_t fp_remfirstdb (fpreal64_t fb, fpreal64_t fa)
         fpreal64_t result;
         long N;
         fpreal64_t r64;
+        uint64_t fracb, fraca;
 
-        if (fp_infdb (fb))
+        if (fp_nandb (fb) && fp_nandb (fa))
+        {
+                FP_Error = TRUE;
+                fracb = fp_fracdb (fb);
+                fraca = fp_fracdb (fa);
+                if (fracb >= fraca)
+                        result = fb;
+                else
+                        result = fa;
+                return db_correct_sign (result, fb, fa);
+        }
+        else if (fp_nandb (fb))
+        {
+                FP_Error = TRUE;
+                return db_correct_sign (fb, fb, fa);
+        }
+        else if (fp_nandb (fa))
+        {
+                FP_Error = TRUE;
+                return db_correct_sign (fa, fb, fa);
+        }
+        else if (fp_infdb (fb))
+        {
+                FP_Error = TRUE;
                 return DRemFromInf_NaN;
-        if (fp_zerodb (fa))
+        }
+        else if (fp_zerodb (fa))
+        {
+                FP_Error = TRUE;
                 return DRemByZero_NaN;
+        }
 
         result.fp = DQuotRem (fb.fp, fa.fp, &N);
 #ifndef FPA_STANDALONE
@@ -1102,12 +1150,25 @@ fpreal64_t fp_remfirstdb (fpreal64_t fb, fpreal64_t fa)
 }
 int    fp_gtdb (fpreal64_t fb, fpreal64_t fa)
 {
+        int result;
+
         if (fp_notfinitedb (fb) || fp_notfinitedb (fa))
                 FP_Error = TRUE;
 
+        if (fp_zerodb (fb) && fp_zerodb (fa))
+                return FALSE;
+
         /* ACWG pp.158: checks (Inf U NaN) membership */
         /* ACWG pp.106 B.2.7: binary comparison on total ordering */
-        return INT64(fb.bits) > INT64(fa.bits);
+
+        if (fp_signdb (fb) != fp_signdb (fa))
+                result = INT64(fb.bits) > INT64(fa.bits);
+        else if (fp_signdb (fb))
+                result = fp_expfracdb (fb) < fp_expfracdb (fa);
+        else
+                result = fp_expfracdb (fb) > fp_expfracdb (fa);
+
+        return result;
 }
 int    fp_eqdb (fpreal64_t fb, fpreal64_t fa)
 {
@@ -1325,11 +1386,39 @@ fpreal32_t fp_remfirstsn (fpreal32_t fb, fpreal32_t fa)
         fpreal32_t result;
         long N;
         fpreal32_t r32;
+        uint32_t fracb, fraca;
 
-        if (fp_infsn (fb))
+        if (fp_nansn (fb) && fp_nansn (fa))
+        {
+                FP_Error = TRUE;
+                fracb = fp_fracsn (fb);
+                fraca = fp_fracsn (fa);
+                if (fracb >= fraca)
+                        result = fb;
+                else
+                        result = fa;
+                return sn_correct_sign (result, fb, fa);
+        }
+        else if (fp_nansn (fb))
+        {
+                FP_Error = TRUE;
+                return sn_correct_sign (fb, fb, fa);
+        }
+        else if (fp_nansn (fa))
+        {
+                FP_Error = TRUE;
+                return sn_correct_sign (fa, fb, fa);
+        }
+        else if (fp_infsn (fb))
+        {
+                FP_Error = TRUE;
                 return RemFromInf_NaN;
+        }
         if (fp_zerosn (fa))
+        {
+                FP_Error = TRUE;
                 return RemByZero_NaN;
+        }
 
         result.fp = RQuotRem (fb.fp, fa.fp, &N);
 #ifndef FPA_STANDALONE
@@ -1341,12 +1430,25 @@ fpreal32_t fp_remfirstsn (fpreal32_t fb, fpreal32_t fa)
 }
 int    fp_gtsn (fpreal32_t fb, fpreal32_t fa)
 {
+        int result;
+
         if (fp_notfinitesn (fb) || fp_notfinitesn (fa))
                 FP_Error = TRUE;
 
+        if (fp_zerosn (fb) && fp_zerosn (fa))
+                return FALSE;
+
         /* ACWG pp.158: checks (Inf U NaN) membership */
         /* ACWG pp.106 B.2.7: binary comparison on total ordering */
-        return INT32(fb.bits) > INT32(fa.bits);
+
+        if (fp_signsn (fb) != fp_signsn (fa))
+                result = INT32(fb.bits) > INT32(fa.bits);
+        else if (fp_signsn (fb))
+                result = fp_expfracsn (fb) < fp_expfracsn (fa);
+        else
+                result = fp_expfracsn (fb) > fp_expfracsn (fa);
+
+        return result;
 }
 int    fp_eqsn (fpreal32_t fb, fpreal32_t fa)
 {

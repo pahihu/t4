@@ -68,8 +68,11 @@ XALT="alt talt"
 XALT_INP=0
 XALT_OUT=10
 
-FPT1="fpadd__sn fpaddrmsn fpdiv__sn fpsub__sn fpeq__sn fpgt__sn fpudivby2__sn \
-      fpusqrt__sn fpuchki32__sn"
+FPT1="fpadd__sn fpaddrmsn fpdiv__sn fpsub__sn \
+      fpeq__sn fpgt__sn \
+      fpudivby2__sn \
+      fpusqrt__sn fpuchki32__sn \
+      fprem__sn"
 FPT1_INP=8
 FPT1_OUT=8
 
@@ -78,7 +81,8 @@ FPT2="fpldnladdsn__sn fpur64tor32__db \
         fprtoi32__db \
         fprtoi32rmdb \
         fprtoi32rzdb \
-        fpstnli32__sn"
+        fpstnli32__sn \
+        fprem__db"
 FPT2_INP=12
 FPT2_OUT=12
 

@@ -60,6 +60,7 @@
 #define NAN64_ConversionNaN     ((uint64_t)0x7ff0400000000000ULL)
 #define NAN64_RemFromInf        ((uint64_t)0x7ff0080000000000ULL)
 #define NAN64_RemByZero         ((uint64_t)0x7ff0040000000000ULL)
+#define NAN64_RemInvalidQuot    ((uint64_t)0x7ff0020000000000ULL)
 
 #undef TRUE
 #undef FALSE
@@ -102,6 +103,7 @@ static fpreal64_t DNegativeSqrt_NaN;
 static fpreal64_t DConversion_NaN;
 static fpreal64_t DRemFromInf_NaN;
 static fpreal64_t DRemByZero_NaN;
+static fpreal64_t DRemInvalidQuot_NaN;
 
 extern int emudebug;
 extern int FP_Error;
@@ -161,6 +163,7 @@ void fp_init (void)
         DConversion_NaN.bits     = NAN64_ConversionNaN;
         DRemFromInf_NaN.bits     = NAN64_RemFromInf;
         DRemByZero_NaN.bits      = NAN64_RemByZero;
+        DRemInvalidQuot_NaN.bits = NAN64_RemInvalidQuot;
 
         fp_clrexcept ();
 }
@@ -689,24 +692,22 @@ fpreal32_t sn_unary (fpreal32_t fa, fpreal32_t (*opr)(fpreal32_t))
 }
 
 
-REAL64 DQuotRem (REAL64 X, REAL64 Y, long *N)
+REAL64 DQuotRem (REAL64 X, REAL64 Y, REAL64 *N)
 {
         REAL64 rem;
 
         rem = remainder (X, Y);
-        *N  = (X - rem) / Y;
-        fp_clrexcept ();
+        *N  = round ((X - rem) / Y);
 
         return rem;
 }
 
-REAL32 RQuotRem (REAL32 X, REAL32 Y, long *N)
+REAL32 RQuotRem (REAL32 X, REAL32 Y, REAL32 *N)
 {
         REAL32 rem;
 
         rem = remainder (X, Y);
-        *N  = (X - rem) / Y;
-        fp_clrexcept ();
+        *N  = round ((X - rem) / Y);
 
         return rem;
 }
@@ -885,9 +886,6 @@ fpreal64_t db_sqrt (fpreal64_t fa)
 
         return result;
 }
-fpreal64_t db_remfirst (fpreal64_t fb, fpreal64_t fa) { fpreal64_t result; result.fp = fmod (fb.fp, fa.fp); return result; }
-int    db_gt (fpreal64_t fb, fpreal64_t fa)     { return fb.fp  > fa.fp; }
-int    db_eq (fpreal64_t fb, fpreal64_t fa)     { return fb.fp == fa.fp; }
 
 
 /* 
@@ -1062,9 +1060,6 @@ fpreal32_t sn_sqrt (fpreal32_t fa)
 
         return result;
 }
-fpreal32_t sn_remfirst (fpreal32_t fb, fpreal32_t fa){ fpreal32_t result; result.fp = fmodf (fb.fp, fa.fp); return result; }
-int    sn_gt (fpreal32_t fb, fpreal32_t fa)      { return fb.fp  > fa.fp; }
-int    sn_eq (fpreal32_t fb, fpreal32_t fa)      { return fb.fp == fa.fp; }
 
 
 /*
@@ -1121,10 +1116,14 @@ fpreal64_t fp_sqrtlastdb (fpreal64_t fa)         { return db_unary (fa, db_sqrt)
 fpreal64_t fp_remfirstdb (fpreal64_t fb, fpreal64_t fa)
 {
         fpreal64_t result;
-        long N;
+        REAL64 N;
         fpreal64_t r64;
         uint64_t fracb, fraca;
 
+        if (fp_infdb (fb) || fp_infdb (fa))
+        {
+                FP_Error = TRUE;
+        }
         if (fp_nandb (fb) && fp_nandb (fa))
         {
                 FP_Error = TRUE;
@@ -1134,33 +1133,44 @@ fpreal64_t fp_remfirstdb (fpreal64_t fb, fpreal64_t fa)
                         result = fb;
                 else
                         result = fa;
-                return db_correct_sign (result, fb, fa);
+                fp_pushdb (DRemInvalidQuot_NaN);
+                return result;
         }
         else if (fp_nandb (fb))
         {
                 FP_Error = TRUE;
-                return db_correct_sign (fb, fb, fa);
+                fp_pushdb (DRemInvalidQuot_NaN);
+                return fb;
         }
         else if (fp_nandb (fa))
         {
                 FP_Error = TRUE;
-                return db_correct_sign (fa, fb, fa);
+                fp_pushdb (DRemInvalidQuot_NaN);
+                return fa;
         }
         else if (fp_infdb (fb))
         {
                 FP_Error = TRUE;
+                fp_pushdb (DRemInvalidQuot_NaN);
                 return DRemFromInf_NaN;
         }
         else if (fp_zerodb (fa))
         {
                 FP_Error = TRUE;
+                fp_pushdb (DRemInvalidQuot_NaN);
                 return DRemByZero_NaN;
+        }
+        else if (fp_zerodb (fb))
+        {
+                fp_pushdb (db_correct_sign (DZero, fb, fa));
+                return fb;
         }
 
         result.fp = DQuotRem (fb.fp, fa.fp, &N);
 #ifndef FPA_STANDALONE
-        r64.fp = (REAL64) N;
-        fp_pushdb (r64);
+        r64.fp = N;
+        fp_pushdb (db_correct_sign (r64, fb, fa));
+        fp_clrexcept ();
 #endif
 
         return result;
@@ -1533,7 +1543,7 @@ fpreal32_t fp_sqrtlastsn (fpreal32_t fa)         { return sn_unary (fa, sn_sqrt)
 fpreal32_t fp_remfirstsn (fpreal32_t fb, fpreal32_t fa)
 {
         fpreal32_t result;
-        long N;
+        REAL32 N;
         fpreal32_t r32;
         uint32_t fracb, fraca;
 
@@ -1546,32 +1556,37 @@ fpreal32_t fp_remfirstsn (fpreal32_t fb, fpreal32_t fa)
                         result = fb;
                 else
                         result = fa;
-                return sn_correct_sign (result, fb, fa);
+                return result;
         }
         else if (fp_nansn (fb))
         {
                 FP_Error = TRUE;
-                return sn_correct_sign (fb, fb, fa);
+                return fb;
         }
         else if (fp_nansn (fa))
         {
                 FP_Error = TRUE;
-                return sn_correct_sign (fa, fb, fa);
+                return fa;
         }
         else if (fp_infsn (fb))
         {
                 FP_Error = TRUE;
                 return RemFromInf_NaN;
         }
-        if (fp_zerosn (fa))
+        else if (fp_zerosn (fa))
         {
                 FP_Error = TRUE;
                 return RemByZero_NaN;
         }
 
+        if (fp_infsn (fa))
+        {
+                FP_Error = TRUE;
+        }
         result.fp = RQuotRem (fb.fp, fa.fp, &N);
 #ifndef FPA_STANDALONE
-        r32.fp = (REAL32) N;
+        r32.fp = N;
+        fp_clrexcept ();
         fp_pushsn (r32);
 #endif
 

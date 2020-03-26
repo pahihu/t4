@@ -68,25 +68,11 @@
 
 const char *RMODE = "PMZN";
 
-/*
-REAL32 RInf;
-REAL32 RMinusInf;
-REAL32 undefined_NaN;
-REAL32 unstable_NaN;
-REAL32 inexact_NaN;
-*/
 fpreal32_t Zero;
 fpreal32_t RUndefined;
 REAL32 RInt32Min = (REAL32) __INT32_MIN__;
 REAL32 RInt32Max = (REAL32) __INT32_MAX__;
 
-/*
-REAL64 DRInf;
-REAL64 DRMinusInf;
-REAL64 Dundefined_NaN;
-REAL64 Dunstable_NaN;
-REAL64 Dinexact_NaN;
-*/
 fpreal64_t DZero;
 fpreal64_t DRUndefined;
 fpreal64_t DInt32Min;
@@ -142,13 +128,6 @@ void fp_init (void)
 
         fp_setrounding ("fpinit", ROUND_N);
 
-/*
-        sn_setbits (&RInf,           PINFINITY32);
-        sn_setbits (&RMinusInf,      MINFINITY32);
-        sn_setbits (&undefined_NaN,  NAN32_UNDEFINED);
-        sn_setbits (&unstable_NaN,   NAN32_UNSTABLE);
-        sn_setbits (&inexact_NaN,    NAN32_INEXACT);
-*/
         Zero.bits = ZERO32;
         RUndefined.bits = REAL32_UNDEFINED;
 
@@ -162,13 +141,6 @@ void fp_init (void)
         RemFromInf_NaN.bits     = NAN32_RemFromInf;
         RemByZero_NaN.bits      = NAN32_RemByZero;
 
-/*
-        db_setbits (&DRInf,          PINFINITY64);
-        db_setbits (&DRMinusInf,     MINFINITY64);
-        db_setbits (&Dundefined_NaN, NAN64_UNDEFINED);
-        db_setbits (&Dunstable_NaN,  NAN64_UNSTABLE);
-        db_setbits (&Dinexact_NaN,   NAN64_INEXACT);
-*/
         DZero.bits = ZERO64;
         DRUndefined.bits = REAL64_UNDEFINED;
 

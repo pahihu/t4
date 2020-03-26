@@ -1220,7 +1220,10 @@ fpreal64_t fp_intdb (fpreal64_t fp)
 #endif
 
         if (fp_notfinitedb (fp))
+        {
                 FP_Error = TRUE;
+                return fp;
+        }
 
         result.fp = rint (fp.fp);
 
@@ -1497,7 +1500,10 @@ fpreal32_t fp_intsn (fpreal32_t fp)
 #endif
 
         if (fp_notfinitesn (fp))
+        {
                 FP_Error = TRUE;
+                return fp;
+        }
 
         result.fp = rintf (fp.fp);
 

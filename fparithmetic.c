@@ -1527,6 +1527,17 @@ fpreal64_t  fp_r32tor64 (fpreal32_t fp)
 
         if (fp_notfinitesn (fp))
                 FP_Error = TRUE;
+        if (fp_nansn (fp))
+        {
+                /* Same sign and fraction as REAL32. */
+                result.bits = 0;
+                if (fp_signsn (fp))
+                        result.bits |= REAL64_SIGN;
+                result.bits |= REAL64_EXP;
+                result.bits |= ((uint64_t)(REAL32_FRAC & fp.bits)) << 29;
+                fp_clrexcept ();
+                return result;
+        }
 
         result.fp = (REAL64) fp.fp;
 

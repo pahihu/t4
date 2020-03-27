@@ -580,7 +580,7 @@ int db_binary2word (fpreal64_t fb, fpreal64_t fa, int (*opr)(fpreal64_t, fpreal6
         result = opr(fb, fa);
 
 #ifndef NDEBUG
-        ResultDB.fp = result;
+        ResultDB.fp = t4_i32_to_fp64 (result);
 #endif
 
         db_check_except (DZero);
@@ -656,7 +656,7 @@ int sn_binary2word (fpreal32_t fb, fpreal32_t fa, int (*opr)(fpreal32_t, fpreal3
         result = opr(fb, fa);
 
 #ifndef NDEBUG
-        ResultSN.fp = result;
+        ResultSN.fp = t4_i32_to_fp32 (result);
 #endif
 
         sn_check_except (Zero);
@@ -697,8 +697,8 @@ REAL64 DQuotRem (REAL64 X, REAL64 Y, REAL64 *N)
 {
         REAL64 rem;
 
-        rem = remainder (X, Y);
-        *N  = round ((X - rem) / Y);
+        rem = t4_fpremainder64 (X, Y);
+        *N  = t4_fpround64 (t4_fpdiv64 (t4_fpsub64 (X, rem), Y));
 
         return rem;
 }
@@ -707,8 +707,8 @@ REAL32 RQuotRem (REAL32 X, REAL32 Y, REAL32 *N)
 {
         REAL32 rem;
 
-        rem = (REAL32) remainder ((REAL64) X, (REAL64) Y);
-        *N  = (REAL32) round ((REAL64) ((X - rem) / Y));
+        rem = t4_fpremainder32 (X, Y);
+        *N  = t4_fpround32 (t4_fpdiv32 (t4_fpsub32 (X, rem), Y));
 
         return rem;
 }
@@ -749,7 +749,7 @@ fpreal64_t db_add (fpreal64_t fb, fpreal64_t fa)
                         return DAddOppositeInf_NaN;
         }
 
-        result.fp = fb.fp + fa.fp;
+        result.fp = t4_fpadd64 (fb.fp, fa.fp);
 
         return result;
 }
@@ -787,7 +787,7 @@ fpreal64_t db_sub (fpreal64_t fb, fpreal64_t fa)
                         return DSubSameInf_NaN;
         }
 
-        result.fp = fb.fp - fa.fp;
+        result.fp = t4_fpsub64 (fb.fp, fa.fp);
 
         return result;
 }
@@ -825,7 +825,7 @@ fpreal64_t db_mul(fpreal64_t fb, fpreal64_t fa)
                 return DMulZeroByInf_NaN;
         }
 
-        result.fp = fb.fp * fa.fp;
+        result.fp = t4_fpmul64 (fb.fp, fa.fp);
 
         return result;
 }
@@ -866,14 +866,14 @@ fpreal64_t db_div(fpreal64_t fb, fpreal64_t fa)
                 return DDivInfByInf_NaN;
         }
 
-        result.fp = fb.fp / fa.fp;
+        result.fp = t4_fpdiv64 (fb.fp, fa.fp);
 
         return result;
 }
-fpreal64_t db_mulby2 (fpreal64_t fa)            { fpreal64_t result; result.fp = ldexp (fa.fp,  1); return result; }
-fpreal64_t db_divby2 (fpreal64_t fa)            { fpreal64_t result; result.fp = ldexp (fa.fp, -1); return result; }
-fpreal64_t db_expinc32 (fpreal64_t fa)          { fpreal64_t result; result.fp = ldexp (fa.fp,  32); return result; }
-fpreal64_t db_expdec32 (fpreal64_t fa)          { fpreal64_t result; result.fp = ldexp (fa.fp, -32); return result; }
+fpreal64_t db_mulby2 (fpreal64_t fa)            { fpreal64_t result; result.fp = t4_fpldexp64 (fa.fp,  1); return result; }
+fpreal64_t db_divby2 (fpreal64_t fa)            { fpreal64_t result; result.fp = t4_fpldexp64 (fa.fp, -1); return result; }
+fpreal64_t db_expinc32 (fpreal64_t fa)          { fpreal64_t result; result.fp = t4_fpldexp64 (fa.fp,  32); return result; }
+fpreal64_t db_expdec32 (fpreal64_t fa)          { fpreal64_t result; result.fp = t4_fpldexp64 (fa.fp, -32); return result; }
 fpreal64_t db_sqrt (fpreal64_t fa)
 {
         fpreal64_t result;
@@ -883,7 +883,7 @@ fpreal64_t db_sqrt (fpreal64_t fa)
         else if (fp_zerodb (fa))
                 return fa;
 
-        result.fp = sqrt (fa.fp);
+        result.fp = t4_fpsqrt64 (fa.fp);
 
         return result;
 }
@@ -923,7 +923,7 @@ fpreal32_t sn_add (fpreal32_t fb, fpreal32_t fa)
                         return AddOppositeInf_NaN;
         }
 
-        result.fp = fb.fp + fa.fp;
+        result.fp = t4_fpadd32 (fb.fp, fa.fp);
 
         return result;
 }
@@ -961,7 +961,7 @@ fpreal32_t sn_sub (fpreal32_t fb, fpreal32_t fa)
                         return SubSameInf_NaN;
         }
         
-        result.fp = fb.fp - fa.fp;
+        result.fp = t4_fpsub32 (fb.fp, fa.fp);
 
         return result;
 }
@@ -999,7 +999,7 @@ fpreal32_t sn_mul (fpreal32_t fb, fpreal32_t fa)
                 return MulZeroByInf_NaN;
         }
 
-        result.fp = fb.fp * fa.fp;
+        result.fp = t4_fpmul32 (fb.fp, fa.fp);
 
         return result;
 }
@@ -1040,14 +1040,14 @@ fpreal32_t sn_div (fpreal32_t fb, fpreal32_t fa)
                 return DivInfByInf_NaN;
         }
 
-        result.fp = fb.fp / fa.fp;
+        result.fp = t4_fpdiv32 (fb.fp, fa.fp);
 
         return result;
 }
-fpreal32_t sn_mulby2 (fpreal32_t fa)             { fpreal32_t result; result.fp = ldexpf (fa.fp,   1); return result; }
-fpreal32_t sn_divby2 (fpreal32_t fa)             { fpreal32_t result; result.fp = ldexpf (fa.fp,  -1); return result; }
-fpreal32_t sn_expinc32 (fpreal32_t fa)           { fpreal32_t result; result.fp = ldexpf (fa.fp,  32); return result; }
-fpreal32_t sn_expdec32 (fpreal32_t fa)           { fpreal32_t result; result.fp = ldexpf (fa.fp, -32); return result; }
+fpreal32_t sn_mulby2 (fpreal32_t fa)             { fpreal32_t result; result.fp = t4_fpldexp32 (fa.fp,   1); return result; }
+fpreal32_t sn_divby2 (fpreal32_t fa)             { fpreal32_t result; result.fp = t4_fpldexp32 (fa.fp,  -1); return result; }
+fpreal32_t sn_expinc32 (fpreal32_t fa)           { fpreal32_t result; result.fp = t4_fpldexp32 (fa.fp,  32); return result; }
+fpreal32_t sn_expdec32 (fpreal32_t fa)           { fpreal32_t result; result.fp = t4_fpldexp32 (fa.fp, -32); return result; }
 fpreal32_t sn_sqrt (fpreal32_t fa)
 {
         fpreal32_t result;
@@ -1057,7 +1057,7 @@ fpreal32_t sn_sqrt (fpreal32_t fa)
         else if (fp_zerosn (fa))
                 return fa;
 
-        result.fp = (REAL32) sqrt ((REAL64) fa.fp);
+        result.fp = t4_fpsqrt32 (fa.fp);
 
         return result;
 }
@@ -1088,7 +1088,7 @@ fpreal64_t fp_absdb (fpreal64_t fa)
         else if (fp_infdb (fa))
                 FP_Error = TRUE;
 
-        result.fp = fabs (fa.fp);
+        result.fp = t4_fpabs64 (fa.fp);
         fp_clrexcept ();
 
         return result;
@@ -1233,7 +1233,7 @@ fpreal32_t  fp_r64tor32 (fpreal64_t fp)
                 return Conversion_NaN;
         }
 
-        result.fp = (REAL32) fp.fp;
+        result.fp = t4_fp64_to_fp32 (fp.fp);
 
 #ifndef NDEBUG
         ResultSN = result;
@@ -1266,7 +1266,7 @@ fpreal64_t fp_intdb (fpreal64_t fp)
                 }
         }
 
-        result.fp = rint (fp.fp);
+        result.fp = t4_fprint64 (fp.fp);
         if (RoundingMode == ROUND_M)
         {
                 if (fp_zerodb (result) && fp_signdb (result))
@@ -1315,7 +1315,7 @@ void fp_chki32db (fpreal64_t fp)
                 }
         }
 
-        result = rint (fp.fp);
+        result = t4_fprint64 (fp.fp);
 
 #ifndef NDEBUG
         ResultDB.fp = result;
@@ -1325,7 +1325,7 @@ void fp_chki32db (fpreal64_t fp)
 }
 void fp_chki64db (fpreal64_t fp)
 {
-        long long result;
+        int64_t result;
 
 #ifndef NDEBUG
         AargDB = fp; ResultDB = DRUndefined;
@@ -1358,7 +1358,7 @@ void fp_chki64db (fpreal64_t fp)
                 }
         }
 
-        result = (long long) rint ((REAL64) fp.fp);
+        result = t4_fp64_to_i64 (t4_fprint64 (fp.fp));
 
 #ifndef NDEBUG
         ResultDB.fp = result;
@@ -1490,14 +1490,14 @@ fpreal64_t fp_i32tor64 (uint32_t i)
 {
         fpreal64_t result;
 
-        result.fp = (REAL64) INT32(i);
+        result.fp = t4_i32_to_fp64 (INT32(i));
         return result;
 }
 fpreal64_t fp_b32tor64 (uint32_t i)
 {
         fpreal64_t result;
 
-        result.fp = (REAL64) i;
+        result.fp = t4_u32_to_fp64 (i);
         return result;
 }
 
@@ -1528,7 +1528,7 @@ fpreal32_t fp_abssn (fpreal32_t fa)
         else if (fp_infsn (fa))
                 FP_Error = TRUE;
 
-        result.fp =  (REAL32) fabs ((REAL64) fa.fp);
+        result.fp =  t4_fpabs32 (fa.fp);
         fp_clrexcept ();
 
         return result;
@@ -1651,7 +1651,7 @@ fpreal64_t  fp_r32tor64 (fpreal32_t fp)
         fpreal64_t result;
 
 #ifndef NDEBUG
-        AargDB.fp = fp.fp; ResultDB = DRUndefined;
+        AargDB.fp = t4_fp32_to_fp64 (fp.fp); ResultDB = DRUndefined;
 #endif
 
         if (fp_notfinitesn (fp))
@@ -1671,7 +1671,7 @@ fpreal64_t  fp_r32tor64 (fpreal32_t fp)
                 return result;
         }
 
-        result.fp = (REAL64) fp.fp;
+        result.fp = t4_fp32_to_fp64 (fp.fp);
 
 #ifndef NDEBUG
         ResultDB = result;
@@ -1703,7 +1703,7 @@ fpreal32_t fp_intsn (fpreal32_t fp)
                 }
         }
 
-        result.fp = (REAL32) rint ((REAL64) fp.fp);
+        result.fp = t4_fprint32 (fp.fp);
         if (RoundingMode == ROUND_M)
         {
                 if (fp_zerosn (result) && fp_signsn (result))
@@ -1719,7 +1719,7 @@ fpreal32_t fp_intsn (fpreal32_t fp)
 }
 void fp_chki32sn (fpreal32_t fp)
 {
-        long result;
+        int32_t result;
 
 #ifndef NDEBUG
         AargSN = fp; ResultSN = RUndefined;
@@ -1731,10 +1731,10 @@ void fp_chki32sn (fpreal32_t fp)
                 return;
         }
 
-        result = (long) rint ((REAL64) fp.fp);
+        result = t4_fp32_to_i32 (t4_fprint32 (fp.fp));
 
 #ifndef NDEBUG
-        ResultSN.fp = result;
+        ResultSN.fp = t4_i32_to_fp32 (result);
 #endif
 
         sn_check_except (Zero);
@@ -1748,7 +1748,7 @@ void fp_chki32sn (fpreal32_t fp)
 }
 void fp_chki64sn (fpreal32_t fp)
 {
-        long long result;
+        int64_t result;
 
 #ifndef NDEBUG
         AargSN = fp; ResultSN = RUndefined;
@@ -1759,10 +1759,10 @@ void fp_chki64sn (fpreal32_t fp)
                 FP_Error = TRUE;
                 return;
         }
-        result = (long long) rint ((REAL64) fp.fp);
+        result = t4_fp32_to_i64 (t4_fprint32 (fp.fp));
 
 #ifndef NDEBUG
-        ResultSN.fp = result;
+        ResultSN.fp = t4_i64_to_fp32 (result);
 #endif
 
         sn_check_except (Zero);
@@ -1832,6 +1832,6 @@ fpreal32_t fp_i32tor32 (uint32_t i)
 {
         fpreal32_t result;
 
-        result.fp = (REAL32) INT32(i);
+        result.fp = t4_i32_to_fp32 (INT32(i));
         return result;
 }

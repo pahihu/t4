@@ -6,8 +6,7 @@
  */
 #include <stdint.h>
 
-typedef float   REAL32;
-typedef double  REAL64;
+#include "fpiface.h"
 
 typedef union {
         REAL64   fp;

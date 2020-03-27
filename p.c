@@ -226,18 +226,40 @@ struct prof *profile_head = NULL;
 /* Signal handler. */
 void handler (int);
 
+/* Support functions. */
+
 #ifdef _MSC_VER
 #define t4_bitcount(x)			__popcnt (x)
-#else
+#endif
+
+#ifdef __GNUC__
 #define t4_bitcount(x)			__builtin_popcount (x)
+#endif
+
+#ifndef t4_bitcount
+uint32_t t4_bitcount(uint32_t x)
+{
+        uint32_t result;
+
+        result = 0;
+        while (x)
+        {
+                if (x & 1)
+                        result++;
+                x >>= 1;
+        }
+        return result;
+}
 #endif
 
 #ifdef __clang__
 #define t4_bitreverse(x)        __builtin_bitreverse32 (x)
-#else
+#endif
+
+#ifndef t4_bitreverse
 uint32_t t4_bitreverse (uint32_t x)
 {
-	unsigned int s = 32;
+	unsigned int s = BitsPerWord;
 	uint32_t mask = ~0;
 	while ((s >>= 1) > 0)
 	{
@@ -3495,8 +3517,10 @@ INLINE void update_time (void)
 uint32_t word_int (uint32_t ptr)
 {
 	uint32_t result;
-#if __LITTLE_ENDIAN__ == 1
+#if BYTE_ORDER == LITTLE_ENDIAN
+#ifndef _MSC_VER
 #warning Using little-endian access!
+#endif
         uint32_t *wptr;
 
         if (INT32(ptr) < INT32(ExtMemStart))
@@ -3560,8 +3584,10 @@ uint32_t word (uint32_t ptr)
 void writeword_int (uint32_t ptr, uint32_t value)
 {
 
-#if __LITTLE_ENDIAN__ == 1
+#if BYTE_ORDER == LITTLE_ENDIAN
+#ifndef _MSC_VER
 #warning Using little-endian access!
+#endif
         uint32_t *wptr;
 
         if (INT32(ptr) < INT32(ExtMemStart))

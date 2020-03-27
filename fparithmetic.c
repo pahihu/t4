@@ -25,7 +25,6 @@
 #define __INT32_MIN__   ((-__INT32_MAX__)-1)
 
 
-/* #define FE_T800_EXCEPT  (FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW | FE_INEXACT) */
 #define FE_T800_EXCEPT  (FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW)
 
 #define REAL64_SIGN     0x8000000000000000ULL
@@ -708,8 +707,8 @@ REAL32 RQuotRem (REAL32 X, REAL32 Y, REAL32 *N)
 {
         REAL32 rem;
 
-        rem = remainder (X, Y);
-        *N  = round ((X - rem) / Y);
+        rem = (REAL32) remainder ((REAL64) X, (REAL64) Y);
+        *N  = (REAL32) round ((REAL64) ((X - rem) / Y));
 
         return rem;
 }
@@ -1058,7 +1057,7 @@ fpreal32_t sn_sqrt (fpreal32_t fa)
         else if (fp_zerosn (fa))
                 return fa;
 
-        result.fp = sqrtf (fa.fp);
+        result.fp = (REAL32) sqrt ((REAL64) fa.fp);
 
         return result;
 }
@@ -1258,7 +1257,21 @@ fpreal64_t fp_intdb (fpreal64_t fp)
                 return fp;
         }
 
+        /* GCC V8.4.0 workarounds. */
+        if (RoundingMode == ROUND_M)
+        {
+                if (fp_zerodb (fp) && fp_signdb (fp))
+                {
+                        return fp;
+                }
+        }
+
         result.fp = rint (fp.fp);
+        if (RoundingMode == ROUND_M)
+        {
+                if (fp_zerodb (result) && fp_signdb (result))
+                        result = DZero;
+        }
 
 #ifndef NDEBUG
         ResultDB = result;
@@ -1302,7 +1315,7 @@ void fp_chki32db (fpreal64_t fp)
                 }
         }
 
-        result = lrint (fp.fp);
+        result = rint (fp.fp);
 
 #ifndef NDEBUG
         ResultDB.fp = result;
@@ -1345,7 +1358,7 @@ void fp_chki64db (fpreal64_t fp)
                 }
         }
 
-        result = llrintf (fp.fp);
+        result = (long long) rint ((REAL64) fp.fp);
 
 #ifndef NDEBUG
         ResultDB.fp = result;
@@ -1515,7 +1528,7 @@ fpreal32_t fp_abssn (fpreal32_t fa)
         else if (fp_infsn (fa))
                 FP_Error = TRUE;
 
-        result.fp =  fabsf (fa.fp);
+        result.fp =  (REAL32) fabs ((REAL64) fa.fp);
         fp_clrexcept ();
 
         return result;
@@ -1681,7 +1694,21 @@ fpreal32_t fp_intsn (fpreal32_t fp)
                 return fp;
         }
 
-        result.fp = rintf (fp.fp);
+        /* GCC V8.4.0 workarounds. */
+        if (RoundingMode == ROUND_M)
+        {
+                if (fp_zerosn (fp) && fp_signsn (fp))
+                {
+                        return fp;
+                }
+        }
+
+        result.fp = (REAL32) rint ((REAL64) fp.fp);
+        if (RoundingMode == ROUND_M)
+        {
+                if (fp_zerosn (result) && fp_signsn (result))
+                        result = Zero;
+        }
 
 #ifndef NDEBUG
         ResultSN = result;
@@ -1704,7 +1731,7 @@ void fp_chki32sn (fpreal32_t fp)
                 return;
         }
 
-        result = lrintf (fp.fp);
+        result = (long) rint ((REAL64) fp.fp);
 
 #ifndef NDEBUG
         ResultSN.fp = result;
@@ -1732,7 +1759,7 @@ void fp_chki64sn (fpreal32_t fp)
                 FP_Error = TRUE;
                 return;
         }
-        result = llrintf (fp.fp);
+        result = (long long) rint ((REAL64) fp.fp);
 
 #ifndef NDEBUG
         ResultSN.fp = result;

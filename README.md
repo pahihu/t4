@@ -20,18 +20,17 @@ Non-goals
 * emulate multiple transputers
 * to be efficient
 
-Failed tests using GCC V8.4.0 on macOS
-======================================
+Failed tests using VS2017 on Win32
+==================================
 
-* fpint
-* fprtoi32
+* fpudivby2
+* fpuexpdec32
+* fpusqrt
 
-Failed tests using VS2017 on Windows
-====================================
+Failed tests using VS2017 on Win64
+==================================
 
-* bitrevnbits
-* bitrevword
-* fprem
+* fpurem
 * fpudivby2
 * fpuexpdec32
 
@@ -46,6 +45,7 @@ Failed tests using GCC V4.1.2 on SLES10 PPC
 Changes
 =======
 
+* the TVS1F floating-point results depend on the compiler, compiler flags and C math runtime
 * successfully runs Mike's TVS1F (using Apple clang)
 * successfully runs Mike's TVS1
 * Savage runs with tbmaths.lib

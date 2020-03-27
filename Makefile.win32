@@ -1,6 +1,6 @@
 # Choose a C compiler. (Must be ANSI C capable).
 CC = cl
-CFLAGS = /O2 /DCURTERM=1
+CFLAGS = /O2 /DCURTERM=1 /fp:strict
 RM = del/q
 
 # Put any additional libraries here.

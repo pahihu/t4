@@ -23,6 +23,10 @@ echo "Extracting failed test cases for $tst..."
 
 # extract precision
 prec=`echo $tst | tail -c 3`
+if [ "$prec" != "sn" ] || [ "$prec" != "dn" ];
+then
+  prec="iu"
+fi
 
 # extract the input file
 inpfil=`grep "/$tst.tbo" ./tvsf_test${prec}.sh | awk '{print $4;}'`
@@ -64,6 +68,10 @@ IUT3="postnormsn"
 IUT3_INP=4
 IUT3_OUT=4
 
+IUT="call"
+IUT_INP=0
+IUT_OUT=4
+
 XALT="alt talt"
 XALT_INP=0
 XALT_OUT=10
@@ -91,7 +99,7 @@ FPT3="fpur32tor64__sn"
 FPT3_INP=8
 FPT3_OUT=12
 
-TESTS="IUT1 IUT2 IUT3 XALT FPT1 FPT2 FPT3"
+TESTS="IUT1 IUT2 IUT3 IUT XALT FPT1 FPT2 FPT3"
 
 tstcas="NONE"
 for t in $TESTS
@@ -121,14 +129,14 @@ echo "#output columns = $outcols"
 
 # convert ref and sim file to HEX
 echo "Converting ref and sim to HEX..."
-myxxd -b 16 -c $outcols ref/T801B/$tst.out ref.hex
-myxxd -b 16 -c $outcols tmp/$tst.sim sim.hex
+myxxd -c $outcols ref/T801B/$tst.out ref.hex
+myxxd -c $outcols tmp/$tst.sim sim.hex
 
 # combine files line-by-line
 if [ "X$inpcols" != "X0" ];
 then
   echo "Converting input to HEX..."
-  myxxd -b 16 -c $inpcols inp/inp/$inp inp.hex
+  myxxd -c $inpcols inp/inp/$inp inp.hex
 
   echo "Combining files..."
   paste inp.hex ref.hex >ref2.hex

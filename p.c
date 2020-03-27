@@ -870,7 +870,7 @@ void mainloop (void)
 			   IPtr++;
 			   OReg = 0; IntEnabled = TRUE;
 			   break;
-		case 0x90: /* XXX call  */
+		case 0x90: /* call  */
 			   IPtr++;
 			   writeword (index (WPtr, -1), CReg);
 			   writeword (index (WPtr, -2), BReg);
@@ -878,6 +878,8 @@ void mainloop (void)
 			   writeword (index (WPtr, -4), IPtr);
 			   WPtr = index ( WPtr, -4);
 			   AReg = IPtr;
+                           /* Pop BReg. */
+                           BReg = CReg;
 			   IPtr = IPtr + OReg;
 			   OReg = 0; IntEnabled = TRUE;
 			   break;

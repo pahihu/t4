@@ -20,10 +20,25 @@ Non-goals
 * emulate multiple transputers
 * to be efficient
 
+Failed tests in Mike's TVS1F using GCC V8.4.0 on macOS
+======================================================
+
+* fpint
+* fprtoi32
+
+Failed tests in Mike's TVS1F using VS2017 on Windows
+====================================================
+
+* bitrevnbits
+* bitrevword
+* fprem
+* fpudivby2
+* fpuexpdec32
+
 Changes
 =======
 
-* successfully runs Mike's TVS1F
+* successfully runs Mike's TVS1F (using Apple clang)
 * successfully runs Mike's TVS1
 * Savage runs with tbmaths.lib
 * added -sv flag to support Mike's TVS1

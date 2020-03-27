@@ -1,11 +1,6 @@
 # --- INTEGER ---
 
 #
-# clean up
-#
-rm -f tmp/*
-
-#
 # run tests
 #
 ./t4 -sv tbo/tbo/adc.tbo      inp/inp/i32_1.bin         tmp/adc.sim        #4000

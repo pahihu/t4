@@ -1,11 +1,6 @@
 # --- SINGLE ---
 
 #
-# clean up
-#
-rm -f tmp/*
-
-#
 # run tests
 #
 ./t4 -sv tbo/tbo/fpdup__sn.tbo         inp/inp/fpu_1sn.bin tmp/fpdup__sn.sim  #1000

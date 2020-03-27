@@ -1,11 +1,6 @@
 # --- DOUBLE ---
 
 #
-# clean up
-#
-rm -f tmp/*
-
-#
 # run tests
 #
 ./t4 -sv tbo/tbo/fpdup__db.tbo         inp/inp/fpu_1db.bin tmp/fpdup__db.sim  #1800

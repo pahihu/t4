@@ -178,6 +178,7 @@ rm -f tmp/*
 ./t4 -sv tbo/tbo/fpb32tor64__db.tbo    inp/inp/fpumidb.bin tmp/fpb32tor64__db.sim   #4000
 ./t4 -sv tbo/tbo/fpi32tor64__db.tbo    inp/inp/fpumidb.bin tmp/fpi32tor64__db.sim   #4000
 ./t4 -sv tbo/tbo/fpldnldb__db.tbo      inp/inp/fpum1db.bin tmp/fpldnldb__db.sim     #2000
+./t4 -sv tbo/tbo/fpldnldbi__db.tbo     inp/inp/fpum1db.bin tmp/fpldnldbi__db.sim    #2000
 ./t4 -sv tbo/tbo/fpldnladddb__db.tbo   inp/inp/fpum2db.bin tmp/fpldnladddb__db.sim #100000
 ./t4 -sv tbo/tbo/fpldnlmuldb__db.tbo   inp/inp/fpum2db.bin tmp/fpldnlmuldb__db.sim #100000
 ./t4 -sv tbo/tbo/fpstnldb__db.tbo      inp/inp/fpum1db.bin tmp/fpstnldb__db.sim     #2000
@@ -185,6 +186,7 @@ rm -f tmp/*
 ./t4 -sv tbo/tbo/fpb32tor64rndb.tbo    inp/inp/fpumidb.bin tmp/fpb32tor64rndb.sim   #4000
 ./t4 -sv tbo/tbo/fpi32tor64rndb.tbo    inp/inp/fpumidb.bin tmp/fpi32tor64rndb.sim   #4000
 ./t4 -sv tbo/tbo/fpldnldbrndb.tbo      inp/inp/fpum1db.bin tmp/fpldnldbrndb.sim     #2000
+./t4 -sv tbo/tbo/fpldnldbirndb.tbo     inp/inp/fpum1db.bin tmp/fpldnldbirndb.sim    #2000
 ./t4 -sv tbo/tbo/fpldnladddbrndb.tbo   inp/inp/fpum2db.bin tmp/fpldnladddbrndb.sim #100000
 ./t4 -sv tbo/tbo/fpldnlmuldbrndb.tbo   inp/inp/fpum2db.bin tmp/fpldnlmuldbrndb.sim #100000
 ./t4 -sv tbo/tbo/fpstnldbrndb.tbo      inp/inp/fpum1db.bin tmp/fpstnldbrndb.sim     #2000
@@ -192,6 +194,7 @@ rm -f tmp/*
 ./t4 -sv tbo/tbo/fpb32tor64rzdb.tbo    inp/inp/fpumidb.bin tmp/fpb32tor64rzdb.sim   #4000
 ./t4 -sv tbo/tbo/fpi32tor64rzdb.tbo    inp/inp/fpumidb.bin tmp/fpi32tor64rzdb.sim   #4000
 ./t4 -sv tbo/tbo/fpldnldbrzdb.tbo      inp/inp/fpum1db.bin tmp/fpldnldbrzdb.sim     #2000
+./t4 -sv tbo/tbo/fpldnldbirzdb.tbo     inp/inp/fpum1db.bin tmp/fpldnldbirzdb.sim    #2000
 ./t4 -sv tbo/tbo/fpldnladddbrzdb.tbo   inp/inp/fpum2db.bin tmp/fpldnladddbrzdb.sim #100000
 ./t4 -sv tbo/tbo/fpldnlmuldbrzdb.tbo   inp/inp/fpum2db.bin tmp/fpldnlmuldbrzdb.sim #100000
 ./t4 -sv tbo/tbo/fpstnldbrzdb.tbo      inp/inp/fpum1db.bin tmp/fpstnldbrzdb.sim     #2000
@@ -199,6 +202,7 @@ rm -f tmp/*
 ./t4 -sv tbo/tbo/fpb32tor64rpdb.tbo    inp/inp/fpumidb.bin tmp/fpb32tor64rpdb.sim   #4000
 ./t4 -sv tbo/tbo/fpi32tor64rpdb.tbo    inp/inp/fpumidb.bin tmp/fpi32tor64rpdb.sim   #4000
 ./t4 -sv tbo/tbo/fpldnldbrpdb.tbo      inp/inp/fpum1db.bin tmp/fpldnldbrpdb.sim     #2000
+./t4 -sv tbo/tbo/fpldnldbirpdb.tbo     inp/inp/fpum1db.bin tmp/fpldnldbirpdb.sim    #2000
 ./t4 -sv tbo/tbo/fpldnladddbrpdb.tbo   inp/inp/fpum2db.bin tmp/fpldnladddbrpdb.sim #100000
 ./t4 -sv tbo/tbo/fpldnlmuldbrpdb.tbo   inp/inp/fpum2db.bin tmp/fpldnlmuldbrpdb.sim #100000
 ./t4 -sv tbo/tbo/fpstnldbrpdb.tbo      inp/inp/fpum1db.bin tmp/fpstnldbrpdb.sim     #2000
@@ -206,6 +210,7 @@ rm -f tmp/*
 ./t4 -sv tbo/tbo/fpb32tor64rmdb.tbo    inp/inp/fpumidb.bin tmp/fpb32tor64rmdb.sim   #4000
 ./t4 -sv tbo/tbo/fpi32tor64rmdb.tbo    inp/inp/fpumidb.bin tmp/fpi32tor64rmdb.sim   #4000
 ./t4 -sv tbo/tbo/fpldnldbrmdb.tbo      inp/inp/fpum1db.bin tmp/fpldnldbrmdb.sim     #2000
+./t4 -sv tbo/tbo/fpldnldbirmdb.tbo     inp/inp/fpum1db.bin tmp/fpldnldbirmdb.sim    #2000
 ./t4 -sv tbo/tbo/fpldnladddbrmdb.tbo   inp/inp/fpum2db.bin tmp/fpldnladddbrmdb.sim #100000
 ./t4 -sv tbo/tbo/fpldnlmuldbrmdb.tbo   inp/inp/fpum2db.bin tmp/fpldnlmuldbrmdb.sim #100000
 ./t4 -sv tbo/tbo/fpstnldbrmdb.tbo      inp/inp/fpum1db.bin tmp/fpstnldbrmdb.sim     #2000

@@ -1887,7 +1887,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   IPtr++;
 			   break;
 		case 0x49: /* enbs        */
-			   if (AReg == true_t)
+                           /* Any non-zero value is valid. */
+			   if (AReg)
                                 writeword (index (WPtr, State_s), Ready_p);
 			   IPtr++;
 			   break;
@@ -2322,9 +2323,10 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            checkWordAligned ("FPLDNLDBI", AReg);
                            fp_pushdb (real64 (index (AReg, 2*BReg)));
                            AReg = CReg;
+                           BReg = CReg;
 		           IPtr++;
 		           break;
-		case 0x83: /* XXX fpchkerr    */
+		case 0x83: /* fpchkerr    */
 		           if (IsT414)
 		               goto BadCode;
                            if (FP_Error)
@@ -2334,7 +2336,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0x84: /* XXX fpstnldb    */
+		case 0x84: /* fpstnldb    */
 		           if (IsT414)
 		               goto BadCode;
                            checkWordAligned ("FPSTNLDB", AReg);
@@ -2357,16 +2359,17 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            checkWordAligned ("FPLDNLSNI", AReg);
                            fp_pushsn (real32 (index (AReg, BReg)));
                            AReg = CReg;
+                           BReg = CReg;
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0x87: /* XXX fpadd    */
+		case 0x87: /* fpadd    */
 		           if (IsT414)
 		               goto BadCode;
                            fp_dobinary (fp_adddb, fp_addsn);
 		           IPtr++;
 		           break;
-		case 0x88: /* XXX fpstnlsn    */
+		case 0x88: /* fpstnlsn    */
 		           if (IsT414)
 		               goto BadCode;
                            checkWordAligned ("FPSTNLSN", AReg);
@@ -2383,13 +2386,13 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0x89: /* XXX fpsub    */
+		case 0x89: /* fpsub    */
 		           if (IsT414)
 		               goto BadCode;
                            fp_dobinary (fp_subdb, fp_subsn);
 		           IPtr++;
 		           break;
-		case 0x8a: /* XXX fpldnldb    */
+		case 0x8a: /* fpldnldb    */
 		           if (IsT414)
 		               goto BadCode;
                            checkWordAligned ("FPLDNLDB", AReg);
@@ -2398,19 +2401,19 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            BReg = CReg;
 		           IPtr++;
 		           break;
-		case 0x8b: /* XXX fpmul    */
+		case 0x8b: /* fpmul    */
 		           if (IsT414)
 		               goto BadCode;
                            fp_dobinary (fp_muldb, fp_mulsn);
 		           IPtr++;
 		           break;
-		case 0x8c: /* XXX fpdiv    */
+		case 0x8c: /* fpdiv    */
 		           if (IsT414)
 		               goto BadCode;
                            fp_dobinary (fp_divdb, fp_divsn);
 		           IPtr++;
 		           break;
-		case 0x8e: /* XXX fpldnlsn    */
+		case 0x8e: /* fpldnlsn    */
 		           if (IsT414)
 		               goto BadCode;
                            checkWordAligned ("FPLDNLSN", AReg);
@@ -2439,7 +2442,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0x91: /* XXX fpnan    */
+		case 0x91: /* fpnan    */
 		           if (IsT414)
 		               goto BadCode;
                            temp = true_t;
@@ -2455,7 +2458,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0x92: /* XXX fpordered    */
+		case 0x92: /* fpordered    */
 		           if (IsT414)
 		               goto BadCode;
                            temp = false_t;
@@ -2477,7 +2480,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0x93: /* XXX fpnotfinite    */
+		case 0x93: /* fpnotfinite    */
 		           if (IsT414)
 		               goto BadCode;
                            temp = true_t;
@@ -2493,7 +2496,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0x94: /* XXX fpgt    */
+		case 0x94: /* fpgt    */
 		           if (IsT414)
 		               goto BadCode;
                            temp = fp_binary2word (fp_gtdb, fp_gtsn);
@@ -2502,7 +2505,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            AReg = temp;
 		           IPtr++;
 		           break;
-		case 0x95: /* XXX fpeq    */
+		case 0x95: /* fpeq    */
 		           if (IsT414)
 		               goto BadCode;
                            temp = fp_binary2word (fp_eqdb, fp_eqsn);
@@ -2511,7 +2514,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            AReg = temp;
 		           IPtr++;
 		           break;
-		case 0x96: /* XXX fpi32tor32    */
+		case 0x96: /* fpi32tor32    */
 		           if (IsT414)
 		               goto BadCode;
                            temp = word (AReg);
@@ -2521,7 +2524,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0x98: /* XXX fpi32tor64    */
+		case 0x98: /* fpi32tor64    */
 		           if (IsT414)
 		               goto BadCode;
                            temp = word (AReg);
@@ -2531,7 +2534,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0x9a: /* XXX fpb32tor64    */
+		case 0x9a: /* fpb32tor64    */
 		           if (IsT414)
 		               goto BadCode;
                            temp = word (AReg);
@@ -2541,7 +2544,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0x9c: /* XXX fptesterr    */
+		case 0x9c: /* fptesterr    */
 		           if (IsT414)
 		               goto BadCode;
                            if (FP_Error)
@@ -2555,7 +2558,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0x9d: /* XXX fprtoi32    */
+		case 0x9d: /* fprtoi32    */
 		           if (IsT414)
 		               goto BadCode;
                            if (FAReg.length == FP_REAL64)
@@ -2576,7 +2579,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0x9e: /* XXX fpstnli32    */
+		case 0x9e: /* fpstnli32    */
 		           if (IsT414)
 		               goto BadCode;
                            if (FAReg.length == FP_REAL64)
@@ -2601,21 +2604,21 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0x9f: /* XXX fpldzerosn    */
+		case 0x9f: /* fpldzerosn    */
 		           if (IsT414)
 		               goto BadCode;
                            fp_pushsn (Zero);
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0xa0: /* XXX fpldzerodb    */
+		case 0xa0: /* fpldzerodb    */
 		           if (IsT414)
 		               goto BadCode;
                            fp_pushdb (DZero);
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0xa1: /* XXX fpint    */
+		case 0xa1: /* fpint    */
 		           if (IsT414)
 		               goto BadCode;
                            if (FAReg.length == FP_REAL64)
@@ -2631,7 +2634,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0xa3: /* XXX fpdup    */
+		case 0xa3: /* fpdup    */
 		           if (IsT414)
 		               goto BadCode;
                            FCReg = FBReg;
@@ -2639,7 +2642,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0xa4: /* XXX fprev    */
+		case 0xa4: /* fprev    */
 		           if (IsT414)
 		               goto BadCode;
                            fptemp = FAReg;
@@ -2648,7 +2651,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
-		case 0xa6: /* XXX fpldnladddb    */
+		case 0xa6: /* fpldnladddb    */
 		           if (IsT414)
 		               goto BadCode;
                            checkWordAligned ("FPLDNLADDDB", AReg);
@@ -2669,7 +2672,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            BReg = CReg;
 		           IPtr++;
 		           break;
-		case 0xa8: /* XXX fpldnlmuldb    */
+		case 0xa8: /* fpldnlmuldb    */
 		           if (IsT414)
 		               goto BadCode;
                            checkWordAligned ("FPLDNLMULDB", AReg);
@@ -2690,7 +2693,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            BReg = CReg;
 		           IPtr++;
 		           break;
-		case 0xaa: /* XXX fpldnladdsn    */
+		case 0xaa: /* fpldnladdsn    */
 		           if (IsT414)
 		               goto BadCode;
                            checkWordAligned ("FPLDNLADDSN", AReg);
@@ -2711,7 +2714,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            BReg = CReg;
 		           IPtr++;
 		           break;
-		case 0xab: /* XXX fpentry    */
+		case 0xab: /* fpentry    */
 		           if (IsT414)
 		               goto BadCode;
                            temp = AReg;
@@ -2742,19 +2745,19 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   case 0x03: /* fpusqrtlast    */
                                       fp_dounary (fp_sqrtlastdb, fp_sqrtlastsn);
 			              break;
-			   case 0x04: /* XXX fpurp    */
+			   case 0x04: /* fpurp    */
                                       fp_setrounding ("fpurp", ROUND_P);
                                       /* Do not reset rounding mode. */
 			              break;
-			   case 0x05: /* XXX fpurm    */
+			   case 0x05: /* fpurm    */
                                       fp_setrounding ("fpurm", ROUND_M);
                                       /* Do not reset rounding mode. */
 			              break;
-			   case 0x06: /* XXX fpurz    */
+			   case 0x06: /* fpurz    */
                                       fp_setrounding ("fpurz", ROUND_Z);
                                       /* Do not reset rounding mode. */
 			              break;
-			   case 0x07: /* XXX fpur32tor64    */
+			   case 0x07: /* fpur32tor64    */
                                       if (FAReg.length == FP_REAL32)
                                       {
                                           FAReg.length = FP_REAL64;
@@ -2768,7 +2771,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                       }
                                       ResetRounding = TRUE;
 			              break;
-			   case 0x08: /* XXX fpur64tor32    */
+			   case 0x08: /* fpur64tor32    */
                                       if (FAReg.length == FP_REAL64)
                                       {
                                           FAReg.length = FP_REAL32;
@@ -2782,16 +2785,16 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                       }
                                       ResetRounding = TRUE;
 			              break;
-			   case 0x09: /* XXX fpuexpdec32    */
+			   case 0x09: /* fpuexpdec32    */
                                       fp_dounary (fp_expdec32db, fp_expdec32sn);
 			              break;
-			   case 0x0a: /* XXX fpuexpinc32    */
+			   case 0x0a: /* fpuexpinc32    */
                                       fp_dounary (fp_expinc32db, fp_expinc32sn);
 			              break;
-			   case 0x0b: /* XXX fpuabs    */
+			   case 0x0b: /* fpuabs    */
                                       fp_dounary (fp_absdb, fp_abssn);
 			              break;
-			   case 0x0d: /* XXX fpunoround    */
+			   case 0x0d: /* fpunoround    */
                                       if (FAReg.length == FP_REAL64)
                                       {
                                           FAReg.length = FP_REAL32;
@@ -2805,7 +2808,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                       }
                                       ResetRounding = TRUE;
 			              break;
-			   case 0x0e: /* XXX fpuchki32    */
+			   case 0x0e: /* fpuchki32    */
                                       if (FAReg.length == FP_REAL64)
                                           fp_chki32db (DB(FAReg));
                                       else if (FAReg.length == FP_REAL32)
@@ -2814,7 +2817,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                           printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpuchki32)\n");
                                       ResetRounding = TRUE;
 			              break;
-			   case 0x0f: /* XXX fpuchki64    */
+			   case 0x0f: /* fpuchki64    */
                                       if (FAReg.length == FP_REAL64)
                                           fp_chki64db (DB(FAReg));
                                       else if (FAReg.length == FP_REAL32)
@@ -2823,21 +2826,21 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                           printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpuchki64)\n");
                                       ResetRounding = TRUE;
 			              break;
-			   case 0x11: /* XXX fpudivby2    */
+			   case 0x11: /* fpudivby2    */
                                       fp_dounary (fp_divby2db, fp_divby2sn);
 			              break;
-			   case 0x12: /* XXX fpumulby2    */
+			   case 0x12: /* fpumulby2    */
                                       fp_dounary (fp_mulby2db, fp_mulby2sn);
 			              break;
-			   case 0x22: /* XXX fpurn    */
+			   case 0x22: /* fpurn    */
                                       fp_setrounding ("fpurn", ROUND_N);
                                       /* Do not reset rounding mode. */
 			              break;
-			   case 0x23: /* XXX fpuseterr    */
+			   case 0x23: /* fpuseterr    */
                                       FP_Error = TRUE;
                                       ResetRounding = TRUE;
 			              break;
-			   case 0x9c: /* XXX fpuclrerr    */
+			   case 0x9c: /* fpuclrerr    */
                                       FP_Error = FALSE;
                                       ResetRounding = TRUE;
 			              break;
@@ -2848,7 +2851,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			              break;
                            }
 		           break;
-		case 0xac: /* XXX fpldnlmulsn    */
+		case 0xac: /* fpldnlmulsn    */
 		           if (IsT414)
 		               goto BadCode;
                            checkWordAligned ("FPLDNLMULSN", AReg);

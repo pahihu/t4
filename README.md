@@ -1,7 +1,8 @@
 I would like to say thanks to 
 
 * Julian Highfield writing his [Transputer Emulator](https://web.archive.org/web/20130515034826/http://spirit.lboro.ac.uk/emulator.html)
-* Mike's [transputer.net](http://www.transputer.net/welcome.asp) for the Transputer Validation Suite and for invaluable documentation, although I've read the Compiler Writer's Guide several times back in 1992
+* Mike's [transputer.net](http://www.transputer.net/welcome.asp) for the Transputer Validation Suite (TVS1 and TVS1F), for invaluable documentation
+* Mike Bruestle for the implementation details of bitrevnbits, postnormsn, div, roundsn, fpstnli32 and fpunoround
 * Gavin Crate [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) for the email conversation about the Portakit
 
 Goals
@@ -19,14 +20,10 @@ Non-goals
 * emulate multiple transputers
 * to be efficient
 
-Failed tests from Mike's TVS1F
-==============================
-
-* enbs
-
 Changes
 =======
 
+* successfully runs Mike's TVS1F
 * successfully runs Mike's TVS1
 * Savage runs with tbmaths.lib
 * added -sv flag to support Mike's TVS1
@@ -48,7 +45,7 @@ Changes
 **NOTE**: There is the excellent [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) from Gavin Crate. Otherwise here is the code. Good luck!
 
 
-pahihu,  24 / 3 / 2020
+pahihu,  27 / 3 / 2020
 
 
 

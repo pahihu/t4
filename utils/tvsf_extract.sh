@@ -23,7 +23,7 @@ echo "Extracting failed test cases for $tst..."
 
 # extract precision
 prec=`echo $tst | tail -c 3`
-if [ "$prec" != "sn" ] || [ "$prec" != "dn" ];
+if [ "$prec" != "sn" ] && [ "$prec" != "db" ];
 then
   prec="iu"
 fi
@@ -72,7 +72,7 @@ IUT="call"
 IUT_INP=0
 IUT_OUT=4
 
-XALT="alt talt"
+XALT="alt talt enbs"
 XALT_INP=0
 XALT_OUT=10
 
@@ -99,7 +99,11 @@ FPT3="fpur32tor64__sn"
 FPT3_INP=8
 FPT3_OUT=12
 
-TESTS="IUT1 IUT2 IUT3 IUT XALT FPT1 FPT2 FPT3"
+FPT4="fpldnldbi__db"
+FPT4_INP=16
+FPT4_OUT=16
+
+TESTS="IUT1 IUT2 IUT3 IUT XALT FPT1 FPT2 FPT3 FPT4"
 
 tstcas="NONE"
 for t in $TESTS

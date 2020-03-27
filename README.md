@@ -20,20 +20,28 @@ Non-goals
 * emulate multiple transputers
 * to be efficient
 
-Failed tests in Mike's TVS1F using GCC V8.4.0 on macOS
-======================================================
+Failed tests using GCC V8.4.0 on macOS
+======================================
 
 * fpint
 * fprtoi32
 
-Failed tests in Mike's TVS1F using VS2017 on Windows
-====================================================
+Failed tests using VS2017 on Windows
+====================================
 
 * bitrevnbits
 * bitrevword
 * fprem
 * fpudivby2
 * fpuexpdec32
+
+Failed tests using GCC V4.1.2 on SLES10 PPC
+===========================================
+
+* fpb32tor64
+* fpi32tor32
+* fpi32tor64
+* fprem
 
 Changes
 =======

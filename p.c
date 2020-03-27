@@ -3495,7 +3495,7 @@ INLINE void update_time (void)
 uint32_t word_int (uint32_t ptr)
 {
 	uint32_t result;
-#ifdef LITTLE_ENDIAN
+#if __LITTLE_ENDIAN__ == 1
 #warning Using little-endian access!
         uint32_t *wptr;
 
@@ -3560,7 +3560,7 @@ uint32_t word (uint32_t ptr)
 void writeword_int (uint32_t ptr, uint32_t value)
 {
 
-#ifdef LITTLE_ENDIAN
+#if __LITTLE_ENDIAN__ == 1
 #warning Using little-endian access!
         uint32_t *wptr;
 

@@ -12,8 +12,10 @@ CFLAGS = -I. -O2 -Wall -DCURTERM=1
 # Put any additional libraries here.
 LFLAGS	= -lm
 
-SRC	= curterm.c arithmetic.c fparithmetic.c server.c p.c main.c
-OBJ	= curterm.o arithmetic.o fparithmetic.o server.o p.o main.o
+SRC	= s_scalbn.c s_scalbnf.c s_ldexp.c s_ldexpf.c \
+	  curterm.c arithmetic.c fparithmetic.c server.c p.c main.c
+OBJ	= s_scalbn.o s_scalbnf.o s_ldexp.o s_ldexpf.o \
+	  curterm.o arithmetic.o fparithmetic.o server.o p.o main.o
 
 $(BIN)/jserver : $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) $(LFLAGS) -o t4

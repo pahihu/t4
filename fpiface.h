@@ -5,6 +5,7 @@
 
 #ifdef T4_NATIVE_FPU
 #include <math.h>
+#include "mathred.h"
 
 typedef float   REAL32;
 typedef double  REAL64;
@@ -17,7 +18,7 @@ typedef double  REAL64;
 #define t4_fpremainder64(x, y) remainder(x, y)
 #define t4_fpround64(x)        round(x)
 #define t4_fprint64(x)         rint(x)
-#define t4_fpldexp64(r64, i)   ldexp(r64, i)
+#define t4_fpldexp64(r64, i)   fdm_ldexp(r64, i)
 #define t4_fpsqrt64(x)         sqrt(x)
 #define t4_fpabs64(x)          fabs(x)
 #define t4_i32_to_fp64(i32)    ((REAL64) (i32))
@@ -33,7 +34,7 @@ typedef double  REAL64;
 #define t4_fpremainder32(x, y) remainderf(x, y)
 #define t4_fpround32(x)        roundf(x)
 #define t4_fprint32(x)         rintf(x)
-#define t4_fpldexp32(r32, i)   ldexpf(r32, i)
+#define t4_fpldexp32(r32, i)   fdm_ldexpf(r32, i)
 #define t4_fpsqrt32(x)         sqrtf(x)
 #define t4_fpabs32(x)          fabsf(x)
 #define t4_i32_to_fp32(i32)    ((REAL32) (i32))

@@ -6,8 +6,11 @@ RM = del/q
 # Put any additional libraries here.
 LFLAGS	=
 
-SRC	= gettimeofday.c curterm.c arithmetic.c fparithmetic.c server.c p.c main.c
-OBJ	= gettimeofday.obj curterm.obj arithmetic.obj fparithmetic.obj server.obj p.obj main.obj
+SRC	= s_scalbn.c s_scalbnf.c s_ldexp.c s_ldexpf.c \
+	  gettimeofday.c curterm.c arithmetic.c fparithmetic.c server.c p.c main.c
+OBJ	= s_scalbn.obj s_scalbnf.obj s_ldexp.obj s_ldexpf.obj \
+	  gettimeofday.obj curterm.obj arithmetic.obj fparithmetic.obj \
+	  server.obj p.obj main.obj
 
 t4.exe : $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) $(LFLAGS) /Fe: t4.exe

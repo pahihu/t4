@@ -101,7 +101,8 @@ FPT2="fpldnladdsn__sn fpur64tor32__db \
         fpstnli32__sn \
         fprem__db \
         fpunoround__db \
-        fpintrmdb"
+        fpintrmdb \
+        fpudivby2__db"
 FPT2_INP=12
 FPT2_OUT=12
 

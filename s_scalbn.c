@@ -17,12 +17,10 @@
  * exponentiation or a multiplication.
  */
 
-#include "cdefs-compat.h"
-
 #include <float.h>
-#include <openlibm_math.h>
 
-#include "math_private.h"
+#include <math.h>
+#include "mathred.h"
 
 static const double
 two54   =  1.80143985094819840000e+16, /* 0x43500000, 0x00000000 */
@@ -30,8 +28,8 @@ twom54  =  5.55111512312578270212e-17, /* 0x3C900000, 0x00000000 */
 huge   = 1.0e+300,
 tiny   = 1.0e-300;
 
-OLM_DLLEXPORT double
-scalbn (double x, int n)
+double
+fdm_scalbn (double x, int n)
 {
 	int32_t k,hx,lx;
 	EXTRACT_WORDS(hx,lx,x);

@@ -1,4 +1,4 @@
-/* @(#)s_ldexp.c 1.3 95/01/18 */
+/* @(#)s_ldexpf.c 1.3 95/01/18 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
@@ -10,18 +10,14 @@
  * ====================================================
  */
 
-#include "fdlibm.h"
 #include <errno.h>
+#include <math.h>
+#include "mathred.h"
 
-#ifdef __STDC__
-	double ldexp(double value, int exp)
-#else
-	double ldexp(value, exp)
-	double value; int exp;
-#endif
+float fdm_ldexpf(float value, int exp)
 {
-	if(!finite(value)||value==0.0) return value;
-	value = scalbn(value,exp);
-	if(!finite(value)||value==0.0) errno = ERANGE;
+	if(!isfinite(value)||value==0.0) return value;
+	value = fdm_scalbnf(value,exp);
+	if(!isfinite(value)||value==0.0) errno = ERANGE;
 	return value;
 }

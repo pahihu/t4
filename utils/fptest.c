@@ -40,12 +40,15 @@ int main(int argc, char*argv[])
         fa.bits = 0xd0d55531UL;
 */
 
+        fb.bits = 0x00800000UL;
+
         fp_init ();
         FP_Error = FALSE;
         sn_dump ("fb", fb);
-        result.fp = truncf (fb.fp);
+        result.fp = ldexpf (fb.fp, -1);
         sn_dump ("result", result);
         printf ("FP_Error = %d\n", FP_Error);
+        return 0;
 
         FP_Error = FALSE;
         sn_dump ("fa", fa);

@@ -79,6 +79,12 @@ XALT_OUT=10
 FPT1="fpadd__sn fpaddrmsn fpdiv__sn fpsub__sn \
       fpeq__sn fpgt__sn \
       fpudivby2__sn \
+      fpudivby2rmsn \
+      fpudivby2rpsn \
+      fpumulby2__sn \
+      fpumulby2rmsn \
+      fpumulby2rpsn \
+      fpumulby2rzsn \
       fpusqrt__sn fpuchki32__sn \
       fprem__sn \
       fpintrmsn \

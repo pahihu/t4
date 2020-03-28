@@ -37,7 +37,7 @@ extern fpreal32_t RUndefined;
  * REAL64 constants.
  */
 extern fpreal64_t DZero;
-extern fpreal64_t DRUndefined;
+extern fpreal64_t DUndefined;
 
 
 /*

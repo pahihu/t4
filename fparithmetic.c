@@ -732,7 +732,7 @@ REAL64 DQuotRem (REAL64 X, REAL64 Y, REAL64 *N)
         REAL64 rem;
 
         rem = t4_fpremainder64 (X, Y);
-        *N  = t4_fpround64 (t4_fpdiv64 (t4_fpsub64 (X, rem), Y));
+        *N  = t4_fprint64 (t4_fpdiv64 (t4_fpsub64 (X, rem), Y));
 
         return rem;
 }
@@ -742,7 +742,7 @@ REAL32 RQuotRem (REAL32 X, REAL32 Y, REAL32 *N)
         REAL32 rem;
 
         rem = t4_fpremainder32 (X, Y);
-        *N  = t4_fpround32 (t4_fpdiv32 (t4_fpsub32 (X, rem), Y));
+        *N  = t4_fprint32 (t4_fpdiv32 (t4_fpsub32 (X, rem), Y));
 
         return rem;
 }

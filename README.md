@@ -23,16 +23,12 @@ Non-goals
 Failed tests using VS2017 on Win32
 ==================================
 
-* fpudivby2
-* fpuexpdec32
-* fpusqrt
+* fpusqrtdb
 
 Failed tests using VS2017 on Win64
 ==================================
 
-* fpurem
-* fpudivby2
-* fpuexpdec32
+* fpremdb
 
 Failed tests using GCC V4.1.2 on SLES10 PPC
 ===========================================
@@ -45,6 +41,7 @@ Failed tests using GCC V4.1.2 on SLES10 PPC
 Changes
 =======
 
+* updated Windows binaries with replacement ldexp()/ldexpf() functions
 * the TVS1F floating-point results depend on the compiler, compiler flags and C math runtime
 * successfully runs Mike's TVS1F (using Apple clang)
 * successfully runs Mike's TVS1

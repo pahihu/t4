@@ -17,6 +17,7 @@ extern void db_dump(char*, fpreal64_t);
 extern void sn_dump(char*, fpreal32_t);
 
 #define __INT32_MIN__   (-__INT32_MAX__-1)
+#define __INT64_MIN__   (-__INT64_MAX__-1)
 
 
 int main(int argc, char*argv[])
@@ -30,10 +31,14 @@ int main(int argc, char*argv[])
         fa.bits = 0xbfb504f3UL;
         fb.fp = __INT32_MAX__;
         fa.fp = __INT32_MIN__;
+        fb.fp = __INT64_MAX__;
+        fa.fp = __INT64_MIN__;
+/*
         fb.bits = 0x4f000001UL;
         fa.bits = 0xcf000001UL;
         fb.bits = 0x50d55531UL;
         fa.bits = 0xd0d55531UL;
+*/
 
         fp_init ();
         FP_Error = FALSE;

@@ -82,7 +82,8 @@ FPT1="fpadd__sn fpaddrmsn fpdiv__sn fpsub__sn \
       fpusqrt__sn fpuchki32__sn \
       fprem__sn \
       fpintrmsn \
-      fprtoi32rmsn"
+      fprtoi32rmsn \
+      fpuchki64__sn"
 FPT1_INP=8
 FPT1_OUT=8
 

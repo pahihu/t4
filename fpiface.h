@@ -23,7 +23,6 @@ typedef double  REAL64;
 #define t4_i32_to_fp64(i32)    ((REAL64) (i32))
 #define t4_u32_to_fp64(u32)    ((REAL64) (u32))
 #define t4_fp32_to_fp64(r32)   ((REAL64) (r32))
-#define t4_fp64_to_i64(r64)    ((int64_t) (r64))
 
 
 #define t4_fpadd32(x, y)       ((x) + (y))
@@ -39,9 +38,6 @@ typedef double  REAL64;
 #define t4_fpabs32(x)          fabsf(x)
 #define t4_i32_to_fp32(i32)    ((REAL32) (i32))
 #define t4_fp64_to_fp32(r64)   ((REAL32) (r64))
-#define t4_fp32_to_i32(r32)    ((int32_t) (r32))
-#define t4_fp32_to_i64(r32)    ((int64_t) (r32))
-#define t4_i64_to_fp32(i64)    ((REAL32) (i64))
 
 #else
 
@@ -59,7 +55,6 @@ REAL64 t4_fpabs64 (REAL64);
 REAL64 t4_i32_to_fp64 (int32_t);
 REAL64 t4_u32_to_fp64 (uint32_t);
 REAL64 t4_fp32_to_fp64 (REAL32);
-int64_t t4_fp64_to_i64 (REAL64);
 
 
 REAL32 t4_fpadd32 (REAL32, REAL32);
@@ -75,9 +70,6 @@ REAL32 t4_fpsqrt32 (REAL32);
 REAL32 t4_fpabs32 (REAL32);
 REAL32 t4_i32_to_fp32 (int32_t);
 REAL32 t4_fp64_to_fp32 (REAL64);
-int32_t t4_fp32_to_i32 (REAL32);
-int64_t t4_fp32_to_i64 (REAL32);
-REAL32 t4_i64_to_fp32 (int64_t);
 
 #endif
 

@@ -14,6 +14,8 @@
 
 #pragma STDC FENV_ACCESS ON
 
+#define T4_CRTHACKS     1
+
 #ifdef _MSC_VER
 #define __INT32_MAX__	INT32_MAX
 #endif
@@ -74,6 +76,8 @@ fpreal32_t Zero;
 fpreal32_t RUndefined;
 fpreal32_t RInt32Min;
 fpreal32_t RInt32Max;
+fpreal32_t RInt64Min;
+fpreal32_t RInt64Max;
 
 fpreal64_t DZero;
 fpreal64_t DRUndefined;
@@ -120,6 +124,14 @@ void sn_dump (char*, fpreal32_t);
 void sn_setbits (REAL32*, uint32_t);
 void db_setbits (REAL64*, uint64_t);
 
+#ifdef FPA_STANDALONE
+int emudebug = 0;
+int RoundingMode;
+void fp_pushdb (fpreal64_t x) { return; }
+void fp_pushsn (fpreal32_t x) { return; }
+void handler (int x) { exit (1); }
+#endif
+
 void fp_init (void)
 {
         fenv_t fpenv;
@@ -133,8 +145,12 @@ void fp_init (void)
 
         Zero.bits = ZERO32;
         RUndefined.bits = REAL32_UNDEFINED;
+
         RInt32Min.bits = 0xcf000000UL;
-        RInt32Max.bits = 0x4f000000UL;
+        RInt32Max.bits = 0x4effffffUL;
+
+        RInt64Min.bits = 0xdf000000UL;
+        RInt64Max.bits = 0x5effffffUL;
 
         DivZeroByZero_NaN.bits  = NAN32_DivZeroByZero;
         DivInfByInf_NaN.bits    = NAN32_DivInfByInf;
@@ -207,16 +223,12 @@ void fp_setrounding (const char *where, int mode)
                         break;
                 default     :
                         printf ("-E-EMUFPU: Error - unknown rounding mode! (%d)\n", mode);
-#ifndef FPA_STANDALONE
                         handler (-1);
-#endif
         }
         
-#ifndef FPA_STANDALONE
         RoundingMode = mode;
         if (emudebug)
                 printf ("-I-EMUFPU: RoundingMode set to '%c' (%s).\n", RMODE[mode - 1], where);
-#endif
 
         rc = fesetround (fpu_mode);
         if (rc != 0)
@@ -1168,11 +1180,9 @@ fpreal64_t fp_remfirstdb (fpreal64_t fb, fpreal64_t fa)
         }
 
         result.fp = DQuotRem (fb.fp, fa.fp, &N);
-#ifndef FPA_STANDALONE
         r64.fp = N;
         fp_pushdb (db_correct_sign (r64, fb, fa));
         fp_clrexcept ();
-#endif
 
         return result;
 }
@@ -1257,6 +1267,7 @@ fpreal64_t fp_intdb (fpreal64_t fp)
                 return fp;
         }
 
+#if T4_CRTHACKS == 1
         /* GCC V8.4.0 workarounds. */
         if (RoundingMode == ROUND_M)
         {
@@ -1265,13 +1276,17 @@ fpreal64_t fp_intdb (fpreal64_t fp)
                         return fp;
                 }
         }
+#endif
 
         result.fp = t4_fprint64 (fp.fp);
+
+#if T4_CRTHACKS == 1
         if (RoundingMode == ROUND_M)
         {
                 if (fp_zerodb (result) && fp_signdb (result))
                         result = DZero;
         }
+#endif
 
 #ifndef NDEBUG
         ResultDB = result;
@@ -1282,12 +1297,6 @@ fpreal64_t fp_intdb (fpreal64_t fp)
 }
 void fp_chki32db (fpreal64_t fp)
 {
-        REAL64 result;
-
-#ifndef NDEBUG
-        AargDB = fp; ResultDB = DRUndefined;
-#endif
-
         if (fp_notfinitedb (fp))
         {
                 FP_Error = TRUE;
@@ -1303,7 +1312,6 @@ void fp_chki32db (fpreal64_t fp)
                 if (fp_expfracdb (fp) > fp_expfracdb (DInt32Min))
                 {
                         FP_Error = TRUE;
-                        return;
                 }
         }
         else
@@ -1311,26 +1319,11 @@ void fp_chki32db (fpreal64_t fp)
                 if (fp_expfracdb (fp) > fp_expfracdb (DInt32Max))
                 {
                         FP_Error = TRUE;
-                        return;
                 }
         }
-
-        result = t4_fprint64 (fp.fp);
-
-#ifndef NDEBUG
-        ResultDB.fp = result;
-#endif
-
-        db_check_except (DZero);
 }
 void fp_chki64db (fpreal64_t fp)
 {
-        int64_t result;
-
-#ifndef NDEBUG
-        AargDB = fp; ResultDB = DRUndefined;
-#endif
-
         if (fp_notfinitedb (fp))
         {
                 FP_Error = TRUE;
@@ -1346,7 +1339,6 @@ void fp_chki64db (fpreal64_t fp)
                 if (fp_expfracdb (fp) > fp_expfracdb (DInt64Min))
                 {
                         FP_Error = TRUE;
-                        return;
                 }
         }
         else
@@ -1354,17 +1346,8 @@ void fp_chki64db (fpreal64_t fp)
                 if (fp_expfracdb (fp) > fp_expfracdb (DInt64Max))
                 {
                         FP_Error = TRUE;
-                        return;
                 }
         }
-
-        result = t4_fp64_to_i64 (t4_fprint64 (fp.fp));
-
-#ifndef NDEBUG
-        ResultDB.fp = result;
-#endif
-
-        db_check_except (DZero);
 }
 fpreal64_t fp_rtoi32db (fpreal64_t fp)
 {
@@ -1373,7 +1356,7 @@ fpreal64_t fp_rtoi32db (fpreal64_t fp)
         fp_chki32db (fp);
         result = fp_intdb (fp);
 
-#ifndef FPA_STANDALONE
+#if T4_CRTHACKS == 1
         if (fp.bits == (DInt32Min.bits + 1))
         {
                 switch (RoundingMode) {
@@ -1598,11 +1581,9 @@ fpreal32_t fp_remfirstsn (fpreal32_t fb, fpreal32_t fa)
                 FP_Error = TRUE;
         }
         result.fp = RQuotRem (fb.fp, fa.fp, &N);
-#ifndef FPA_STANDALONE
         r32.fp = N;
         fp_clrexcept ();
         fp_pushsn (r32);
-#endif
 
         return result;
 }
@@ -1694,6 +1675,7 @@ fpreal32_t fp_intsn (fpreal32_t fp)
                 return fp;
         }
 
+#if T4_CRTHACKS == 1
         /* GCC V8.4.0 workarounds. */
         if (RoundingMode == ROUND_M)
         {
@@ -1702,13 +1684,17 @@ fpreal32_t fp_intsn (fpreal32_t fp)
                         return fp;
                 }
         }
+#endif
 
         result.fp = t4_fprint32 (fp.fp);
+
+#if T4_CRTHACKS == 1
         if (RoundingMode == ROUND_M)
         {
                 if (fp_zerosn (result) && fp_signsn (result))
                         result = Zero;
         }
+#endif
 
 #ifndef NDEBUG
         ResultSN = result;
@@ -1719,53 +1705,57 @@ fpreal32_t fp_intsn (fpreal32_t fp)
 }
 void fp_chki32sn (fpreal32_t fp)
 {
-        int32_t result;
-
-#ifndef NDEBUG
-        AargSN = fp; ResultSN = RUndefined;
-#endif
-
         if (fp_notfinitesn (fp))
         {
                 FP_Error = TRUE;
                 return;
         }
-
-        result = t4_fp32_to_i32 (t4_fprint32 (fp.fp));
-
-#ifndef NDEBUG
-        ResultSN.fp = t4_i32_to_fp32 (result);
-#endif
-
-        sn_check_except (Zero);
-        if (FP_Error)
+        else if ((fp.bits == RInt32Min.bits) || (fp.bits == RInt32Max.bits))
+        {
+                /* The range guards are OK. */
                 return;
-
-        if ((__INT32_MIN__ <= result) && (result <= __INT32_MAX__))
-                ;
+        }
+        else if (fp_signsn (fp))
+        {
+                if (fp_expfracsn (fp) > fp_expfracsn (RInt32Min))
+                {
+                        FP_Error = TRUE;
+                }
+        }
         else
-                FP_Error = TRUE;
+        {
+                if (fp_expfracsn (fp) > fp_expfracsn (RInt32Max))
+                {
+                        FP_Error = TRUE;
+                }
+        }
 }
 void fp_chki64sn (fpreal32_t fp)
 {
-        int64_t result;
-
-#ifndef NDEBUG
-        AargSN = fp; ResultSN = RUndefined;
-#endif
-
         if (fp_notfinitesn (fp))
         {
                 FP_Error = TRUE;
                 return;
         }
-        result = t4_fp32_to_i64 (t4_fprint32 (fp.fp));
-
-#ifndef NDEBUG
-        ResultSN.fp = t4_i64_to_fp32 (result);
-#endif
-
-        sn_check_except (Zero);
+        else if ((fp.bits == RInt64Min.bits) || (fp.bits == RInt64Max.bits))
+        {
+                /* The range guards are OK. */
+                return;
+        }
+        else if (fp_signsn (fp))
+        {
+                if (fp_expfracsn (fp) > fp_expfracsn (RInt64Min))
+                {
+                        FP_Error = TRUE;
+                }
+        }
+        else
+        {
+                if (fp_expfracsn (fp) > fp_expfracsn (RInt64Max))
+                {
+                        FP_Error = TRUE;
+                }
+        }
 }
 fpreal32_t fp_rtoi32sn (fpreal32_t fp)
 {

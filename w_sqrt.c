@@ -1,4 +1,4 @@
-/* @(#)s_ldexp.c 1.3 95/01/18 */
+/* @(#)w_sqrt.c 1.3 95/01/18 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
@@ -10,15 +10,21 @@
  * ====================================================
  */
 
-#include <errno.h>
+/* 
+ * wrapper sqrt(x)
+ */
+
 #include <math.h>
 
 #include "redmath.h"
 
-double fdm_ldexp(double value, int exp)
+double fdm_sqrt(double x)		/* wrapper sqrt */
 {
-	if(!isfinite(value)||value==0.0) return value;
-	value = fdm_scalbn(value,exp);
-	if(!isfinite(value)||value==0.0) errno = ERANGE;
-	return value;
+	double z;
+	z = ieee754_sqrt(x);
+	if(_LIB_VERSION == _IEEE_ || isnan(x)) return z;
+	if(x<0.0) {
+	    return __kernel_standard(x,x,26); /* sqrt(negative) */
+	} else
+	    return z;
 }

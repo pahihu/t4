@@ -1,1 +1,3 @@
-cc -DFPA_STANDALONE -I.. -o fptest fptest.c ../fparithmetic.c
+FDMOBJ="../k_standard.o ../s_scalbn.o ../s_scalbnf.o ../s_ldexp.o ../s_ldexpf.o ../e_fmod.o ../e_remainder.o ../e_sqrt.o ../w_remainder.o ../w_sqrt.o"
+cc -DFPA_STANDALONE -I.. -c fptest.c
+cc -DFPA_STANDALONE -I.. -o fptest fptest.o ../fparithmetic.c $FDMOBJ

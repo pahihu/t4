@@ -102,7 +102,11 @@ FPT2="fpldnladdsn__sn fpur64tor32__db \
         fprem__db \
         fpunoround__db \
         fpintrmdb \
-        fpudivby2__db"
+        fpudivby2__db \
+        fpusqrt__db \
+        fpusqrtrmdb \
+        fpusqrtrpdb \
+        fpusqrtrzdb" 
 FPT2_INP=12
 FPT2_OUT=12
 

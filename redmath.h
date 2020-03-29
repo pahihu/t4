@@ -1,12 +1,28 @@
-#ifndef _MATHRED_H
-#define _MATHRED_H
+#ifndef _REDMATH_H
+#define _REDMATH_H
 
 #include <stdint.h>
+
+double __kernel_standard(double,double,int);
 
 double fdm_ldexp(double,int);
 float  fdm_ldexpf(float,int);
 double fdm_scalbn(double,int);
 float  fdm_scalbnf(float,int);
+double ieee754_remainder(double,double);
+double ieee754_fmod(double,double);
+double ieee754_sqrt(double);
+double fdm_remainder(double,double);
+double fdm_sqrt(double);
+
+#define _IEEE_  0
+#define _SVID_  1
+#define _XOPEN_ 2
+#define _POSIX_ 3
+
+#ifndef _LIB_VERSION
+#define _LIB_VERSION    _POSIX_
+#endif
 
 #define EXTRACT_WORDS(hi,lo,x) \
 { \
@@ -35,10 +51,21 @@ float  fdm_scalbnf(float,int);
                 uint64_t bits; \
                 double fp; \
         } r64; \
-        r64.fp = x; \
-        r64.bits = (((uint64_t) (hi)) << 32) | (r64.bits & 0xffffffffULL); \
+        r64.fp = (x); \
+        r64.bits = (((uint64_t) (hi & 0xffffffffUL)) << 32) | (r64.bits & 0xffffffffULL); \
         x = r64.fp; \
 }
+
+#define INSERT_WORDS(x,hi,lo) \
+{ \
+        union { \
+                uint64_t bits; \
+                double fp; \
+        } r64; \
+        r64.bits = (((uint64_t) (hi & 0xffffffffUL)) << 32) | (lo & 0xffffffffUL); \
+        x = r64.fp; \
+}
+
 
 #define GET_FLOAT_WORD(ix,x) \
 { \

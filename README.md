@@ -1,3 +1,6 @@
+Thanks
+======
+
 I would like to say thanks to 
 
 * Julian Highfield writing his [Transputer Emulator](https://web.archive.org/web/20130515034826/http://spirit.lboro.ac.uk/emulator.html)
@@ -38,9 +41,20 @@ Failed tests using GCC V4.1.2 on SLES10 PPC
 * fpi32tor64
 * fprem
 
+Notes
+=====
+
+Passing the T800 floating point tests is NOT easy. I am using
+functions from [OpenMLib](https://openmlb.org) with my own fixes.
+The following operating system and compiler combinations are passing 
+the T800 FPU tests:
+
+* macOS Mojave (10.14) + clang 10.0.1 or MacPorts gcc8 8.4.0_0
+
 Changes
 =======
 
+* more replacement functions: remainder()/sqrt()
 * updated Windows binaries with replacement ldexp()/ldexpf() functions
 * the TVS1F floating-point results depend on the compiler, compiler flags and C math runtime
 * successfully runs Mike's TVS1F (using Apple clang)

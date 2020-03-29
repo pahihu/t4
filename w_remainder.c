@@ -1,4 +1,4 @@
-/* @(#)s_ldexp.c 1.3 95/01/18 */
+/* @(#)w_remainder.c 1.3 95/01/18 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
@@ -10,15 +10,21 @@
  * ====================================================
  */
 
-#include <errno.h>
+/* 
+ * wrapper remainder(x,p)
+ */
+
 #include <math.h>
 
 #include "redmath.h"
 
-double fdm_ldexp(double value, int exp)
+double fdm_remainder(double x, double y)	/* wrapper remainder */
 {
-	if(!isfinite(value)||value==0.0) return value;
-	value = fdm_scalbn(value,exp);
-	if(!isfinite(value)||value==0.0) errno = ERANGE;
-	return value;
+	double z;
+	z = ieee754_remainder(x,y);
+	if(_LIB_VERSION == _IEEE_ || isnan(y)) return z;
+	if(y==0.0) 
+	    return __kernel_standard(x,y,28); /* remainder(x,0) */
+	else
+	    return z;
 }

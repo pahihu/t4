@@ -14,7 +14,8 @@
  */
 
 #include <math.h>
-#include "mathred.h"
+
+#include "redmath.h"
 
 static const float
 two25   =  3.355443200e+07,	/* 0x4c000000 */

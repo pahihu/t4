@@ -12,10 +12,16 @@ CFLAGS = -I. -O2 -Wall -DCURTERM=1
 # Put any additional libraries here.
 LFLAGS	= -lm
 
-SRC	= s_scalbn.c s_scalbnf.c s_ldexp.c s_ldexpf.c \
-	  curterm.c arithmetic.c fparithmetic.c server.c p.c main.c
-OBJ	= s_scalbn.o s_scalbnf.o s_ldexp.o s_ldexpf.o \
-	  curterm.o arithmetic.o fparithmetic.o server.o p.o main.o
+#
+# https://github.com/JuliaMath/openlibm
+#
+FDMSRC  = k_standard.c s_scalbn.c s_scalbnf.c s_ldexp.c s_ldexpf.c \
+	  e_fmod.c e_remainder.c e_sqrt.c w_remainder.c w_sqrt.c
+FDMOBJ	= k_standard.o s_scalbn.o s_scalbnf.o s_ldexp.o s_ldexpf.o \
+	  e_fmod.o e_remainder.o e_sqrt.o w_remainder.o w_sqrt.o
+
+SRC	= $(FDMSRC) curterm.c arithmetic.c fparithmetic.c server.c p.c main.c
+OBJ	= $(FDMOBJ) curterm.o arithmetic.o fparithmetic.o server.o p.o main.o
 
 $(BIN)/jserver : $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) $(LFLAGS) -o t4

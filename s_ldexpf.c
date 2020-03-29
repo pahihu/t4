@@ -12,7 +12,8 @@
 
 #include <errno.h>
 #include <math.h>
-#include "mathred.h"
+
+#include "redmath.h"
 
 float fdm_ldexpf(float value, int exp)
 {

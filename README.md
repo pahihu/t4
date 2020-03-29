@@ -23,24 +23,6 @@ Non-goals
 * emulate multiple transputers
 * to be efficient
 
-Failed tests using VS2017 on Win32
-==================================
-
-* fpusqrtdb
-
-Failed tests using VS2017 on Win64
-==================================
-
-* fpremdb
-
-Failed tests using GCC V4.1.2 on SLES10 PPC
-===========================================
-
-* fpb32tor64
-* fpi32tor32
-* fpi32tor64
-* fprem
-
 Notes
 =====
 
@@ -50,10 +32,23 @@ The following operating system and compiler combinations are passing
 the T800 FPU tests:
 
 * macOS Mojave (10.14) + clang 10.0.1 or MacPorts gcc8 8.4.0_0
+* Win32/Win64 VisualStudio 2017
+* Ubuntu 18.04 LTS 64bit + gcc 7.5.0 Ubuntu 7.5.0-3ubuntu1~18.04
+
+The the compiled binaries are in the `bin/` directory.
+
+Failed tests using GCC V4.1.2 on SLES10 PPC
+===========================================
+
+* fpb32tor64
+* fpi32tor32
+* fpi32tor64
+* fprem
 
 Changes
 =======
 
+* fixed Windows compilation, Linux x64 port, binaries for Windows/Linux/macOS
 * more replacement functions: remainder()/sqrt()
 * updated Windows binaries with replacement ldexp()/ldexpf() functions
 * the TVS1F floating-point results depend on the compiler, compiler flags and C math runtime

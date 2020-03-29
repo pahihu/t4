@@ -22,7 +22,7 @@ tst=$1
 echo "Extracting failed test cases for $tst..."
 
 # extract precision
-prec=`echo $tst | tail -c 3`
+prec=`echo $tst | tail --bytes=3`
 if [ "$prec" != "sn" ] && [ "$prec" != "db" ];
 then
   prec="iu"

@@ -23,7 +23,7 @@ FDMOBJ	= k_standard.o s_scalbn.o s_scalbnf.o s_ldexp.o s_ldexpf.o \
 SRC	= $(FDMSRC) curterm.c arithmetic.c fparithmetic.c server.c p.c main.c
 OBJ	= $(FDMOBJ) curterm.o arithmetic.o fparithmetic.o server.o p.o main.o
 
-$(BIN)/jserver : $(OBJ)
+t4 : $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) $(LFLAGS) -o t4
 
 clean	:

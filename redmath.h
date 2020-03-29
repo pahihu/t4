@@ -3,6 +3,27 @@
 
 #include <stdint.h>
 
+#if defined(_MSC_VER) || defined(__linux__)
+struct exception {
+        int type;
+        char *name;
+        double arg1;
+        double arg2;
+        double retval;
+};
+#endif
+
+#ifdef __linux__
+#include <math.h>
+#define HUGE		MAXFLOAT
+#define DOMAIN		1
+#define	SING		2
+#define OVERFLOW	3
+#define UNDERFLOW	4
+#define TLOSS		5
+#define PLOSS		6
+#endif
+
 double __kernel_standard(double,double,int);
 
 double fdm_ldexp(double,int);

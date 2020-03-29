@@ -28,7 +28,7 @@ double
 ieee754_fmod(double x, double y)
 {
 	int32_t n,hx,hy,hz,ix,iy,sx,i;
-	u_int32_t lx,ly,lz;
+	uint32_t lx,ly,lz;
 
 	EXTRACT_WORDS(hx,lx,x);
 	EXTRACT_WORDS(hy,ly,y);
@@ -117,7 +117,7 @@ ieee754_fmod(double x, double y)
 	} else {		/* subnormal output */
 	    n = -1022 - iy;
 	    if(n<=20) {
-		lx = (lx>>n)|((u_int32_t)hx<<(32-n));
+		lx = (lx>>n)|((uint32_t)hx<<(32-n));
 		hx >>= n;
 	    } else if (n<=31) {
 		lx = (hx<<(32-n))|(lx>>n); hx = sx;

@@ -28,7 +28,7 @@ Notes
 =====
 
 Passing the T800 floating point tests is NOT easy. I use
-functions from [OpenMLib](https://openmlb.org) with my own fixes.
+functions from [OpenLibm](https://openlibm.org) with my own fixes.
 The following operating system and compiler combinations are passing 
 the T800 FPU tests:
 

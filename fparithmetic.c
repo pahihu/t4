@@ -1526,6 +1526,13 @@ fpreal64_t fp_i32tor64 (uint32_t i)
 {
         fpreal64_t result;
 
+#if T4_CRTHACKS == 1
+        if ((RoundingMode == ROUND_M) && (i == 0))
+        {
+                return DZero;
+        }
+#endif
+
         result.fp = t4_i32_to_fp64 (INT32(i));
         return result;
 }
@@ -1885,6 +1892,13 @@ uint32_t fp_stnli32sn (fpreal32_t fp)
 fpreal32_t fp_i32tor32 (uint32_t i)
 {
         fpreal32_t result;
+
+#if T4_CRTHACKS == 1
+        if ((RoundingMode == ROUND_M) && (i == 0))
+        {
+                return Zero;
+        }
+#endif
 
         result.fp = t4_i32_to_fp32 (INT32(i));
         return result;

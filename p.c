@@ -3533,7 +3533,7 @@ INLINE void update_time (void)
 uint32_t word_int (uint32_t ptr)
 {
 	uint32_t result;
-#if BYTE_ORDER == LITTLE_ENDIAN
+#if BYTE_ORDER==1234
 #ifndef _MSC_VER
 #warning Using little-endian access!
 #endif
@@ -3600,7 +3600,7 @@ uint32_t word (uint32_t ptr)
 void writeword_int (uint32_t ptr, uint32_t value)
 {
 
-#if BYTE_ORDER == LITTLE_ENDIAN
+#if BYTE_ORDER==1234
 #ifndef _MSC_VER
 #warning Using little-endian access!
 #endif

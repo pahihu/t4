@@ -176,14 +176,14 @@ int has_key(void)
  *     previously emitted chars.
  */
 static
-u_char
+unsigned char
 get_char(void)
 {
    char buf;
 
    fflush(stdout);
    (void) read(STDIN_FILENO, &buf, sizeof(char));
-   return (u_char)buf;
+   return (unsigned char)buf;
 }
 
 int getkey(void)
@@ -194,8 +194,8 @@ int getkey(void)
 	if (ESC == ch) {
       if (!has_key_timeout(ESC_TIMEOUT))
          return ESC;
-		ch = (u_char)get_char();
-		ch = (ch << 8) + (u_char)get_char();
+		ch = (unsigned char)get_char();
+		ch = (ch << 8) + (unsigned char)get_char();
 	}
 
 	return ch;

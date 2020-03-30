@@ -38,6 +38,7 @@ the T800 FPU tests:
 * Ubuntu 18.04 LTS + gcc 7.5.0 Ubuntu 7.5.0-3ubuntu1~18.04 64bit
 * Ubuntu 18.04 LTS + gcc 7.5.0 Ubuntu 7.5.0-3ubuntu1~18.04 32bit
 * Raspbian 9 + gcc 6.3.0 Raspbian 6.3.0-18+rpi1+debu9u1 32bit
+* SLES10SP4 IBM Power + gcc 4.1.2 SUSE Linux 64bit/32bit
 
 The compiled binaries are in the `bin/` directory.
 
@@ -46,17 +47,10 @@ Failed tests using clang 9.1.0 on macOS High Sierra 32bit
 
 * fpb32tor64rmdb
 
-Failed tests using GCC V4.1.2 on SLES10 PPC
-===========================================
-
-* fpb32tor64
-* fpi32tor32
-* fpi32tor64
-* fprem
-
 Changes
 =======
 
+* added Linux-POWER binaries 64bit/32bit
 * added Linux-x86 binary
 * added single/double precision versions of C Whetstone
 * added Raspbian binary

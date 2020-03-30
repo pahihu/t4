@@ -1,9 +1,15 @@
 # Choose a C compiler. (Must be ANSI C capable).
 CC = cc
+#
 # 64bit Linux-x86 emulator, 32bit Linux-armhf emulator
 # CC = gcc -ffloat-store -frounding-math
+#
 # 32bit Linux-x86 emulator
 # CC = gcc -m32 -mfpmath=sse -msse2 -ffloat-store -frounding-math
+#
+# 32bit/64bit Linux-POWER emulator
+# CC = gcc [-m64] -ffloat-store -frounding-math -std=c99
+#
 
 # For a well-optimised version compiled with gcc on a Sun use:
 # CFLAGS = -O2 -DSUN -finline -finline-functions -fexpensive-optimizations

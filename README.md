@@ -36,6 +36,7 @@ the T800 FPU tests:
 * macOS Mojave (10.14) + clang 10.0.1 or MacPorts gcc8 8.4.0_0 64bit
 * Windows + VisualStudio 2017 64bit/32bit
 * Ubuntu 18.04 LTS + gcc 7.5.0 Ubuntu 7.5.0-3ubuntu1~18.04 64bit
+* Ubuntu 18.04 LTS + gcc 7.5.0 Ubuntu 7.5.0-3ubuntu1~18.04 32bit
 * Raspbian 9 + gcc 6.3.0 Raspbian 6.3.0-18+rpi1+debu9u1 32bit
 
 The compiled binaries are in the `bin/` directory.
@@ -56,6 +57,7 @@ Failed tests using GCC V4.1.2 on SLES10 PPC
 Changes
 =======
 
+* added Linux-x86 binary
 * added single/double precision versions of C Whetstone
 * added Raspbian binary
 * replaced macOS binary with macOS High Sierra (SSE2)

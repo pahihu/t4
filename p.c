@@ -517,6 +517,12 @@ void print_fpreg (char *ident, char name, REAL *fpreg, int printempty)
         fpreal32_t r32;
         char tmp[32];
 
+        /* Sync FP_Error with native FPU exceptions. */
+        fp_syncexcept ();
+
+        /* Here FP_Error is synchronized. */
+        /* NativeFPU exceptions MAY or MAY NOT be cleared. */
+
 #ifndef NDEBUG
         fp_chkexcept ("Enter print_fpreg ()");
 #endif
@@ -554,6 +560,8 @@ void print_fpreg (char *ident, char name, REAL *fpreg, int printempty)
                 printf ("%sF%cReg          #%016llX   (Empty)\n", ident, name, r64.bits);
         }
 
+        fp_clrexcept ();
+
 #ifndef NDEBUG
         fp_chkexcept ("Leave print_fpreg ()");
 #endif
@@ -575,6 +583,7 @@ void processor_state (void)
                 print_fpreg ("\t", 'A', &FAReg, 1);
                 print_fpreg ("\t", 'B', &FBReg, 1);
                 print_fpreg ("\t", 'C', &FCReg, 1);
+                fp_syncexcept ();
                 printf ("\tFP_Error       %s\n", FP_Error ? "Set" : "Clear");
         }
         printf ("\tFPtr1 (Low     #%08X\n", FPtrReg1);
@@ -810,7 +819,10 @@ void mainloop (void)
                         printf("%-17s", mnemo);
 	                printf ("   %c%c", FLAG(ReadHaltOnError, 'H'), FLAG(      ReadError, 'E'));
                         if (IsT800 || IsTVS)
+                        {
+                                fp_syncexcept ();
 	                        printf ("%c%c", FLAG(FP_Error, 'F'), RMODE[RoundingMode-1]);
+                        }
                         printf ("   %8X %8X %8X   %08X %8X\n", 
                                 AReg, BReg, CReg, WPtr, word_int (WPtr));
                         if (IsT800 || IsTVS)
@@ -2351,6 +2363,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x83: /* fpchkerr    */
 		           if (IsT414)
 		               goto BadCode;
+                           fp_syncexcept ();
                            if (FP_Error)
                            {
                                 SetError;
@@ -2569,10 +2582,12 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x9c: /* fptesterr    */
 		           if (IsT414)
 		               goto BadCode;
+                           fp_syncexcept ();            /* Sync FP_Error with native FPU excp. */
                            if (FP_Error)
                                 temp = false_t;
                            else
                                 temp = true_t;
+                           fp_clrexcept ();             /* Clear native FPU excp. */
                            FP_Error = FALSE;
                            CReg = BReg;
                            BReg = AReg;
@@ -2863,6 +2878,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                       ResetRounding = TRUE;
 			              break;
 			   case 0x9c: /* fpuclrerr    */
+                                      fp_clrexcept ();
                                       FP_Error = FALSE;
                                       ResetRounding = TRUE;
 			              break;

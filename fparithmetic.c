@@ -452,6 +452,8 @@ void fp_chkexcept (char *msg)
 {
         int exc;
 
+        return; /* XXX */
+
         exc = fetestexcept (FE_T800_EXCEPT);
         if (exc)
         {
@@ -501,6 +503,8 @@ void db_check_except (void)
 {
         int excp;
 
+        return; /* XXX */
+
         excp = fetestexcept (FE_T800_EXCEPT);
         if (0 == excp)
                 return;
@@ -520,6 +524,8 @@ void db_check_except (void)
 void sn_check_except (void)
 {
         int excp;
+
+        return; /* XXX */
 
         excp = fetestexcept (FE_T800_EXCEPT);
         if (0 == excp)
@@ -1126,6 +1132,7 @@ fpreal64_t fp_absdb (fpreal64_t fa)
         else if (fp_infdb (fa))
                 FP_Error = TRUE;
 
+        fp_syncexcept ();
         result.fp = t4_fpabs64 (fa.fp);
         fp_clrexcept ();
 
@@ -1206,6 +1213,7 @@ fpreal64_t fp_remfirstdb (fpreal64_t fb, fpreal64_t fa)
                 return fb;
         }
 
+        fp_syncexcept ();
         result.fp = DQuotRem (fb.fp, fa.fp, &N);
         r64.fp = N;
         fp_pushdb (db_correct_sign (r64, fb, fa));
@@ -1382,11 +1390,17 @@ fpreal64_t fp_rtoi32db (fpreal64_t fp)
         int savFP_Error;
 
         /* Let's see if this instruction sets the FP_Error flag. */
+
+        /* Sync FP_Error with native FPU exceptions. */
+        fp_syncexcept ();
         savFP_Error = FP_Error;
         FP_Error = FALSE;
 
         fp_chki32db (fp);
         result = fp_intdb (fp);
+
+        /* Sync again, because we will correct FP_Error. */
+        fp_syncexcept ();
 
 #if T4_CRTHACKS == 1
         /* Correct FP_Error according to the constants below. */
@@ -1519,6 +1533,13 @@ fpreal64_t fp_b32tor64 (uint32_t i)
 {
         fpreal64_t result;
 
+#if T4_CRTHACKS == 1
+        if ((RoundingMode == ROUND_M) && (i == 0))
+        {
+                return DZero;
+        }
+#endif
+
         result.fp = t4_u32_to_fp64 (i);
         return result;
 }
@@ -1550,6 +1571,7 @@ fpreal32_t fp_abssn (fpreal32_t fa)
         else if (fp_infsn (fa))
                 FP_Error = TRUE;
 
+        fp_syncexcept ();
         result.fp =  t4_fpabs32 (fa.fp);
         fp_clrexcept ();
 
@@ -1620,6 +1642,7 @@ fpreal32_t fp_remfirstsn (fpreal32_t fb, fpreal32_t fa)
         {
                 FP_Error = TRUE;
         }
+        fp_syncexcept ();
         result.fp = RQuotRem (fb.fp, fa.fp, &N);
         r32.fp = N;
         fp_clrexcept ();
@@ -1679,6 +1702,7 @@ fpreal64_t  fp_r32tor64 (fpreal32_t fp)
                 FP_Error = TRUE;
         if (fp_nansn (fp))
         {
+                fp_syncexcept ();
                 /* Same sign and fraction as REAL32. */
                 result.bits = 0;
                 if (fp_signsn (fp))

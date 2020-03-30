@@ -442,7 +442,7 @@ void fp_clrexcept (void)
 {
         int rc;
 
-        rc = feclearexcept (FE_T800_EXCEPT);
+        rc = feclearexcept (FE_ALL_EXCEPT);
         if (rc)
                 printf ("-W-EMUFPU: Warning - cannot clear native FPU exceptions!\n");
 }
@@ -481,13 +481,29 @@ void translate_except (int excp)
                 FP_Error = TRUE;
 }
 
-fpreal64_t db_check_except (fpreal64_t result)
+/* Synchronize native FPU exceptions and FP_Error. */
+void fp_syncexcept (void)
+{
+        int excp;
+        
+        if (FP_Error)                                   /* FP_Error already set ? */
+                return;                                 /* Do nothing.            */
+
+        excp = fetestexcept (FE_T800_EXCEPT);           /* Get native FPU exceptions. */
+        if (0 == excp)                                  /* No exceptions ?        */
+                return;                                 /* Do nothing.            */
+
+        translate_except (excp);                        /* Translate native exceptions to FP_Error */
+        fp_clrexcept ();                                /* Clear exceptions.      */
+}
+
+void db_check_except (void)
 {
         int excp;
 
         excp = fetestexcept (FE_T800_EXCEPT);
         if (0 == excp)
-                return result;
+                return;
 
 #if 0
         printf  ("-W-EMUFPU: Native FPU exception!\n");
@@ -498,22 +514,16 @@ fpreal64_t db_check_except (fpreal64_t result)
 #endif
 
         translate_except (excp);
-/*
-        if (excp & FE_INEXACT)
-                result = Real64InexactNaN;
-*/
         fp_clrexcept ();
-
-        return result;
 }
 
-fpreal32_t sn_check_except (fpreal32_t result)
+void sn_check_except (void)
 {
         int excp;
 
         excp = fetestexcept (FE_T800_EXCEPT);
         if (0 == excp)
-                return result;
+                return;
 
 #if 0
         printf  ("-W-EMUFPU: Native FPU exception!\n");
@@ -524,13 +534,7 @@ fpreal32_t sn_check_except (fpreal32_t result)
 #endif
 
         translate_except (excp);
-/*
-        if (excp & FE_INEXACT)
-                result = Real32InexactNaN;
-*/
         fp_clrexcept ();
-
-        return result;
 }
 
 fpreal64_t db_correct_sign (fpreal64_t result, fpreal64_t fb, fpreal64_t fa)
@@ -593,7 +597,7 @@ fpreal64_t db_binary (fpreal64_t fb, fpreal64_t fa, fpreal64_t (*opr)(fpreal64_t
         ResultDB = result;
 #endif
 
-        result = db_check_except (result);
+        db_check_except ();
         return result;
 }
 
@@ -617,7 +621,7 @@ int db_binary2word (fpreal64_t fb, fpreal64_t fa, int (*opr)(fpreal64_t, fpreal6
         ResultDB.fp = t4_i32_to_fp64 (result);
 #endif
 
-        db_check_except (DZero);
+        db_check_except ();
         return result;
 }
 
@@ -644,7 +648,7 @@ fpreal64_t db_unary (fpreal64_t fa, fpreal64_t (*opr)(fpreal64_t))
         ResultDB = result;
 #endif
 
-        result = db_check_except (result);
+        db_check_except ();
         return result;
 }
 
@@ -668,7 +672,7 @@ fpreal32_t sn_binary (fpreal32_t fb, fpreal32_t fa, fpreal32_t (*opr)(fpreal32_t
         ResultSN = result;
 #endif
 
-        result = sn_check_except (result);
+        sn_check_except ();
         return result;
 }
 
@@ -693,7 +697,7 @@ int sn_binary2word (fpreal32_t fb, fpreal32_t fa, int (*opr)(fpreal32_t, fpreal3
         ResultSN.fp = t4_i32_to_fp32 (result);
 #endif
 
-        sn_check_except (Zero);
+        sn_check_except ();
         return result;
 }
 
@@ -722,7 +726,7 @@ fpreal32_t sn_unary (fpreal32_t fa, fpreal32_t (*opr)(fpreal32_t))
         ResultSN = result;
 #endif
 
-        result = sn_check_except (result);
+        sn_check_except ();
         return result;
 }
 
@@ -1272,7 +1276,7 @@ fpreal32_t  fp_r64tor32 (fpreal64_t fp)
         ResultSN = result;
 #endif
 
-        result = sn_check_except (result);
+        sn_check_except ();
 
         return result;
 }
@@ -1315,7 +1319,7 @@ fpreal64_t fp_intdb (fpreal64_t fp)
         ResultDB = result;
 #endif
 
-        result = db_check_except (result);
+        db_check_except ();
         return result;
 }
 void fp_chki32db (fpreal64_t fp)
@@ -1375,11 +1379,17 @@ void fp_chki64db (fpreal64_t fp)
 fpreal64_t fp_rtoi32db (fpreal64_t fp)
 {
         fpreal64_t result;
+        int savFP_Error;
+
+        /* Let's see if this instruction sets the FP_Error flag. */
+        savFP_Error = FP_Error;
+        FP_Error = FALSE;
 
         fp_chki32db (fp);
         result = fp_intdb (fp);
 
 #if T4_CRTHACKS == 1
+        /* Correct FP_Error according to the constants below. */
         if (fp.bits == (DInt32Min.bits + 1))
         {
                 switch (RoundingMode) {
@@ -1412,6 +1422,12 @@ fpreal64_t fp_rtoi32db (fpreal64_t fp)
                 }
         }
 #endif
+
+        /* If FP_Error was set by THIS instruction merge back to FP_Error. */
+        if (FP_Error)
+                savFP_Error = TRUE;
+
+        FP_Error = savFP_Error;
 
         return result;
 }
@@ -1682,7 +1698,7 @@ fpreal64_t  fp_r32tor64 (fpreal32_t fp)
         ResultDB = result;
 #endif
 
-        result = db_check_except (result);
+        db_check_except ();
         return result;
 }
 fpreal32_t fp_intsn (fpreal32_t fp)
@@ -1724,7 +1740,7 @@ fpreal32_t fp_intsn (fpreal32_t fp)
         ResultSN = result;
 #endif
 
-        result = sn_check_except (result);
+        sn_check_except ();
         return result;
 }
 void fp_chki32sn (fpreal32_t fp)

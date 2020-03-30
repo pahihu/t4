@@ -45,6 +45,7 @@ extern fpreal64_t DUndefined;
  */
 void fp_init (void);
 void fp_chkexcept (char *msg);
+void fp_syncexcept (void);
 void fp_clrexcept (void);
 
 

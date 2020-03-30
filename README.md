@@ -6,6 +6,7 @@ I would like to say thanks to
 * Julian Highfield writing his [Transputer Emulator](https://web.archive.org/web/20130515034826/http://spirit.lboro.ac.uk/emulator.html)
 * Mike's [transputer.net](http://www.transputer.net/welcome.asp) for the Transputer Validation Suite (TVS1 and TVS1F), for invaluable documentation
 * Mike Bruestle for the implementation details of bitrevnbits, postnormsn, div, roundsn, fpstnli32 and fpunoround
+* Mike Bruestle and Gavin Crate for the discussion of using the native FPU to emulate the T800 FPU instructions
 * Gavin Crate [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) for the email conversation about the Portakit
 
 Goals
@@ -26,7 +27,7 @@ Non-goals
 Notes
 =====
 
-Passing the T800 floating point tests is NOT easy. I am using
+Passing the T800 floating point tests is NOT easy. I use
 functions from [OpenMLib](https://openmlb.org) with my own fixes.
 The following operating system and compiler combinations are passing 
 the T800 FPU tests:
@@ -55,6 +56,7 @@ Failed tests using GCC V4.1.2 on SLES10 PPC
 Changes
 =======
 
+* added Raspbian binary
 * replaced macOS binary with macOS High Sierra (SSE2)
 * fixed Windows compilation, Linux x64 port, binaries for Windows/Linux/macOS
 * more replacement functions: remainder()/sqrt()

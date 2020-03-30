@@ -35,6 +35,7 @@ the T800 FPU tests:
 * macOS Mojave (10.14) + clang 10.0.1 or MacPorts gcc8 8.4.0_0 64bit
 * Windows + VisualStudio 2017 64bit/32bit
 * Ubuntu 18.04 LTS + gcc 7.5.0 Ubuntu 7.5.0-3ubuntu1~18.04 64bit
+* Raspbian 9 + gcc 6.3.0 Raspbian 6.3.0-18+rpi1+debu9u1 32bit
 
 The compiled binaries are in the `bin/` directory.
 

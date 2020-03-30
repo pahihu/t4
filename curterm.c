@@ -182,7 +182,7 @@ get_char(void)
    char buf;
 
    fflush(stdout);
-   read(STDIN_FILENO, &buf, sizeof(char));
+   (void) read(STDIN_FILENO, &buf, sizeof(char));
    return (u_char)buf;
 }
 
@@ -206,7 +206,7 @@ void gotoxy(int x, int y)
 	char buf[16];
 
 	sprintf(buf, "%c[%d;%dH", ESC, y, x);
-	write(1, buf, strlen(buf));
+	(void) write(1, buf, strlen(buf));
 }
 
 void clrscr(void)
@@ -214,7 +214,7 @@ void clrscr(void)
 	char buf[16];
 
 	sprintf(buf, "%c[2J", ESC);
-	write(1, buf, strlen(buf));
+	(void) write(1, buf, strlen(buf));
 	gotoxy(0, 0);
 }
 

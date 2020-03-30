@@ -1169,6 +1169,7 @@ fpreal64_t fp_remfirstdb (fpreal64_t fb, fpreal64_t fa)
                 else
                         result = fa;
                 fp_pushdb (DRemInvalidQuot_NaN);
+		fp_clrexcept ();
                 return result;
         }
         else if (fp_nandb (fb))
@@ -1575,6 +1576,7 @@ fpreal32_t fp_remfirstsn (fpreal32_t fb, fpreal32_t fa)
                         result = fb;
                 else
                         result = fa;
+		fp_clrexcept ();
                 return result;
         }
         else if (fp_nansn (fb))

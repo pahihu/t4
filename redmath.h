@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#if defined(_MSC_VER) || defined(__linux__)
+#if defined(_MSC_VER) || (defined(__linux__) && !defined(TLOSS))
 struct exception {
         int type;
         char *name;
@@ -13,9 +13,12 @@ struct exception {
 };
 #endif
 
-#ifdef __linux__
+#ifndef HUGE 
 #include <math.h>
-#define HUGE		MAXFLOAT
+#define HUGE		0x1.fffffep+127f
+#endif
+
+#ifndef TLOSS
 #define DOMAIN		1
 #define	SING		2
 #define OVERFLOW	3
@@ -73,7 +76,7 @@ double fdm_sqrt(double);
                 double fp; \
         } r64; \
         r64.fp = (x); \
-        r64.bits = (((uint64_t) (hi & 0xffffffffUL)) << 32) | (r64.bits & 0xffffffffULL); \
+        r64.bits = (((uint64_t) ((hi) & 0xffffffffUL)) << 32) | (r64.bits & 0xffffffffULL); \
         x = r64.fp; \
 }
 
@@ -83,7 +86,7 @@ double fdm_sqrt(double);
                 uint64_t bits; \
                 double fp; \
         } r64; \
-        r64.bits = (((uint64_t) (hi & 0xffffffffUL)) << 32) | (lo & 0xffffffffUL); \
+        r64.bits = (((uint64_t) ((hi) & 0xffffffffUL)) << 32) | ((lo) & 0xffffffffUL); \
         x = r64.fp; \
 }
 

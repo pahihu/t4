@@ -56,6 +56,7 @@ Failed tests using GCC V4.1.2 on SLES10 PPC
 Changes
 =======
 
+* added single/double precision versions of C Whetstone
 * added Raspbian binary
 * replaced macOS binary with macOS High Sierra (SSE2)
 * fixed Windows compilation, Linux x64 port, binaries for Windows/Linux/macOS

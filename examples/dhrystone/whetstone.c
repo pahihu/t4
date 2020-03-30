@@ -74,7 +74,7 @@ C**********************************************************************
 #define DEXP	expf
 #define DSQRT	sqrtf
 #define REAL    float
-#define prec    "single"
+#define prec    "Single"
 #else
 #include <math.h>
 #define REAL    double
@@ -84,7 +84,7 @@ C**********************************************************************
 #define DLOG	log
 #define DEXP	exp
 #define DSQRT	sqrt
-#define prec    "double"
+#define prec    "Double"
 #endif
 
 #define IF		if

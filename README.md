@@ -31,11 +31,17 @@ functions from [OpenMLib](https://openmlb.org) with my own fixes.
 The following operating system and compiler combinations are passing 
 the T800 FPU tests:
 
-* macOS Mojave (10.14) + clang 10.0.1 or MacPorts gcc8 8.4.0_0
-* Win32/Win64 VisualStudio 2017
-* Ubuntu 18.04 LTS 64bit + gcc 7.5.0 Ubuntu 7.5.0-3ubuntu1~18.04
+* macOS High Sierra (10.13) + clang 9.1.0 64bit
+* macOS Mojave (10.14) + clang 10.0.1 or MacPorts gcc8 8.4.0_0 64bit
+* Windows + VisualStudio 2017 64bit/32bit
+* Ubuntu 18.04 LTS + gcc 7.5.0 Ubuntu 7.5.0-3ubuntu1~18.04 64bit
 
-The the compiled binaries are in the `bin/` directory.
+The compiled binaries are in the `bin/` directory.
+
+Failed tests using clang 9.1.0 on macOS High Sierra 32bit
+=========================================================
+
+* fpb32tor64rmdb
 
 Failed tests using GCC V4.1.2 on SLES10 PPC
 ===========================================
@@ -48,6 +54,7 @@ Failed tests using GCC V4.1.2 on SLES10 PPC
 Changes
 =======
 
+* replaced macOS binary with macOS High Sierra (SSE2)
 * fixed Windows compilation, Linux x64 port, binaries for Windows/Linux/macOS
 * more replacement functions: remainder()/sqrt()
 * updated Windows binaries with replacement ldexp()/ldexpf() functions

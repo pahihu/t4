@@ -1,13 +1,13 @@
 # Choose a C compiler. (Must be ANSI C capable).
 CC = cc
 #
-# 64bit Linux-x86 emulator, 32bit Linux-armhf emulator
+# 64bit emulator on Linux-x64, 32bit emulator on  Linux-armhf
 # CC = gcc -ffloat-store -frounding-math
 #
-# 32bit Linux-x86 emulator
+# 32bit emulator on Linux-x86
 # CC = gcc -m32 -mfpmath=sse -msse2 -ffloat-store -frounding-math
 #
-# 32bit/64bit Linux-POWER emulator
+# 32bit/64bit emulator on Linux-POWER
 # CC = gcc [-m64] -ffloat-store -frounding-math -std=c99
 #
 

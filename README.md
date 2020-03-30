@@ -35,8 +35,7 @@ the T800 FPU tests:
 * macOS High Sierra (10.13) + clang 9.1.0 64bit
 * macOS Mojave (10.14) + clang 10.0.1 or MacPorts gcc8 8.4.0_0 64bit
 * Windows + VisualStudio 2017 64bit/32bit
-* Ubuntu 18.04 LTS + gcc 7.5.0 Ubuntu 7.5.0-3ubuntu1~18.04 64bit
-* Ubuntu 18.04 LTS + gcc 7.5.0 Ubuntu 7.5.0-3ubuntu1~18.04 32bit
+* Ubuntu 18.04 LTS + gcc 7.5.0 Ubuntu 7.5.0-3ubuntu1~18.04 64bit/32bit
 * Raspbian 9 + gcc 6.3.0 Raspbian 6.3.0-18+rpi1+debu9u1 32bit
 * SLES10SP4 IBM Power + gcc 4.1.2 SUSE Linux 64bit/32bit
 

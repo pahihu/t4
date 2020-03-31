@@ -32,7 +32,7 @@ functions from [OpenLibm](https://openlibm.org) with my own fixes.
 The following operating system and compiler combinations are passing 
 the T800 FPU tests:
 
-* macOS High Sierra (10.13) + clang 9.1.0 64bit
+* macOS High Sierra (10.13) + clang 9.1.0 64bit/32bit
 * macOS Mojave (10.14) + clang 10.0.1 or MacPorts gcc8 8.4.0_0 64bit
 * Windows + VisualStudio 2017 64bit/32bit
 * Ubuntu 18.04 LTS + gcc 7.5.0 Ubuntu 7.5.0-3ubuntu1~18.04 64bit/32bit
@@ -41,14 +41,10 @@ the T800 FPU tests:
 
 The compiled binaries are in the `bin/` directory.
 
-Failed tests using clang 9.1.0 on macOS High Sierra 32bit
-=========================================================
-
-* fpb32tor64rmdb
-
 Changes
 =======
 
+* added macOS High Sierra 32bit binary
 * added Linux-POWER binaries 64bit/32bit
 * added Linux-x86 binary
 * added single/double precision versions of C Whetstone

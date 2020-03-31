@@ -1,0 +1,36 @@
+#INCLUDE "hostio.inc" -- contains SP protocol
+#USE "dblmath.lib"
+#USE "hostio.lib"
+
+-- INMOS Technical Note 27
+-- IMOS Limited
+-- 72-TCH-027-00
+PROC SAVAGE (CHAN OF SP fs, ts, []INT user.buffer)
+  REAL64 a :  
+  TIMER time :
+  INT start.time, finish.time, total.ticks :
+  VAL ticks.per.sec IS 15625 :
+  REAL32 total.seconds :
+  SEQ  
+    a := 1.0(REAL64)  
+    time ? start.time  
+ 
+    SEQ i = 0 FOR 2499  
+      a := DTAN(DATAN(DEXP(DALOG(DSQRT(a*a))))) + 1.0 (REAL64)  
+ 
+    time ? finish.time
+
+    total.ticks := finish.time - start.time
+    total.seconds := (REAL32 ROUND total.ticks) / (REAL32 ROUND ticks.per.sec)
+
+    so.write.string (fs, ts, "Ticks = ")
+    so.write.int (fs, ts, total.ticks, 4)
+    so.write.nl (fs, ts)
+
+    so.write.string (fs, ts, "Elapsed time = ")
+    so.write.real32 (fs, ts, total.seconds, 4, 6)
+    so.write.string.nl (fs, ts, " seconds")
+
+    so.exit (fs, ts, sps.success)
+:
+    

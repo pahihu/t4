@@ -7,6 +7,11 @@ prime.btl
 sqrroots.btl
 
 
+The Savage, Dhrystone, Whetstone OCCAM code is from "Lies, damned lies and benchmarks", 72-TCH-027-00 INMOS Technical Note 27
+
+damnedlies/
+
+
 The Minix demo and the Whetstone-benchmark is from Ram's Transputer Home page (http://www.classiccmp.org/transputer):
 
 minix-demo/

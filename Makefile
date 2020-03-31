@@ -1,5 +1,5 @@
 # Choose a C compiler. (Must be ANSI C capable).
-CC = cc -m32
+CC = cc
 #
 # 64bit emulator on Linux-x64, 32bit emulator on  Linux-armhf
 # CC = gcc -ffloat-store -frounding-math
@@ -33,7 +33,7 @@ SRC	= $(FDMSRC) curterm.c arithmetic.c fparithmetic.c server.c p.c main.c
 OBJ	= $(FDMOBJ) curterm.o arithmetic.o fparithmetic.o server.o p.o main.o
 
 t4 : $(OBJ)
-	$(CC) -B static $(CFLAGS) $(OBJ) $(LFLAGS) -o t4
+	$(CC) $(CFLAGS) $(OBJ) $(LFLAGS) -o t4
 
 clean	:
 	rm -f *.o

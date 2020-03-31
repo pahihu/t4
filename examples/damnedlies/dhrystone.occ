@@ -1,0 +1,309 @@
+-- INMOS Technical Note 27
+-- IMOS Limited
+-- 72-TCH-027-00
+PROC Dhrystone(CHAN OF INT32 In, Out)  
+ 
+  -- Define constants etc for the Struct equivalent  
+  VAL NULL IS 0 :  
+  VAL Ident1 IS 1 :  
+  VAL Ident2 IS 2 :  
+  VAL Ident3 IS 3 :  
+  VAL Ident4 IS 4 :  
+  VAL Ident5 IS 5 :  
+ 
+  VAL PtrComp     IS 0 : -- 'pointer' to one of these records  
+  VAL Discr       IS 1 :  
+  VAL EnumComp    IS 2 :  
+  VAL IntComp     IS 3 :  
+  VAL StringComp  IS 4 : -- StringComp is subsequent 30 bytes  
+ 
+  VAL StringSize IS 30 :  
+  VAL StringWords IS 8 : -- allocate 30/4 + 1 = 8 words on an IMS T414  
+ 
+  VAL StructSize IS StringWords + 4 :  
+ 
+  [3][StructSize]INT Records : -- all the records required  
+ 
+  -- Global variable declarations  
+  [51]INT     Array1 :  
+  [51][51]INT Array2 :  
+  INT         IntGlob :  
+  BOOL        BoolGlob :  
+  BYTE        Char1Glob, Char2Glob :  
+  INT         PtrGlb, PtrGlbNext :  
+ 
+  -- array placement  
+  PLACE Array1 AT (#800 / 4) : -- placement for an IMS T414 and IMS T800  
+  PLACE Array2 AT (#800 / 4) + 51 :  
+  Array2Glob IS Array2 :  
+  Array1Glob IS Array1 :  
+ 
+  INT FUNCTION Func1 (VAL BYTE CharPar1, CharPar2)  
+    INT Res :  
+    VALOF  
+      BYTE CharLoc1, CharLoc2 :  
+      SEQ  
+        CharLoc1 := CharPar1  
+        CharLoc2 := CharLoc1  
+        IF  
+          CharLoc2 <> CharPar2 -- true  
+            SEQ  
+              Res := Ident1  
+          TRUE  
+            Res := Ident2  
+      RESULT Res  
+  :  
+  BOOL FUNCTION Func2 (VAL [StringSize]BYTE StrParI1, StrParI2)  
+    BOOL Res :  
+    VALOF  
+      INT FUNCTION strcmp (VAL [StringSize]BYTE S1, S2)  
+        INT order :  
+        VALOF  
+          IF  
+            IF i = 0 FOR StringSize  
+              S1[i] <> S2[i]  
+                IF  
+                  (INT S1[i]) > (INT S2[i])  
+                    order := 1  
+                  TRUE  
+                    order := -1  
+            TRUE  
+              order := 0  
+          RESULT order  
+      :  
+      -- StrParI1 = "DHRYSTONE, 1*'ST STRING"  
+      -- StrParI2 = "DHRYSTONE, 2*'ND STRING"  
+      INT IntLoc :  
+      BYTE CharLoc :  
+      SEQ  
+        IntLoc := 1  
+        WHILE IntLoc <= 1 -- executed once  
+          IF  
+            Func1(StrParI1[IntLoc], StrParI2[IntLoc+1]) = Ident1  
+              SEQ  
+                CharLoc := 'A'
+                IntLoc := IntLoc + 1  
+            TRUE  
+              SKIP  
+        VAL CharLoc.int IS INT CharLoc : -- because no '>' for BYTES  
+        IF  
+          (CharLoc.int >= (INT 'W')) AND (CharLoc.int <= (INT 'Z'))  
+            IntLoc := 7 -- not executed  
+          TRUE  
+            SKIP  
+        IF  
+          CharLoc = 'X'  
+            Res := TRUE -- not executed  
+          strcmp(StrParI1, StrParI2) > 0  
+            SEQ -- not executed  
+              IntLoc := IntLoc + 7  
+              Res := TRUE  
+          TRUE  
+            Res := FALSE  
+      RESULT Res  
+  :  
+  BOOL FUNCTION Func3(VAL INT EnumParIn)  
+    BOOL Res :  
+    VALOF  
+      INT EnumLoc :  
+      SEQ  
+        EnumLoc := EnumParIn  
+        IF  
+          EnumLoc = Ident3  
+            Res := TRUE  
+          TRUE  
+            Res := FALSE  
+      RESULT Res  
+  :  
+  PROC P8([51]INT Array1Par, [51][51]INT Array2Par, VAL INT IntParI1, IntParI2)  
+    -- once; IntParI1 = 3, IntParI2 = 7  
+    INT IntLoc, IntIndex :  
+    SEQ  
+      IntLoc := IntParI1 + 5  
+      Array1Par[IntLoc]      := IntParI2  
+      Array1Par[IntLoc +  1] := Array1Par[IntLoc]  
+      Array1Par[IntLoc + 30] := IntLoc  
+      SEQ IntIndex = IntLoc FOR 2 -- twice  
+        Array2Par[IntLoc][IntIndex] := IntLoc  
+      Array2Par[IntLoc][IntLoc-1] := Array2Par[IntLoc][IntLoc-1] + 1  
+      Array2Par[IntLoc+20][IntLoc] := Array1Par[IntLoc]  
+      IntGlob := 5  
+  :  
+  PROC P7 (VAL INT IntParI1, IntParI2, INT IntParOut) -- thrice  
+    -- 1) IntParI1 =  2, IntParI2 =  3, IntParOut :=  7  
+    -- 2) IntParI1 =  6, IntParI2 = 10, IntParOut := 18  
+    -- 3) IntParI1 = 10, IntParI2 =  5, IntParOut := 17  
+    INT IntLoc :  
+    SEQ  
+      IntLoc := IntParI1 + 2  
+      IntParOut := IntParI2 + IntLoc  
+  :  
+  PROC P5() -- once  
+    SEQ  
+      Char1Glob := 'A'  
+      BoolGlob := FALSE  
+  :  
+  PROC P4() -- once  
+    BOOL BoolLoc :  
+    SEQ  
+      BoolLoc := Char1Glob = 'A' 
+      BoolLoc := BoolLoc OR BoolGlob  
+      Char2Glob := 'B'  
+  :  
+  PROC P3(INT PtrParOut) -- executed once  
+    SEQ  
+      IF  
+        PtrGlb <> NULL -- true  
+          PtrParOut := Records[PtrGlb][PtrComp]  
+        TRUE  
+          IntGlob := 100  
+      P7(10, IntGlob, Records[PtrGlb][IntComp])  
+  :  
+  PROC P6 (VAL INT EnumParIn, INT EnumParOut) -- once  
+    -- EnumParOut = Ident3, EnumParOut := Ident2  
+    SEQ  
+      EnumParOut := EnumParIn  
+      IF  
+        NOT Func3(EnumParIn) -- not taken  
+          EnumParOut := Ident4  
+        TRUE  
+          SKIP  
+      CASE EnumParIn  
+        Ident1  
+          EnumParOut := Ident1  
+        Ident2  
+          IF  
+            IntGlob > 100  
+              EnumParOut := Ident1  
+            TRUE  
+              EnumParOut := Ident4  
+        Ident3 -- this one chosen  
+          EnumParOut := Ident2  
+        Ident4  
+          SKIP  
+        Ident5  
+          EnumParOut := Ident3  
+  :  
+  PROC P2(INT IntParIO) -- executed once  
+    INT IntLoc, EnumLoc :  
+    BOOL Going :  
+    SEQ  
+      IntLoc := IntParIO + 10  
+      Going := TRUE  
+      WHILE Going -- executed once  
+        SEQ  
+          IF  
+            Char1Glob = 'A' 
+              SEQ  
+                IntLoc := IntLoc - 1  
+                IntParIO := IntLoc - IntGlob  
+                EnumLoc := Ident1  
+            TRUE  
+              SKIP  
+          Going := EnumLoc <> Ident1  
+  :  
+  PROC P1(VAL INT PtrParln) -- executed once  
+    [StructSize] INT NextRecTemp :  
+    SEQ  
+      NextRecTemp := Records[PtrGlb] -- must do this to avoid aliasing  
+      Records[PtrParln][IntComp] := 5  
+      NextRecTemp[IntComp] := Records[PtrParln][IntComp]  
+      NextRecTemp[PtrComp] := Records[PtrParln][PtrComp]  
+      P3(NextRecTemp[PtrComp])  
+      -- NextRecTemp[PtrComp] = Records[PtrGlb][PtrComp] = PtrGlbNext  
+      IF  
+        NextRecTemp[Discr] = Ident1 -- it does  
+          INT IntCompTemp :  
+          SEQ  
+            NextRecTemp[IntComp] := 6  
+            P6(Records[PtrParln][EnumComp], NextRecTemp[EnumComp])  
+            NextRecTemp[PtrComp] := Records[PtrGlb][PtrComp]  
+            IntCompTemp := NextRecTemp[IntComp] -- to avoid aliasing  
+            P7(IntCompTemp, 10, NextRecTemp[IntComp])  
+        TRUE  
+          Records[PtrParln] := NextRecTemp  
+      Records[Records[PtrParln][PtrComp]] := NextRecTemp  
+  :  
+  PROC P0(INT32 out, VAL INT32 loops)  
+    TIMER TIME :  
+    [StringSize]BYTE String1Loc, String2Loc :  
+    INT IntLoc1, IntLoc2, IntLoc3 :  
+    BYTE CharLoc :  
+    INT EnumLoc :  
+    INT StartTime, EndTime, NullTime :  
+    VAL Loops IS 10 * (INT loops) :  
+    SEQ  
+      -- initialisation  
+      -- initialise arrays to avoid overflow  
+      SEQ i = 0 FOR SIZE Array1Glob  
+        Array1Glob[i] := 0  
+      SEQ i = 0 FOR SIZE Array2Glob  
+        SEQ j = 0 FOR SIZE Array2Glob[0]  
+          Array2Glob[i][j] := 0  
+      PtrGlb := 1  
+      PtrGlbNext := 2  
+      -- initialise record 'pointed' to by PtrGlb  
+      Record IS Records[PtrGlb] :  
+      SEQ  
+        Record[PtrComp]  := PtrGlbNext  
+        Record[Discr]    := Ident1  
+        Record[EnumComp] := Ident3  
+        Record[IntComp]  := 40  
+        [4*StringWords]BYTE ByteBuff RETYPES  
+                            [Record FROM StringComp FOR StringWords] :  
+        [ByteBuff FROM 0 FOR StringSize]:=  
+                            "DHRYSTONE PROGRAM, SOME STRING"  
+      String1Loc := "DHRYSTONE PROGRAM, 1*'ST STRING"  
+
+      -- measure loop overhead  
+      TIME ? StartTime  
+      SEQ i = 0 FOR Loops  
+        SKIP  
+      TIME ? EndTime  
+      NullTime := EndTime MINUS StartTime  
+
+      TIME ? StartTime  
+      SEQ i = 0 FOR Loops  
+        SEQ  
+          P5()  
+          P4()  
+          -- Char1Glob = 'A', Char2Glob = 'B', BoolGlob = FALSE  
+          IntLoc1 := 2  
+          IntLoc2 := 3  
+          String2Loc := "DHRYSTONE PROGRAM, 2*'ND STRING"  
+          EnumLoc := Ident2  
+          BoolGlob := NOT Func2(String1Loc, String2Loc)  
+          -- BoolGlob = TRUE  
+          WHILE IntLoc1 < IntLoc2 -- body executed once only  
+            SEQ  
+              IntLoc3 := (5 * IntLoc1) - IntLoc2  
+              P7(IntLoc1, IntLoc2, IntLoc3)  
+              IntLoc1 := IntLoc1 + 1  
+          P8(Array1Glob, Array2Glob, IntLoc1, IntLoc3)  
+          -- IntGlob = 5  
+          P1(PtrGlb)  
+          SEQ Charlndex = INT 'A' FOR ((INT Char2Glob) - ((INT 'A')-1))  
+            -- twice  
+            IF  
+              EnumLoc = Func1(BYTE Charlndex, 'C')  
+                P6(Ident1, EnumLoc)  
+              TRUE  
+                SKIP  
+          -- EnumLoc = Ident1  
+          -- IntLoc1 = 3, IntLoc2 = 3, IntLoc3 = 7  
+          IntLoc3 := IntLoc2 * IntLoc1  
+          IntLoc2 := IntLoc3 / IntLoc1  
+          IntLoc2 := (7 * (IntLoc3 - IntLoc2)) - IntLoc1  
+          P2(IntLoc1)  
+      TIME ? EndTime  
+
+      out := INT32 ((EndTime MINUS StartTime) - NullTime)  
+  :  
+  PRI PAR -- to get high priority timer  
+    INT32 count, result :  
+    SEQ  
+      In ? count  
+      P0(result, count)  
+      Out ! result  
+    SKIP  
+:

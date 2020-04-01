@@ -44,6 +44,7 @@ The compiled binaries are in the `bin/` directory.
 Changes
 =======
 
+* using 64bit/32bit arithmetic operations, instead of 16bit
 * added `-su` instruction profiling, output in `profile`, changed command line options
 * added macOS High Sierra 32bit binary
 * added Linux-POWER binaries 64bit/32bit

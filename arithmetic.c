@@ -53,6 +53,26 @@ extern uint32_t t4_overflow;
 extern uint32_t t4_normlen;
 extern uint32_t t4_carry64;
 
+#define HAVE_UINT64     1
+
+#ifdef HAVE_UINT64
+#ifndef _MSC_VER
+#warning Using 64bit arithmetic!
+#endif
+#if defined(__GNUC__) || defined(__clang__)
+#define t4_clz(x)       __builtin_clz(x)
+#endif
+#if defined(_MSC_VER)
+#define t4_clz(x)       __lzcnt(x)
+#endif
+#define UINT64(x)       ((uint64_t)(x))
+#define MK64(x,y)       ((UINT64(x) << 32) | (y))
+#define LO64(x)         ((x) & 0xffffffffUL)
+#define HI64(x)         LO64((x) >> 32)
+#endif
+
+#define BIT32(x)        ((x) & 0x80000000)
+
 uint32_t t4_add16 (uint32_t A, uint32_t B)
 {
 	/* A and B hold the zero-extended 16 bit operands. */
@@ -95,6 +115,28 @@ uint32_t t4_eadd16 (uint32_t A, uint32_t B)
 }
 
 
+#ifdef HAVE_UINT64
+uint32_t t4_add32 (uint32_t A, uint32_t B)
+{
+	/* A and B hold the 32 bit operands. */
+	/* The result is A+B+carry.          */
+        uint32_t C;
+        uint32_t new_carry;
+
+        C = A + B;
+        new_carry = 0;
+        if (C < A)
+                new_carry = 1;
+
+        A = C;
+        C = A + t4_carry;
+        if (C < A)
+                new_carry = 1;
+
+        t4_carry = new_carry;
+        return C;
+}
+#else
 uint32_t t4_add32 (uint32_t A, uint32_t B)
 {
 	/* A and B hold the 32 bit operands. */
@@ -122,8 +164,27 @@ uint32_t t4_add32 (uint32_t A, uint32_t B)
 
 	return (C);
 }
+#endif
 
 
+#ifdef HAVE_UINT64
+uint32_t t4_eadd32 (uint32_t A, uint32_t B)
+{
+	/* A and B hold the 32 bit operands. */
+	/* The result is A+B+carry.          */
+	/* Overflow is checked.              */
+        uint32_t C;
+
+        C = t4_add32 (A, B);
+        if ((BIT32(A) == BIT32(B)) &&
+            (BIT32(A) != BIT32(C)))
+        {
+                t4_overflow = TRUE;
+        }
+
+        return C;
+}
+#else
 uint32_t t4_eadd32 (uint32_t A, uint32_t B)
 {
 	/* A and B hold the 32 bit operands. */
@@ -152,6 +213,7 @@ uint32_t t4_eadd32 (uint32_t A, uint32_t B)
 
 	return (C);
 }
+#endif
 
 
 uint32_t t4_sub16 (uint32_t A, uint32_t B)
@@ -196,6 +258,28 @@ uint32_t t4_esub16 (uint32_t A, uint32_t B)
 }
 
 
+#ifdef HAVE_UINT64
+uint32_t t4_sub32 (uint32_t A, uint32_t B)
+{
+	/* A and B hold the 32 bit operands. */
+	/* The result is A-B-carry.          */
+        uint32_t C;
+        uint32_t new_carry;
+
+        C = A - B;
+        new_carry = 0;
+        if (C > A)
+                new_carry = 1;
+
+        A = C;
+        C = A - t4_carry;
+        if (C > A)
+                new_carry = 1;
+
+        t4_carry = new_carry;
+        return C;
+}
+#else
 uint32_t t4_sub32 (uint32_t A, uint32_t B)
 {
 	/* A and B hold the 32 bit operands. */
@@ -223,8 +307,27 @@ uint32_t t4_sub32 (uint32_t A, uint32_t B)
 
 	return (C);
 }
+#endif
 
 
+#ifdef HAVE_UINT64
+uint32_t t4_esub32 (uint32_t A, uint32_t B)
+{
+	/* A and B hold the 32 bit operands. */
+	/* The result is A-B-carry.          */
+	/* Overflow is checked.              */
+        uint32_t C;
+
+        C = t4_sub32 (A, B);
+        if ((BIT32(A) != BIT32(B)) &&
+            (BIT32(B) == BIT32(C)))
+        {
+                t4_overflow = TRUE;
+        }
+
+        return C;
+}
+#else
 uint32_t t4_esub32 (uint32_t A, uint32_t B)
 {
 	/* A and B hold the 32 bit operands. */
@@ -253,6 +356,7 @@ uint32_t t4_esub32 (uint32_t A, uint32_t B)
 
 	return (C);
 }
+#endif
 
 
 uint32_t t4_mul16 (uint32_t A, uint32_t B)
@@ -290,6 +394,19 @@ uint32_t t4_emul16 (uint32_t A, uint32_t B)
 }
 
 
+#ifdef HAVE_UINT64
+uint32_t t4_mul32 (uint32_t A, uint32_t B)
+{
+	/* A and B hold the 32 bit operands. */
+	/* The 64 bit result is (A*B)+carry. */
+        uint64_t AB;
+
+        AB = UINT64(A) * B + t4_carry;
+        t4_carry = HI64(AB);
+
+        return LO64(AB);
+}
+#else
 uint32_t t4_mul32 (uint32_t A, uint32_t B)
 {
 	/* A and B hold the 32 bit operands. */
@@ -346,6 +463,7 @@ uint32_t t4_mul32 (uint32_t A, uint32_t B)
 	t4_carry = CHi1;
 	return (CLo1);
 }
+#endif
 
 
 uint32_t t4_emul32 (uint32_t A, uint32_t B)
@@ -357,13 +475,13 @@ uint32_t t4_emul32 (uint32_t A, uint32_t B)
 	uint32_t D;
         uint32_t UA, UB;
 
-        UA = A & 0x80000000 ? 1 + ~A : A;
-        UB = B & 0x80000000 ? 1 + ~B : B;
+        UA = BIT32(A) ? 1 + ~A : A;
+        UB = BIT32(B) ? 1 + ~B : B;
 
 	CLo = t4_mul32 (UA, UB);
         CHi = t4_carry;
 
-        if ((A & 0x80000000) != (B & 0x80000000))
+        if (BIT32(A) != BIT32(B))
         {
                 CLo = ~CLo;
                 CHi = ~CHi;
@@ -394,7 +512,7 @@ uint32_t t4_fmul (uint32_t A, uint32_t B)
         TempHi = t4_carry;
 
         carry  = t4_carry << 1;
-        if (TempLo & 0x80000000)
+        if (BIT32(TempLo))
                 carry = carry + 1;
 
         frac   = 0x7fffffff & TempLo;
@@ -418,6 +536,32 @@ uint32_t t4_fmul (uint32_t A, uint32_t B)
 }
 
 
+#ifdef HAVE_UINT64
+uint32_t t4_shl64 (uint32_t A, uint32_t B, uint32_t C)
+{
+	/* A and B hold the 64 bit operand. */
+	/* A is the most significant part.  */
+	/* The result is AB<<C.             */
+        uint64_t AB;
+        uint32_t result;
+
+        t4_carry64 = BIT32(A) ? 1 : 0;
+
+	/* Reduce C to <= 64. */
+        if (C >= 64)
+        {
+                t4_carry = 0;
+                return 0;
+        }
+
+        AB = MK64(A,B);
+        AB <<= C;
+
+        t4_carry = HI64(AB);
+        result = LO64(AB);
+        return result;
+}
+#else
 uint32_t t4_shl64 (uint32_t A, uint32_t B, uint32_t C)
 {
 	/* A and B hold the 64 bit operand. */
@@ -434,13 +578,13 @@ uint32_t t4_shl64 (uint32_t A, uint32_t B, uint32_t C)
 
 	for (loop=0; loop<C; loop++)
 	{
-		if ((B & 0x80000000) == 0)
+		if (BIT32(B) == 0)
 			bit = 0;
 		else
 			bit = 1;
 
 		B = B << 1;
-                if (A & 0x80000000)
+                if (BIT32(A))
                         t4_carry64 = 1;
                 else
                         t4_carry64 = 0;
@@ -452,8 +596,31 @@ uint32_t t4_shl64 (uint32_t A, uint32_t B, uint32_t C)
 	t4_carry = A;
 	return (B);
 }
+#endif
 
 
+#ifdef HAVE_UINT64
+uint32_t t4_shr64 (uint32_t A, uint32_t B, uint32_t C)
+{
+	/* A and B hold the 64 bit operand. */
+	/* A is the most significant part.  */
+	/* The result is AB>>C.             */
+        uint64_t AB;
+
+	/* Reduce C to <= 64. */
+        if (C >= 64)
+        {
+                t4_carry = 0;
+                return 0;
+        }
+
+        AB = MK64(A,B);
+        AB >>= C;
+
+        t4_carry = HI64(AB);
+        return LO64(AB);
+}
+#else
 uint32_t t4_shr64 (uint32_t A, uint32_t B, uint32_t C)
 {
 	/* A and B hold the 64 bit operand. */
@@ -482,8 +649,42 @@ uint32_t t4_shr64 (uint32_t A, uint32_t B, uint32_t C)
 	t4_carry = A;
 	return (B);
 }
+#endif
 
+#ifdef HAVE_UINT64
+uint32_t t4_norm64 (uint32_t A, uint32_t B)
+{
+	/* A and B hold the 64 bit operand. */
+	/* A is the most significant part.  */
+	/* The result AB will have its      */
+	/* msb set.                         */
+	uint64_t AB;
 
+	t4_normlen = 0;
+
+	if ((A==0x00000000)&&(B==0x00000000))
+	{
+		t4_normlen = 64;
+		t4_carry = A;
+		return (B);
+	}
+
+        if (A == 0)
+        {
+                t4_normlen = 32 + t4_clz (B);
+        } 
+        else
+        {
+                t4_normlen = t4_clz (A);
+        }
+
+        AB = MK64(A,B);
+        AB <<= t4_normlen;
+
+	t4_carry = HI64(AB);
+	return LO64(AB);
+}
+#else
 uint32_t t4_norm64 (uint32_t A, uint32_t B)
 {
 	/* A and B hold the 64 bit operand. */
@@ -501,10 +702,10 @@ uint32_t t4_norm64 (uint32_t A, uint32_t B)
 		return (B);
 	}
 
-	while ((A&0x80000000)==0)
+	while (BIT32(A)==0)
 	{
 		/* Shift AB left one bit. */
-		if ((B & 0x80000000) == 0)
+		if (BIT32(B) == 0)
 			bit = 0;
 		else
 			bit = 1;
@@ -519,7 +720,27 @@ uint32_t t4_norm64 (uint32_t A, uint32_t B)
 	t4_carry = A;
 	return (B);
 }
+#endif
 
+
+#ifdef HAVE_UINT64
+uint32_t t4_longdiv (uint32_t A, uint32_t B, uint32_t C)
+{
+	/* A and B hold the 64 bit dividend. */
+	/* A is the most significant part.   */
+	/* C is the 32 bit divisor.          */
+	/* A is always smaller than C.       */
+        uint64_t AB;
+        uint32_t quotient;
+
+        AB = MK64(A,B);
+
+        t4_carry = AB % C;
+        quotient = AB / C;
+
+	return (quotient);
+}
+#else
 uint32_t t4_longdiv (uint32_t A, uint32_t B, uint32_t C)
 {
 	/* A and B hold the 64 bit dividend. */
@@ -544,7 +765,7 @@ uint32_t t4_longdiv (uint32_t A, uint32_t B, uint32_t C)
 			printf ("(long)div has failed!\n");
 			handler (-1);
 		}
-		dividend_hi = (dividend_lo & 0x80000000) >> 31;
+		dividend_hi = BIT32(dividend_lo) >> 31;
 		dividend_lo = (dividend_lo << 1) + ((B >> (31 - loop)) & 0x00000001);
 
 		if (dividend_hi != 0)
@@ -578,6 +799,8 @@ uint32_t t4_longdiv (uint32_t A, uint32_t B, uint32_t C)
 
 	return (quotient);
 }
+#endif
+
 
 uint32_t t4_infinity (void)
 {

@@ -148,14 +148,14 @@ echo "#output columns = $outcols"
 
 # convert ref and sim file to HEX
 echo "Converting ref and sim to HEX..."
-myxxd -b 16 -c $outcols ref/T801B/$tst.out ref.hex
-myxxd -b 16 -c $outcols tmp/$tst.sim sim.hex
+myxxd -c $outcols ref/T801B/$tst.out ref.hex
+myxxd -c $outcols tmp/$tst.sim sim.hex
 
 # combine files line-by-line
 if [ "X$inpcols" != "X0" ];
 then
   echo "Converting input to HEX..."
-  myxxd -b 16 -c $inpcols inp/inp/$inp inp.hex
+  myxxd -c $inpcols inp/inp/$inp inp.hex
 
   echo "Combining files..."
   paste inp.hex ref.hex >ref2.hex

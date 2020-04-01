@@ -97,7 +97,7 @@ uint32_t   word_int (uint32_t);
 void    writeword_int (uint32_t, uint32_t);
 unsigned char byte_int (uint32_t);
 void writebyte_int (uint32_t, unsigned char);
-void add_profile   (int32_t);
+void add_profile   (uint32_t);
 void print_profile (void);
 void reset_channel (uint32_t);
 void init_memory   (void);

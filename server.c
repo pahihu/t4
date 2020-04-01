@@ -116,7 +116,7 @@ extern int  usetvs;
 extern FILE *InpFile, *OutFile;
 
 extern int profiling;
-extern int32_t profile[10];
+extern uint32_t profile[10];
 
 extern struct termios t_getk;
 extern struct termios t_poll;
@@ -245,10 +245,9 @@ int server (void)
                 init_server();
                 do_init = 0;
         }
-#ifdef PROFILE
+
 	if (profiling)
 		profile[2]++;
-#endif
 
         activity = 0;
 	if (copy==TRUE)

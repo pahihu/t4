@@ -104,7 +104,7 @@ extern uint32_t ProcPriority;
 int profiling = false;
 
 /* Profile array. */
-int32_t profile[10];
+uint32_t profile[10];
 
 /* Profile file. */
 FILE *ProfileFile;
@@ -165,7 +165,7 @@ int main (int argc, char **argv)
 	{
 		printf("\n");
 		printf("Usage : t4 [options] [program arguments]\n\n");
-		printf("t4 V1.4   21/3/2020\n\n");
+		printf("t4 V1.5   1/4/2020\n\n");
 		printf("Options:\n");
 		printf("    -sa                  Analyse transputer.\n");
 		printf("    -sb filename         Boot program \"filename\".\n");
@@ -178,8 +178,9 @@ int main (int argc, char **argv)
                 printf("Extra options:\n");
                 printf("    -s4                  Select T414 mode. (default)\n");
                 printf("    -s8                  Select T800 mode.\n");
+                printf("    -sg                  Halt on uninitialized memory read.\n");
                 printf("    -sm #bits            Memory size in address bits (default 21, 2Mbyte).\n");
-                printf("    -su                  Halt on not initialized memory read.\n");
+                printf("    -su                  Instruction profiling.\n");
                 printf("    -sv inp.tbo inp.bin out.bin\n");
                 printf("                         Select Mike's TVS: T800 + T414 FP support.\n");
                 printf("    -sw \"string\"         Trigger execution trace on SP_WRITE (string).\n");
@@ -283,6 +284,13 @@ int main (int argc, char **argv)
 					  }
 					  else exitonerror=true;
 					  break;
+				case 'g': if (argv[arg][3]!='\0')
+					  {
+						strcat (CommandLineMost, argv[arg]);
+						strcat (CommandLineMost, " ");
+					  }
+					  else memnotinit=true;
+					  break;
 				case 'i': if (argv[arg][3]!='\0')
 					  {
 						strcat (CommandLineMost, argv[arg]);
@@ -359,7 +367,7 @@ int main (int argc, char **argv)
 						strcat (CommandLineMost, argv[arg]);
 						strcat (CommandLineMost, " ");
 					  }
-					  else memnotinit=true;
+					  else profiling=true;
 					  break;
                                 case 'v': if (argv[arg][3]!='\0')
 					  {
@@ -567,7 +575,6 @@ int main (int argc, char **argv)
 #endif
 #endif
 
-#ifdef PROFILE
 	if (profiling)
 	{
 		/* Open profiling file. */
@@ -577,7 +584,6 @@ int main (int argc, char **argv)
 			handler (-1);
 		}
 	}
-#endif
 
 
 #if __profile__
@@ -603,19 +609,18 @@ int main (int argc, char **argv)
         if (OutFile)
                 fclose (OutFile);
 
-#ifdef PROFILE
 	if (profiling)
 	{
 		/* Print out profile counts. */
-		fprintf (ProfileFile, "\n%d instructions\n", profile[0]);
-		fprintf (ProfileFile, "%d descheduling points\n", profile[1]);
-		fprintf (ProfileFile, "%d server calls\n", profile[2]);
-		fprintf (ProfileFile, "%d start_process calls\n", profile[3]);
+                fprintf (ProfileFile, "\nInstructions           %9u\n", profile[0]);
+                fprintf (ProfileFile, "Descheduling points    %9u\n", profile[1]);
+                fprintf (ProfileFile, "Server calls           %9u\n", profile[2]);
+                fprintf (ProfileFile, "StartProcess calls     %9u\n\n", profile[3]);
 
 		print_profile ();
+
 		fclose (ProfileFile);
 	}
-#endif
 
 #ifdef CURTERM
         prepterm (0);
@@ -646,10 +651,8 @@ void handler (int signal)
 	short itemHit = 0;
 #endif
 
-#ifdef PROFILE
 	if (profiling)
 		fclose (ProfileFile);
-#endif
 
         if (CopyIn)
                 fclose (CopyIn);

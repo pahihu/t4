@@ -44,6 +44,7 @@ The compiled binaries are in the `bin/` directory.
 Changes
 =======
 
+* added `-su` instruction profiling, output in `profile`, changed command line options
 * added macOS High Sierra 32bit binary
 * added Linux-POWER binaries 64bit/32bit
 * added Linux-x86 binary
@@ -76,8 +77,7 @@ Changes
 **NOTE**: There is the excellent [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) from Gavin Crate. Otherwise here is the code. Good luck!
 
 
-pahihu,  27 / 3 / 2020
-
+pahihu,  1 / 4 / 2020
 
 
 
@@ -86,7 +86,7 @@ Command line arguments
 
         Usage : t4 [options] [program arguments]
 
-        t4 V1.4   21/3/2020
+        t4 V1.5   1/4/2020
 
         Options:
             -sa                  Analyse transputer.
@@ -100,8 +100,9 @@ Command line arguments
         Extra options:
             -s4                  Select T414 mode. (default)
             -s8                  Select T800 mode.
+            -sg                  Halt on uninitialized memory read.
             -sm #bits            Memory size in address bits (default 21, 2Mbyte).
-            -su                  Halt on not initialized memory read.
+            -su                  Instruction profiling.
             -sv inp.tbo inp.bin out.bin
                                  Select Mike's TVS: T800 + T414 FP support.
             -sw "string"         Trigger execution trace on SP_WRITE (string).

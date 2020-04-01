@@ -191,7 +191,6 @@ int count3;
 int timeslice;
 int32_t quit = FALSE;
 int32_t quitstatus;
-uint32_t InstrCount;            /* Instruction count */
 
 /* XXX Wdesc contains MostNeg + 1 in idle state */
 #define Wdesc   (WPtr | ProcPriority)
@@ -201,7 +200,7 @@ extern int analyse;
 extern int exitonerror;
 extern int FromServerLen;
 extern int profiling;
-extern int32_t profile[10];
+extern uint32_t profile[10];
 extern int emudebug;
 extern int memdebug;
 extern int memnotinit;
@@ -212,16 +211,13 @@ LinkIface Link[4];
 /* Macros. */
 #define index(a,b)		((a)+(BytesPerWord*(b)))
 
-/* Profile information structure and head. */
-struct prof
-{
-	int32_t instruction;
-	int32_t count;
-	struct prof *next;
-	struct prof *prev;
-};
-
-struct prof *profile_head = NULL;
+/* Profile information. */
+uint32_t instrprof[0x400];
+/*
+        #00 - #FF       primary instr.
+        #100 - #2FF     secondary instr. OReg
+        #300 - #3FF     fpentry
+*/
 
 /* Signal handler. */
 void handler (int);
@@ -616,16 +612,16 @@ void save_dump (void)
         fclose (fout);
 }
 
-char *mnemonic(unsigned char icode, uint32_t oreg, uint32_t fpuentry)
+char *mnemonic(unsigned char icode, uint32_t oreg, uint32_t fpuentry, int onlymnemo)
 {
         char *mnemo;
         char bad[16];
         static char str[32];
 
         mnemo = 0;
-        if (icode > 239)
+        if ((icode > 239) && (oreg != MostNeg))
         {
-                if (oreg == 0xab)
+                if ((oreg == 0xab) && (fpuentry != MostNeg))
                 {
                         if (fpuentry == 0x9c)
                                 mnemo = "FPUCLRERR";
@@ -652,6 +648,10 @@ char *mnemonic(unsigned char icode, uint32_t oreg, uint32_t fpuentry)
                 sprintf (str, "%s", mnemo);
                 return str;
         }
+
+        if (onlymnemo)
+                return Primaries[icode >> 4];
+
         sprintf (str, "%-7s #%X", Primaries[icode >> 4], oreg);
         return str;
 }
@@ -671,6 +671,8 @@ void init_memory (void)
 
 void init_processor (void)
 {
+        int i;
+
         /* M.Bruestle 15.2.2012 */
         reset_channel (Link0Out);
         reset_channel (Link0In);
@@ -698,6 +700,10 @@ void init_processor (void)
         }
 
         /* ErrorFlag is in an indeterminate state on power up. */
+
+        if (profiling)
+                for (i = 0; i < 0x400; i++)
+                        instrprof[i] = 0;
 }
 
 #define FLAG(x,y)       ((x) ? (y) : '-')
@@ -758,13 +764,8 @@ void mainloop (void)
 	Timers = TimersStop;
 
 
-        InstrCount = 0;
 	while (1)
 	{
-/*
-                if (++InstrCount > 61396800)
-                        emudebug = TRUE;
-*/
 #ifndef NDEBUG
                 temp = temp2 = Undefined_p;
                 otherWdesc = otherWPtr = otherPtr = altState = Undefined_p;
@@ -815,7 +816,7 @@ void mainloop (void)
                 {
                         for (; instrBytes < 9; instrBytes++)
                                 printf("   ");
-                        mnemo = mnemonic (Icode, OReg, AReg);
+                        mnemo = mnemonic (Icode, OReg, AReg, 0);
                         printf("%-17s", mnemo);
 	                printf ("   %c%c", FLAG(ReadHaltOnError, 'H'), FLAG(      ReadError, 'E'));
                         if (IsT800 || IsTVS)
@@ -840,10 +841,8 @@ void mainloop (void)
                 }
         }
 
-#ifdef PROFILE
 	if (profiling)
-		add_profile (INT32(Icode) - 0x100);
-#endif
+		add_profile (Icode);
 
 	switch (Icode)
 	{
@@ -965,10 +964,8 @@ void mainloop (void)
 
         IntEnabled = TRUE;
 
-#ifdef PROFILE
 	if (profiling)
-		add_profile (OReg);
-#endif
+		add_profile (0x100 + OReg);
 
 	switch (OReg)
 	{
@@ -2605,11 +2602,6 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is undefined! (fprtoi32)\n");
-                                /*
-                                if (emudebug == FALSE)
-                                        printf ("InstrCount = %u\n", InstrCount);
-                                emudebug = TRUE;
-                                */
                                 FAReg.length = FP_UNKNOWN;
                                 SN(FAReg)    = RUndefined;
                            }
@@ -2758,6 +2750,10 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            AReg = BReg;
                            BReg = CReg;
 		           IPtr++;
+
+                           if (profiling)
+                                add_profile (0x300 + temp);
+
                            switch (temp) {
 			   case 0x01: /* fpusqrtfirst    */
                                       if (FAReg.length == FP_REAL64)
@@ -2883,7 +2879,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                       ResetRounding = TRUE;
 			              break;
                            default  :  
-                                      printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg, AReg));
+                                      printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg, AReg, 0));
                                       processor_state ();
 			              handler (-1);
 			              break;
@@ -2921,7 +2917,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            break;
 		default  : 
 BadCode:
-                           printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg, AReg));
+                           printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg, AReg, 0));
                            processor_state ();
 			   handler (-1);
 			   break;
@@ -2929,7 +2925,7 @@ BadCode:
 			   OReg = 0;
 			   break;
 		default  : 
-                           printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg, AReg));
+                           printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg, AReg, 0));
                            processor_state ();
 			   handler (-1);
 			   break;
@@ -2937,10 +2933,10 @@ BadCode:
                 /* Reset rounding mode to round nearest. */
                 if ((IsT800 || IsTVS) && ResetRounding && (RoundingMode != ROUND_N))
                         fp_setrounding ("reset", ROUND_N);
-#ifdef PROFILE
+
 		if (profiling)
 			profile[0]++;
-#endif
+
                 /* Halt when Error flag was set */
 		if ((!PrevError && ReadError) &&
                     (exitonerror || (ReadHaltOnError)))
@@ -3243,10 +3239,8 @@ void start_process (void)
 	/* Reset timeslice counter. */
 	timeslice = 0;
 
-#ifdef PROFILE
 	if (profiling)
 		profile[3]++;
-#endif
 }
 
 /* Save the current process and start a new process. */
@@ -3300,10 +3294,8 @@ void D_check (void)
 		/* Set StartNewProcess flag. */
                 SetGotoSNP;
 	}
-#ifdef PROFILE
 	if (profiling)
 		profile[1]++;
-#endif
 }
 
 /* Interrupt a low priority process.                    */
@@ -3745,124 +3737,31 @@ void writereal64 (uint32_t ptr, fpreal64_t value)
 }
 
 /* Add an executing instruction to the profile list. */
-void add_profile (int32_t instruction)
+void add_profile (uint32_t instruction)
 {
-	struct prof *current;
-	struct prof *newprof;
-
-	current = profile_head;
-
-	if (current == NULL)
-	{
-		/* Create first entry in list. */
-		newprof = (struct prof *) malloc (/*1, */sizeof (struct prof));
-		if (newprof == NULL)
-		{
-			printf ("-E-EMU414: Error - ran out of memory in add_profile.\n");
-			handler (-1);
-		}
-		profile_head = newprof;
-		current = newprof;
-		current->instruction = instruction;
-		current->count = 1;
-		current->prev = NULL;
-		current->next = NULL;
-	}
-	else
-	{
-		/* Find right point in list. */
-		while ((current->instruction < instruction) && (current->next != NULL))
-		{
-			current = current->next;
-		}
-
-		/* Either this is the correct entry, or one must be added into the list. */
-		if (current->instruction == instruction)
-		{
-			/* Correct entry, increment count field. */
-			current->count++;
-		}
-		else if (current->instruction > instruction)
-		{
-			/* Overshot, go back one element and splice in newprof element. */
-			if (current == profile_head)
-			{
-				/* Add element into start of list. */
-				newprof = (struct prof *) malloc (/*1, */sizeof (struct prof));
-				if (newprof == NULL)
-				{
-					printf ("-E-EMU414: Error - ran out of memory in add_profile.\n");
-					handler (-1);
-				}
-				newprof->instruction = instruction;
-				newprof->count = 1;
-				newprof->next = current;
-				newprof->prev = NULL;
-				current->prev = newprof;
-				profile_head = newprof;
-			}
-			else
-			{
-				/* Insert newprof element into middle of list. */
-				current = current->prev;
-				newprof = (struct prof *) malloc (/*1, */sizeof (struct prof));
-				if (newprof == NULL)
-				{
-					printf ("-E-EMU414: Error - ran out of memory in add_profile.\n");
-					handler (-1);
-				}
-				newprof->instruction = instruction;
-				newprof->count = 1;
-				newprof->next = current->next;
-				newprof->prev = current;
-				current->next->prev = newprof;
-				current->next = newprof;
-			}
-		}
-		else if (current->next == NULL)
-		{
-			/* Add newprof element to the end of the list. */
-			newprof = (struct prof *) malloc (/*1, */sizeof (struct prof));
-			if (newprof == NULL)
-			{
-				printf ("-E-EMU414: Error - ran out of memory in add_profile.\n");
-				handler (-1);
-			}
-			newprof->instruction = instruction;
-			newprof->count = 1;
-			newprof->next = NULL;
-			newprof->prev = current;
-			current->next = newprof;
-		}
-	}
+        if (instruction > 0x3ff)
+        {
+                printf ("-E-EMU414: Error - profile invalid instruction! (%u)", instruction);
+        }
+        instrprof[instruction]++;
 }
 
 void print_profile (void)
 {
-	struct prof *current;
-	struct prof *old;
+        int i;
 	extern FILE *ProfileFile;
 
-	current = profile_head;
-
-	if (current == NULL)
-		printf ("-W-EMU414: No profile list!.\n");
-	else
+	for (i = 0; i < 0x400; i++)
 	{
-		while (current->next != NULL)
-		{
-			if (current->instruction < 0)
-				fprintf (ProfileFile, "Instruction %2X, executed %6d times.\n", (current->instruction + 0x100), current->count);
-			else
-				fprintf (ProfileFile, "Extended Instruction %4X, executed %6d times.\n", current->instruction, current->count);
-			old = current;
-			current = current->next;
-			free (old);
-		}
-		if (current->instruction < 0)
-			fprintf (ProfileFile, "Instruction %2X, executed %6d times.\n", (current->instruction + 0x100), current->count);
-		else
-			fprintf (ProfileFile, "Extended Instruction %4X, executed %6d times.\n", current->instruction, current->count);
-		free (current);
-	}
+                /* Skip empty counters. */
+                if (0 == instrprof[i])
+                        continue;
+
+	        if (i < 0x100)
+                        fprintf (ProfileFile, "  %02X  %-12s executed %9u times.\n", i, mnemonic (i, MostNeg, MostNeg, 1), instrprof[i]);
+	        else if (i < 0x300)
+                        fprintf (ProfileFile, "%04X  %-12s executed %9u times.\n", i - 0x100, mnemonic (0xF0, i - 0x100, MostNeg, 1), instrprof[i]);
+                else
+                        fprintf (ProfileFile, "S%03X  %-12s executed %9u times.\n", i - 0x300,  mnemonic (0xF0, 0xAB, i - 0x300, 1), instrprof[i]);
+        }
 }

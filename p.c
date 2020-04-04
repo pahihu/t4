@@ -88,6 +88,9 @@ uint32_t BReg;
 uint32_t CReg;
 uint32_t OReg;
 
+uint32_t DReg;                  /* undocumented DReg/EReg */
+uint32_t EReg;
+
 #define FP_UNKNOWN       0
 #define FP_REAL32       32
 #define FP_REAL64       64
@@ -1512,6 +1515,30 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   }
 			   IPtr++;
 			   break;
+                case 0x24: /* testlde     */
+                           CReg = BReg;
+                           BReg = AReg;
+                           AReg = EReg;
+                           IPtr++;
+                           break;
+                case 0x25: /* testldd     */
+                           CReg = BReg;
+                           BReg = AReg;
+                           AReg = DReg;
+                           IPtr++;
+                           break;
+                case 0x27: /* testste     */
+                           EReg = AReg;
+                           AReg = BReg;
+                           BReg = CReg;
+                           IPtr++;
+                           break;
+                case 0x28: /* teststd     */
+                           DReg = AReg;
+                           AReg = BReg;
+                           BReg = CReg;
+                           IPtr++;
+                           break;
 		case 0x29: /* testerr     */
 			   CReg = BReg;
 			   BReg = AReg;
@@ -2341,6 +2368,31 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            BReg = CReg;
 		           IPtr++;
 		           break;
+                case 0x80: /* XXX fpsttest -- M.Bruestle  */
+                           temp = FAReg.length;
+                           if (FAReg.length == FP_REAL64)
+                           {
+                                fp_popdb (&dbtemp1);
+                           }
+                           else if (FAReg.length == FP_REAL32)
+                           {
+                                fp_popsn (&sntemp1);
+                                dbtemp1.bits = sntemp1.bits;
+                           }
+                           else
+                           {
+                                printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpsttest)\n");
+                                temp    = FP_REAL64;
+                                dbtemp1 = DUndefined;
+                           }
+                           dbtemp2 = fp_state (temp, dbtemp1, &temp2);
+                           writereal64 (AReg, dbtemp2);
+                           writeword (index (AReg, 2), temp2);
+                           AReg = BReg;
+                           BReg = CReg;
+                           ResetRounding = TRUE;
+                           IPtr++;
+                           break;
 		case 0x81: /* wsubdb    */
 		           if (IsT414)
 		               goto BadCode;
@@ -2385,6 +2437,15 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            BReg = CReg;
 		           IPtr++;
 		           break;
+                case 0x85: /* XXX fpldtest -- M.Bruestle */
+                           dbtemp1 = real64 (AReg);
+                           temp    = word (index (AReg, 2));
+                           fp_setstate (dbtemp1, temp);
+                           AReg = BReg;
+                           BReg = CReg;
+                           ResetRounding = TRUE; /* XXX */
+                           IPtr++;
+                           break;
 		case 0x86: /* XXX fpldnlsni    */
 		           if (IsT414)
 		               goto BadCode;

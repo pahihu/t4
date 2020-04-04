@@ -50,16 +50,22 @@ void fp_clrexcept (void);
 
 
 /*
+ * Undocumented FPU status.
+ */
+fpreal64_t fp_state (int length, fpreal64_t r64, uint32_t *fps);
+void fp_setstate (fpreal64_t r64, uint32_t fps);
+
+
+/*
  * Rounding mode.
  */
-#define ROUND_P         1
-#define ROUND_M         2
-#define ROUND_Z         3
-#define ROUND_N         4
+#define ROUND_Z         1
+#define ROUND_N         2
+#define ROUND_P         3
+#define ROUND_M         4
 
 void fp_setrounding (const char *where, int mode);
 extern const char *RMODE;
-
 
 
 /*

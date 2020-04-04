@@ -70,7 +70,7 @@
 #define FALSE   0x0000
 #define TRUE    0x0001
 
-const char *RMODE = "PMZN";
+const char *RMODE = "ZNPM";
 
 fpreal32_t Zero;
 fpreal32_t MinusZero;
@@ -583,6 +583,81 @@ fpreal32_t sn_change_sign (fpreal32_t fp)
         return fp;
 }
 
+fpreal64_t fp_state (int length, fpreal64_t r64, uint32_t *fps)
+{
+        fpreal32_t r32;
+        int sign, exp, exp_width;
+        uint64_t frac;
+        uint32_t status;
+
+        if (length == 32)
+        {
+                /* Get the REAL32 exponent. */
+                r32.bits = r64.bits;
+                exp  = fp_expsn (r32);
+                exp -= 127;
+                exp_width = 8;
+
+                /* Make it quasi REAL64. */
+                r64.bits <<= 32;
+
+                sign = fp_signdb (r64);;
+                if (sign)
+                        r64 = db_change_sign (r64);
+
+                r64.bits >>= 3;
+                if (sign)
+                        r64 = db_change_sign (r64);
+        }
+        else
+        {
+                sign  = fp_signdb (r64);
+                exp   = fp_expdb (r64);
+                exp  -= 1023;
+                exp_width = 11;
+        }
+
+        frac  = fp_fracdb (r64);
+
+        /* FPS encoding */
+        status = 0;
+        status |= sign ? 1 << 31 : 0;
+        status |= (((exp & 1) == 0) || (exp == 0)) ? 1 << 20 : 0;
+        status |= (length == 32) ? 1 << 19 : 0;
+        status |= ((exp  >>  (exp_width - 2)) & 3) << 17;
+        status |= (RoundingMode - 1) << 7;
+        status |= ((frac >> 49) & 7) << 4;
+        status |= (exp == 0) ? 1 << 3 : 0;
+        /* Bit2 = GuardBit  */
+        /* Bit1 = RoundBit  */
+        /* Bit0 = StickyBit */
+
+        *fps = status;
+        return r64;
+}
+
+void fp_setstate (fpreal64_t r64, uint32_t fps)
+{
+        int length, sign;
+        fpreal32_t r32;
+
+        length = ((fps >> 19) & 1) ? 32 : 64;
+        if (length == 32)
+        {
+                sign = fp_signdb (r64);
+
+                r64.bits <<= 3;
+                r32.bits = (r64.bits >> 32) & 0xffffffff;
+
+                if (sign)
+                        r32 = sn_change_sign (r32);
+                fp_pushsn (r32);
+        }
+        else
+                fp_pushdb (r64);
+
+        fp_setrounding ("fp_setstate", ((fps >> 7) & 3) + 1);
+}
 
 /* Do a binary REAL64 operation, return REAL64 result. */
 fpreal64_t db_binary (fpreal64_t fb, fpreal64_t fa, fpreal64_t (*opr)(fpreal64_t, fpreal64_t))

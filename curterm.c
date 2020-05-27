@@ -196,6 +196,8 @@ int getkey(void)
          return ESC;
 		ch = (unsigned char)get_char();
 		ch = (ch << 8) + (unsigned char)get_char();
+        if (has_key())
+            ch = (ch << 8) + (unsigned char)get_char();
 	}
 
 	return ch;

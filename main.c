@@ -127,6 +127,12 @@ enum {INIT, GETK, POLL} t_state;
 #endif
 #endif
 
+/* 201113AP Gavin Crate */
+int isswopt(int c)
+{
+        return (c == '-') || (c == '/');
+}
+
 void set_debug (void)
 {
         emudebug = (tracing & 1) ? TRUE : FALSE;
@@ -165,8 +171,8 @@ int main (int argc, char **argv)
 	{
 		printf("\n");
 		printf("Usage : t4 [options] [program arguments]\n\n");
-		printf("t4 V1.5   1/4/2020\n\n");
-		printf("Options:\n");
+		printf("t4 V1.5.1   13/11/2020\n\n");
+		printf("Options: use either -sX or /sX\n");
 		printf("    -sa                  Analyse transputer.\n");
 		printf("    -sb filename         Boot program \"filename\".\n");
 		printf("    -sc filename         Copy file \"filename\" to transputer.\n");
@@ -203,7 +209,7 @@ int main (int argc, char **argv)
 
 	for (arg=1;arg<argc;arg++)
 	{
-		if ((argv[arg][0]=='-') && (argv[arg][1]=='s'))
+		if (isswopt(argv[arg][0]) && (argv[arg][1]=='s'))
 		{
 			switch (argv[arg][2])
 			{
@@ -418,7 +424,7 @@ int main (int argc, char **argv)
 						arg++;
 						if (arg >= argc)
                                                         tracing = 1;
-                                                else if (argv[arg][0] == '-')
+                                                else if (isswopt(argv[arg][0]))
                                                 {
                                                         tracing = 1;
                                                         arg--;

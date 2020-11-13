@@ -44,6 +44,8 @@ The compiled binaries are in the `bin/` directory.
 Changes
 =======
 
+* updated macOS, Linux, Windows binaries
+* accept either '-' or '/' as switch options (G.Crate)
 * using 64bit/32bit arithmetic operations, instead of 16bit
 * added `-su` instruction profiling, output in `profile`, changed command line options
 * added macOS High Sierra 32bit binary
@@ -78,7 +80,7 @@ Changes
 **NOTE**: There is the excellent [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) from Gavin Crate. Otherwise here is the code. Good luck!
 
 
-pahihu,  1 / 4 / 2020
+pahihu,  13 / 11 / 2020
 
 
 

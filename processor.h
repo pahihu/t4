@@ -112,6 +112,10 @@ void init_memory   (void);
 #define Link2In  0x80000018 /****/
 #define Link3In  0x8000001C /****/
 
+#define IsLinkOut(x) ((Link0Out <= (x)) && ((x) <= Link3Out) && (0 == ((x) & 3)))
+#define IsLinkIn(x)  ((Link0In  <= (x)) && ((x) <= Link3In)  && (0 == ((x) & 3)))
+#define TheLink(x)   ((x) & 3)
+
 typedef struct _Channel_ {
         uint32_t Address;
         uint32_t Length;

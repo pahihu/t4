@@ -498,10 +498,10 @@ void reset_channel (uint32_t addr)
         writeword (addr, NotProcess_p);
 
         chan = (Channel *)0;
-        if (addr == Link0In)
-                chan = &Link[0].In;
-        else if (addr == Link0Out)
-                chan = &Link[0].Out;
+        if (IsLinkIn(addr))
+                chan = &Link[TheLink(addr)].In;
+        else if (IsLinkOut(addr))
+                chan = &Link[TheLink(addr)].Out;
         
         if (chan)
         {
@@ -679,6 +679,15 @@ void init_processor (void)
         /* M.Bruestle 15.2.2012 */
         reset_channel (Link0Out);
         reset_channel (Link0In);
+
+        reset_channel (Link1Out);
+        reset_channel (Link1In);
+
+        reset_channel (Link2Out);
+        reset_channel (Link2In);
+
+        reset_channel (Link3Out);
+        reset_channel (Link3In);
 
         IPtr = MemStart;
         CReg = Link0In;
@@ -1041,7 +1050,7 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
                            if (msgdebug || emudebug)
 			        printf ("-I-EMUDBG: In(1): Channel=#%08X, to memory at #%08X, length #%X.\n", BReg, CReg, AReg);
 			   IPtr++;
-			   if (BReg != Link0In)
+			   if (!IsLinkIn(BReg))
 			   {
 				/* Internal communication. */
 				otherWdesc = word (BReg);
@@ -1077,10 +1086,10 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 			   {
 				/* Link communication. */
                                 if (msgdebug || emudebug)
-                                        printf ("-I-EMUDBG: In(2): Link communication. Old channel word=#%08X.\n", word (BReg));
+                                        printf ("-I-EMUDBG: In(2): Link%d communication. Old channel word=#%08X.\n", TheLink(BReg), word (BReg));
 				writeword (BReg, Wdesc);
-				Link0InDest   = CReg;
-				Link0InLength = AReg;
+                                Link[TheLink(BReg)].In.Address = CReg;
+                                Link[TheLink(BReg)].In.Length  = AReg;
                                 deschedule ();
 			   }
 			   break;
@@ -1116,7 +1125,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            if (msgdebug || emudebug)
 			        printf ("-I-EMUDBG: out(1): Channel=#%08X, length #%X, from memory at #%08X.\n", BReg, AReg, CReg);
 			   IPtr++;
-			   if (BReg != Link0Out)
+			   if (!IsLinkOut(BReg))
 			   {
 				/* Internal communication. */
 				otherWdesc = word (BReg);
@@ -1181,10 +1190,10 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   {
 				/* Link communication. */
                                 if (msgdebug || emudebug)
-                                        printf ("-I-EMUDBG: out(2): Link communication. Old channel word=#%08X.\n", word (BReg));
+                                        printf ("-I-EMUDBG: out(2): Link%d communication. Old channel word=#%08X.\n", TheLink(BReg), word (BReg));
 				writeword (BReg, Wdesc);
-				Link0OutSource = CReg;
-				Link0OutLength = AReg;
+                                Link[TheLink(BReg)].Out.Address = CReg;
+                                Link[TheLink(BReg)].Out.Length  = AReg;
                                 deschedule ();
 			   }
 			   break;
@@ -1214,11 +1223,11 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				/* Link communication. */
 				writeword (BReg, Wdesc);
 				writeword (WPtr, AReg);
-				Link0InDest = WPtr;
-				Link0InLength = 1;
+                                Link[TheLink(BReg)].In.Address = WPtr;
+                                Link[TheLink(BReg)].In.Length  = 1;
                                 deschedule ();
                            }
-			   else if (BReg != Link0Out)
+			   else if (!IsLinkOut(BReg))
 			   {
 				/* Internal communication. */
 				otherWdesc = word (BReg);
@@ -1268,8 +1277,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				/* Link communication. */
 				writeword (BReg, Wdesc);
 				writeword (WPtr, AReg);
-				Link0OutSource = WPtr;
-				Link0OutLength = 1;
+                                Link[TheLink(BReg)].Out.Address = WPtr;
+                                Link[TheLink(BReg)].Out.Length  = 1;
                                 deschedule ();
 			   }
 			   break;
@@ -1284,11 +1293,11 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				/* Link communication. */
 				writeword (BReg, Wdesc);
 				writeword (WPtr, AReg);
-				Link0InDest   = WPtr;
-				Link0InLength = 4;
+                                Link0InDest   = WPtr;
+                                Link0InLength = 4;
                                 deschedule ();
                            }
-			   else if (BReg != Link0Out)
+			   else if (!IsLinkOut(BReg))
 			   {
 				/* Internal communication. */
 				otherWdesc = word (BReg);
@@ -1352,11 +1361,11 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   {
 				/* Link communication. */
                                 if (msgdebug || emudebug)
-                                        printf ("-I-EMUDBG: out(2): Link communication. Old channel word=#%08X.\n", word (BReg));
+                                        printf ("-I-EMUDBG: out(2): Link%d communication. Old channel word=#%08X.\n", TheLink(BReg), word (BReg));
 				writeword (BReg, Wdesc);
 				writeword (WPtr, AReg);
-				Link0OutSource = WPtr;
-				Link0OutLength = 4;
+                                Link[TheLink(BReg)].Out.Address = WPtr;
+                                Link[TheLink(BReg)].Out.Length  = 4;
                                 deschedule ();
 			   }
 			   break;

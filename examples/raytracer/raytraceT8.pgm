@@ -1,0 +1,82 @@
+--{{{  kilo, mega 
+VAL K IS 1024:
+VAL M IS K*K:
+--}}}
+
+--{{{  HIGH, LOW priority levels
+VAL HIGH IS 0:
+VAL LOW IS 1:
+--}}}
+
+--{{{  problem size
+VAL number.of.transputers IS 43 :
+VAL processors IS 9 :
+--}}}
+
+--{{{  hardware description - 3 T8s on the first B012, 8 T8s on the next,
+--{{{				and 40 T4s on the next 4
+
+[number.of.transputers]NODE System:
+ARC Hostlink:
+
+NETWORK
+  DO
+    SET System[0] (type, memsize := "T800", 4*M)
+    SET System[1] (type, memsize := "T800", 2*M)
+    SET System[2] (type, memsize := "T800", 1*M)
+    DO i = 3 FOR 8
+      SET System[i] (type, memsize := "T800", 1*M)
+    DO i = 11 FOR 32
+      SET System[i] (type, memsize := "T414", 1*M)
+    CONNECT System[0][link][0] TO HOST WITH Hostlink
+    DO i = 1 FOR 42
+      CONNECT System[i-1][link][2] TO System[i][link][1]
+:
+--}}}
+
+--{{{  Mapping
+NODE framebuf.p :
+NODE cntlsys.p :
+[processors]NODE raytrace.p :
+
+MAPPING
+  DO
+    MAP framebuf.p ONTO System[0]
+    MAP cntlsys.p ONTO System[1]
+    DO i = 0 FOR processors
+      MAP raytrace.p[i] ONTO System[i+2]
+:
+--}}}
+
+--{{{  Code
+#INCLUDE "hostio.inc"
+#USE "framebufT8.c8h"
+#USE "cntlsysT8.c8h"
+#USE "raytraceT8.c8h"
+
+CONFIG
+  CHAN OF SP frame.in, frame.out :
+  PLACE frame.in, frame.out ON Hostlink :
+  [processors]CHAN OF ANY forward, back :
+  CHAN OF ANY graphics, soft :
+  CHAN OF INT image :
+
+  VAL true      IS #FFFF :
+  VAL false     IS #0000 :
+
+  PAR
+    PROCESSOR framebuf.p
+      frameBuffer (frame.in, frame.out, graphics, image, processors, 50, 34500, 0, 25000000)
+    PROCESSOR cntlsys.p
+      controlSystem (forward[0], back[0], graphics, image, processors)
+    PAR i = 0 FOR processors - 1
+      PROCESSOR raytrace.p[i]
+        rayTrace (forward[i], back[i], back[i+1], forward[i+1], true, i)
+    VAL i IS processors - 1 :
+    PROCESSOR raytrace.p[i]
+      rayTrace (forward [i], back[i], soft, soft, false, i)
+:
+--}}}
+  
+
+

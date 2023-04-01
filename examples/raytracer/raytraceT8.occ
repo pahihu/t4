@@ -1,0 +1,3478 @@
+PROC rayTrace   ( CHAN OF ANY fromPrev, toPrev, fromNext, toNext,
+                  VAL INT propogate, me )
+
+  #USE "occam8.lib"
+
+  VAL c.stop    IS 0 :
+  VAL c.render  IS 1 :  -- render; x0; y0
+  VAL c.object  IS 2 :  -- object; size; [ size ]
+  VAL c.light   IS 3 :  -- light;  size; [ size ]
+  VAL c.patch   IS 4 :  -- patch;  x; y; patchSize; [ patchSize][patchSize]
+  VAL c.runData IS 5 :  -- ambient light, rendering mode, screen pos etc.
+  VAL c.message IS 6 :  -- message; size; [ words ]
+
+  VAL m.adaptive   IS 0 :
+  VAL m.stochastic IS 1 :
+  VAL m.dumb       IS 2 :
+  VAL m.test       IS 3 :
+
+  VAL nil       IS -1 :
+
+  VAL n.reflect IS 0 :        -- point to children
+  VAL n.refract IS 1 :
+  VAL n.next    IS 2 :        -- maintain linked list of leaf nodes
+  VAL n.type    IS 3 :        -- reflected, refracted or primary ray
+
+  -- Valid ray types for n.type slot
+
+  VAL rt.root IS 0 :   -- only first ray is of this type
+  VAL rt.spec IS 1 :   -- reflected ray
+  VAL rt.frac IS 2 :   -- transmitted ray
+
+  VAL n.objptr  IS 4 :        -- pointer into world model for intersect
+
+  VAL n.sectx   IS 5 :        -- point of intersection
+  VAL n.secty   IS 6 :
+  VAL n.sectz   IS 7 :
+
+  VAL n.normx   IS 8 :        -- surface normal at point of intersection
+  VAL n.normy   IS 9 :
+  VAL n.normz   IS 10 :
+
+  VAL n.t       IS 11 :       -- distance parameter 't' of intersection
+
+  VAL n.startx  IS 12 :       -- ray origin
+  VAL n.starty  IS 13 :
+  VAL n.startz  IS 14 :
+
+  VAL n.dx      IS 15 :       -- ray direction
+  VAL n.dy      IS 16 :
+  VAL n.dz      IS 17 :
+
+  VAL n.red   IS 18 :
+  VAL n.green IS 19 :
+  VAL n.blue  IS 20 :
+
+  VAL nodeSize IS n.blue + 1 :
+
+  VAL maxDepth IS 6 :
+  VAL maxNodes IS 4 + (2 << maxDepth) :  -- traverse tree 5 deep max,
+                                         -- PLUS 4 for good measure
+  VAL treeSize  IS nodeSize * maxNodes : -- shadow generation
+
+  VAL o.sphere    IS 0 :
+  VAL o.xyplane   IS 1 :
+  VAL o.xzplane   IS 2 :
+  VAL o.yzplane   IS 3 :
+  VAL o.plane     IS 4 :
+  VAL o.cone      IS 5 :
+  VAL o.cylinder  IS 6 :
+  VAL o.ellipsoid IS 7 :
+  VAL o.quadric   IS 8 : -- general quadric, hell to compute
+
+  VAL x.axis     IS  0 :
+  VAL y.axis     IS  1 :
+  VAL z.axis     IS  2 :
+
+  -- the attribute word contains gross attributes of the object as
+  -- bits. The relevant words in the object descriptor expand upon these
+
+  VAL a.spec     IS #01 :  -- use lambert / use phong and reflect
+  VAL a.frac     IS #02 :  -- refract on surface
+  VAL a.bound0   IS #04 :  -- bounded in 1 dimension
+  VAL a.bound1   IS #08 :  -- bounded in 2 dimension
+  VAL a.tex      IS #10 :  -- texture map ?
+  VAL a.bump     IS #20 :  -- bump map    ?
+
+  VAL o.type     IS  0 : -- type field of all objects
+  VAL o.attr     IS  1 : -- attribute field of all object
+
+  VAL o.kdR      IS  2 :  -- coeffs of diffuse reflection R G B
+  VAL o.kdG      IS  3 :
+  VAL o.kdB      IS  4 :
+
+  VAL o.ks       IS  5 :  -- coeff of specular reflection ( for reflections)
+
+  VAL o.kg       IS  6 :  -- coeff of gloss for phong shading
+  VAL o.xmitR    IS  7 :  -- coeffs of transmission R G B
+  VAL o.xmitG    IS  8 :
+  VAL o.xmitB    IS  9 :
+
+  VAL o.power    IS 10 :  -- power for phong shading
+  VAL o.refix    IS 11 :  -- refractive index (relative)
+
+  VAL o.specific IS 12 :
+
+  VAL first      IS o.specific :
+
+  VAL s.rad      IS  first + 0 :
+  VAL s.x        IS  first + 1 :
+  VAL s.y        IS  first + 2 :
+  VAL s.z        IS  first + 3 :
+
+  VAL s.map      IS  first + 4 :  -- which map ( texture or bump)
+  VAL s.uoffs    IS  first + 5 :  -- offsets for u and v in map
+  VAL s.voffs    IS  first + 6 :
+  VAL s.size     IS  first + 7 :
+  VAL first   IS o.specific:
+  VAL e.x     IS first + 0:       -- center of the ellipsoid
+  VAL e.y     IS first + 1:
+  VAL e.z     IS first + 2:
+  VAL e.a11   IS first + 3:       -- transformation matrix of the ellipsoid
+  VAL e.a12   IS first + 4:       -- from gobal to local coord.
+  VAL e.a13   IS first + 5:
+  VAL e.a21   IS first + 6:
+  VAL e.a22   IS first + 7:
+  VAL e.a23   IS first + 8:
+  VAL e.a31   IS first + 9:
+  VAL e.a32   IS first + 10:
+  VAL e.a33   IS first + 11:
+  VAL e.radx  IS first + 12:      -- size on x axis ( of the new system )
+  VAL e.rady  IS first + 13:      -- size on y axis ( of the new system )
+  VAL e.radz  IS first + 14:      -- size on z axis ( of the new system )
+  VAL e.size  IS first + 15:
+  VAL first   IS o.specific:
+  VAL co.x     IS first + 0:       -- center of the circle
+  VAL co.y     IS first + 1:       --  at the beginnig of the cone
+  VAL co.z     IS first + 2:
+  VAL co.a11   IS first + 3:       -- transformation matrix of the cone
+  VAL co.a12   IS first + 4:       -- from gobal to local coord.
+  VAL co.a13   IS first + 5:
+  VAL co.a21   IS first + 6:
+  VAL co.a22   IS first + 7:
+  VAL co.a23   IS first + 8:
+  VAL co.a31   IS first + 9:
+  VAL co.a32   IS first + 10:
+  VAL co.a33   IS first + 11:
+  VAL co.rada  IS first + 12:      -- size of the circle at the beginning
+  VAL co.radb  IS first + 13:      -- size of the circle at the end
+  VAL co.len   IS first + 14:      -- length of the cone on new z axis
+  VAL co.size  IS first + 15:
+  VAL first   IS o.specific:
+  VAL c.x     IS first + 0:       -- center of the circle
+  VAL c.y     IS first + 1:       --  at the beginnig of the cylinder
+  VAL c.z     IS first + 2:
+  VAL c.a11   IS first + 3:       -- transformation matrix of the cylinder
+  VAL c.a12   IS first + 4:       -- from gobal to local coord.
+  VAL c.a13   IS first + 5:
+  VAL c.a21   IS first + 6:
+  VAL c.a22   IS first + 7:
+  VAL c.a23   IS first + 8:
+  VAL c.a31   IS first + 9:
+  VAL c.a32   IS first + 10:
+  VAL c.a33   IS first + 11:
+  VAL c.rad   IS first + 12:      -- size of the circle
+  VAL c.len   IS first + 13:      -- length of the cylinder
+  VAL c.size  IS first + 14:
+
+  VAL first      IS o.specific :
+
+  VAL p.x        IS first + 1  :
+  VAL p.y        IS first + 2  :
+  VAL p.z        IS first + 3  :
+  VAL p.ux       IS first + 4  :
+  VAL p.uy       IS first + 5  :
+  VAL p.uz       IS first + 6  :
+  VAL p.vx       IS first + 7  :
+  VAL p.vy       IS first + 8  :
+  VAL p.vz       IS first + 9  :
+  VAL p.wx       IS first + 10 :
+  VAL p.wy       IS first + 11 :
+  VAL p.wz       IS first + 12 :
+  VAL p.sizeu    IS first + 13 :
+  VAL p.sizev    IS first + 14 :
+
+  VAL p.map      IS first + 15 :  -- which map ( texture or bump)
+  VAL p.uoffs    IS first + 16 :  -- offsets for u and v in map
+  VAL p.voffs    IS first + 17 :
+  VAL p.size     IS first + 18 :
+
+  VAL first      IS o.specific :
+
+  VAL pxy.x        IS first + 0 : -- origin x of the plane
+  VAL pxy.y        IS first + 1 : -- origin y of the plane
+  VAL pxy.z        IS first + 2 : -- origin z of the plane
+  VAL pxy.sizex    IS first + 3 : -- bounding on x axis
+  VAL pxy.sizey    IS first + 4 : -- bounding on y axis
+  VAL pxy.map      IS first + 5 :  -- which map ( texture or bump)
+  VAL pxy.uoffs    IS first + 6 :  -- offsets for u and v in map
+  VAL pxy.voffs    IS first + 7 :
+  VAL pxy.size     IS first + 8 :
+
+  VAL first      IS o.specific :
+
+  VAL pxz.x        IS first + 0 : -- origin x of the plane
+  VAL pxz.y        IS first + 1 : -- origin y of the plane
+  VAL pxz.z        IS first + 2 : -- origin z of the plane
+  VAL pxz.sizex    IS first + 3 : -- bounding on x axis
+  VAL pxz.sizez    IS first + 4 : -- bounding on z axis
+  VAL pxz.map      IS first + 5 :  -- which map ( texture or bump)
+  VAL pxz.uoffs    IS first + 6 :  -- offsets for u and v in map
+  VAL pxz.voffs    IS first + 7 :
+  VAL pxz.size     IS first + 8 :
+
+  VAL first      IS o.specific :
+
+  VAL pyz.x        IS first + 0 : -- origin x of the plane
+  VAL pyz.y        IS first + 1 : -- origin y of the plane
+  VAL pyz.z        IS first + 2 : -- origin z of the plane
+  VAL pyz.sizey    IS first + 3 : -- bounding on y axis
+  VAL pyz.sizez    IS first + 4 : -- bounding on z axis
+  VAL pyz.map      IS first + 5 :  -- which map ( texture or bump)
+  VAL pyz.uoffs    IS first + 6 :  -- offsets for u and v in map
+  VAL pyz.voffs    IS first + 7 :
+  VAL pyz.size     IS first + 8 :
+
+  VAL sizeWorld IS 1800 :  -- a sphere = 17 words + nextPtr,
+                           -- giving 100 spheres
+
+  VAL l.ir   IS 0 :   -- light intensity fields  R G B
+  VAL l.ig   IS 1 :
+  VAL l.ib   IS 2 :
+
+  VAL l.dx   IS 3 :   -- light direction cosines x y z
+  VAL l.dy   IS 4 :   -- this is a quick'n'tacky shading sheme
+  VAL l.dz   IS 5 :
+
+  VAL l.size IS 6 :
+
+  -- each light is |nextPtr|r|g|b|dx|dy|dz
+
+  VAL sizeLight  IS  7 :
+
+  VAL maxLights  IS 10 :   -- any more than 2 is hell to shade !!
+
+  VAL sizeLights IS sizeLight * maxLights :
+
+  VAL maxDescend   IS 2 :    -- this is a space limitation on the sub-pixel
+                             -- grid rather than a compute saver
+  VAL descendPower IS 4 :    -- 2 ^^ maxDescend
+
+  VAL patchSize IS 16 :
+  VAL gridSize  IS ((patchSize + 1) * descendPower) + 1 :
+
+  VAL mint  IS MOSTNEG INT :
+
+  -- colours are nr | 10 blue bits | 10 green bits | 10 red bits |
+
+  VAL threshold   IS 10 << 2 : -- this is 10 on a scale of 256, but we
+  VAL colourBits  IS 10 :      -- generate 10 bits
+
+  VAL rMask       IS (1 << colourBits) - 1 :
+  VAL gMask       IS rMask    << colourBits :
+  VAL bMask       IS gMask    << colourBits :
+
+  VAL rMaxDiff    IS threshold :               -- threshold values for
+  VAL gMaxDiff    IS rMaxDiff << colourBits :  -- instancing super sample
+  VAL bMaxDiff    IS gMaxDiff << colourBits :
+
+  VAL notRendered IS mint :  -- top bit set = not rendered
+
+
+
+  PROC throughPut ( [256] INT work,
+                    CHAN OF ANY fromPrev, toNext, feedPixels, pixelTrigger,
+                    VAL INT propogate )
+
+    VAL closeDown     IS 0 :
+    VAL active        IS 1 :
+    VAL busy          IS 2 :
+    VAL buffered      IS 4 :
+
+    INT state, tag :
+    INT x, y, size, kick :
+    SEQ
+      state := active
+      WHILE state <> closeDown
+        PRI ALT
+          pixelTrigger ? kick  -- should be guarded by (state /\ busy) <> 0 ..
+            IF
+              (state /\ buffered) <> 0
+                SEQ
+                  feedPixels ! c.render; x; y
+                  state := active \/ busy
+              TRUE
+                state := active -- i.e not busy and not buffered
+          fromPrev ? tag
+            IF
+              tag = c.render
+                INT a, b :
+                SEQ
+                  fromPrev ? a; b
+                  IF
+                    (state /\ busy) = 0
+                      SEQ
+                        feedPixels ! tag; a; b
+                        state := active \/ busy
+
+                    (state /\ buffered) <> 0
+                      toNext ! tag; a; b
+                    TRUE
+                      SEQ
+                        x     := a
+                        y     := b
+                        state := active \/ (busy \/ buffered)
+              tag = c.stop
+                SEQ
+                  IF
+                    (state /\ busy) <> 0
+                      pixelTrigger ? kick
+                    TRUE
+                      SKIP
+                  IF
+                    (state /\ buffered) <> 0
+                      SEQ
+                        feedPixels   ! c.render; x; y
+                        pixelTrigger ? kick
+                    TRUE
+                      SKIP
+                  feedPixels ! tag
+                  toNext     ! tag
+                  state := closeDown
+              TRUE
+                SEQ
+                  fromPrev ? size; [ work FROM 0 FOR size ]
+                  IF
+                    propogate <> 0
+                      toNext ! tag; size; [ work FROM 0 FOR size ]
+                    TRUE
+                      SKIP
+                  feedPixels ! tag; size; [ work FROM 0 FOR size ]
+  :
+
+
+
+  PROC pixelBypass ( [3][256] INT buffers,
+                     CHAN OF ANY toPrev, fromNext, fromThis)
+    PROC buffer ( [256] INT pixels, CHAN OF ANY in, out )
+      INT command :
+      SEQ
+        in ? command
+        WHILE command <> c.stop
+          INT x, y, size :
+          SEQ
+            IF
+              command = c.patch
+                SEQ
+                  in  ? x; y; size
+                  out ! command; x; y; size
+                  SEQ i = 0 FOR size
+                    SEQ
+                      in  ? [ pixels FROM 0 FOR size ]
+                      out ! [ pixels FROM 0 FOR size ]
+              command = c.message
+                SEQ
+                  in  ? size; [ pixels FROM 0 FOR size ]
+                  out ! command; size; [ pixels FROM 0 FOR size ]
+            in ? command
+        out ! c.stop
+    :
+
+
+    PROC mix ( [256] INT pixels, CHAN OF ANY fromOther, fromThis, out)
+      INT  state, command, x, y, size :
+
+      VAL closeDown  IS 0 :
+      VAL lubThis    IS 1 :
+      VAL lubOther   IS 2 :
+
+      PROC pass ( CHAN OF ANY in, out )
+        buffer IS pixels : -- save static chaining
+        SEQ i = 0 FOR size
+          SEQ
+            in  ? [ buffer FROM 0 FOR size ]
+            out ! [ buffer FROM 0 FOR size ]
+      :
+      SEQ
+        state := lubThis \/ lubOther
+        WHILE state <> closeDown
+          PRI ALT
+            fromOther ? command
+              SEQ
+                IF
+                  command = c.message
+                    SEQ
+                      fromOther ? size; [ pixels FROM 0 FOR size ]
+                      out ! command; size; [ pixels FROM 0 FOR size ]
+                  command = c.patch
+                    SEQ
+                      fromOther ? x; y; size
+                      out ! command; x; y; size
+                      pass ( fromOther, out )
+                  command = c.stop
+                    state := state >< lubOther
+            fromThis ? command
+              SEQ
+                IF
+                  command = c.message
+                    SEQ
+                      fromThis ? size; [ pixels FROM 0 FOR size ]
+                      out ! command; size; [ pixels FROM 0 FOR size ]
+                  command = c.patch
+                    SEQ
+                      fromThis ? x; y; size
+                      out ! command; x; y; size
+                      pass ( fromThis, out )
+                  command = c.stop
+                    state := state >< lubThis
+        out ! c.stop
+    :
+
+    CHAN OF ANY lubThis, lubOther :
+    PAR
+      buffer ( buffers [0], fromNext, lubOther)
+      buffer ( buffers [1], fromThis, lubThis)
+      mix    ( buffers [2], lubOther, lubThis, toPrev)
+  :
+
+
+  -- note the declaration of big vectors OUTSIDE the scope of the
+  -- proc, pulling its variables down into internal RAM.
+  -- this also frees internal RAM for throughPut and pixelBypass
+
+  --
+  -- run data is a vector of
+  --
+  --  runData [0] ->  ambient R
+  --           1      ambient G
+  --           2      ambient B
+  --           3      rendering mode  -- m.adaptive / m.dumb / m.stochastic
+  --           4      patch size
+  --           5      scale factor    -- 1 2 or 4
+  --           6      screenOrg x
+  --           7                y
+  --           8                z
+  --           9      screen  dxX
+  --           10             dyX
+  --           11             dzX
+  --           12     screen  dxY
+  --           13             dyY
+  --           14             dzY
+  --           15     pinhole  x
+  --           16     pinhole  y
+  --           17     pinhole  z
+  --
+
+  [20] INT grunData :
+
+
+  [maxNodes][nodeSize] INT cleanTree :    -- for 5 this is 5 kbytes
+
+
+  [sizeWorld] INT    gworldModel :
+
+  [sizeLights] INT glights :
+  [gridSize][gridSize]  INT gsamples :
+
+  [patchSize][patchSize] INT gcolours : -- these are the AREA-AVERAGED colours
+                                        -- returned to the grafix cards,
+                                        -- not the point samples
+
+
+
+  PROC renderer ( CHAN OF ANY workIn, pixelsOut, done )
+    [20] INT runData IS grunData :
+
+    [3] REAL32 ambient RETYPES [ runData FROM 0 FOR 3 ] :
+
+    renderingMode IS runData [3] :
+    runPatchSize  IS runData [4] :
+    scaleFactor   IS runData [5] :
+
+    [3] REAL32 screenOrg RETYPES [ runData FROM  6 FOR 3 ] :
+    [3] REAL32 screendX  RETYPES [ runData FROM  9 FOR 3 ] :
+    [3] REAL32 screendY  RETYPES [ runData FROM 12 FOR 3 ] :
+    [3] REAL32 pinhole   RETYPES [ runData FROM 15 FOR 3 ] :
+    [ treeSize] INT    tree  RETYPES cleanTree :
+
+    [ treeSize] REAL32 ftree RETYPES tree :
+
+    INT freeNode :
+    [sizeWorld] INT worldModel IS gworldModel :
+    [sizeWorld] REAL32 fworld RETYPES worldModel : -- for floating point access
+
+    INT world.p :  -- pointer used during construction of model
+    [sizeLights] INT lights IS glights :
+    [sizeLights] REAL32 flights RETYPES lights :
+
+    INT light.p :  -- pointer used during construction of model
+
+    [gridSize ][gridSize] INT samples IS gsamples :
+    [gridSize * gridSize] INT rawSamples RETYPES samples :
+
+    [patchSize][patchSize] INT colours IS gcolours :
+
+
+    PROC FracDiv (INT Result, VAL INT Divid, Divis)
+      VAL LSignBit IS #80000000(INT) :
+      -- Assumes that overflow will not occur
+      VAL Sign IS (Divid >< Divis) /\ LSignBit :
+      INT TopHi, TopLo, ResHi, Remains, Bot :
+      SEQ
+        IF
+          Divid < 0
+            TopHi := -Divid
+          TRUE
+            TopHi := Divid
+        IF
+          Divis < 0
+            Bot := -Divis
+          TRUE
+            Bot := Divis
+        TopHi, TopLo   := SHIFTRIGHT (TopHi, 0, 1)
+        ResHi, Remains := LONGDIV (TopHi, TopLo, Bot)
+        Remains := Remains << 1    -- To compare 2*Rem against Divis
+        IF
+          Remains < 0     -- Round up (case Divis close to MaxInt)
+            ResHi := ResHi + 1
+          Remains > Bot   -- Round up
+            ResHi := ResHi + 1
+          (Remains = Bot) AND ((ResHi /\ 1) = 1)  -- Round up to even
+            ResHi := ResHi + 1
+          TRUE
+            SKIP
+        IF
+          Sign = LSignBit
+            Result := -ResHi
+          TRUE
+            Result := ResHi
+    :
+
+    PROC IncExp (REAL32 Result, VAL REAL32 X, VAL INT N)
+      -- This is a fast but unsafe procedure, which relies on the calling
+      -- procedure to ensure correct results.
+      VAL RealExpSh IS 23(INT) :
+      VAL INT X.i RETYPES X :
+      INT Res RETYPES Result :
+      IF
+        N < 0
+          Res := X.i - ((-N) << RealExpSh)
+        TRUE
+          Res := X.i + (N << RealExpSh)
+    :
+
+    PROC FIX (INT Result, VAL REAL32 X.r)
+      -- Returns the signed fixed point fraction corresponding to X.
+      -- Assumes X is < 1. Rounds to nearest or even.
+      VAL BitsPerWord    IS        32(INT) :
+      VAL RealShift      IS         8(INT) :
+      VAL RealXcess      IS       127(INT) :
+      VAL LSignBit       IS #80000000(INT) :
+      VAL INT UFlowExp RETYPES (RealXcess - BitsPerWord) :
+      VAL INT X RETYPES X.r :
+      INT XExp, XFrac :
+      SEQ
+        XExp, XFrac := SHIFTLEFT (0, X/\(~LSignBit), RealShift + 1)
+        IF
+          XExp < UFlowExp  -- number too small
+            Result := 0
+          TRUE
+            INT RWork :
+            SEQ
+              XExp := RealXcess - XExp          -- Magnitude of true exponent
+              XFrac := (XFrac >> 1) \/ LSignBit -- Put back implicit bit
+              IF
+                XExp <= RealShift               -- Exact result will fit
+                  RWork := XFrac >> XExp
+                TRUE                            -- Shift and round
+                  INT LostBits :
+                  SEQ
+                    RWork, LostBits := SHIFTRIGHT (XFrac, 0, XExp)
+                    IF
+                      LostBits >= 0      -- Round down
+                        SKIP
+                      LostBits <> LSignBit  -- Round up
+                        RWork := RWork + 1
+                      (RWork /\ 1) = 1  -- Round up to even
+                        RWork := RWork + 1
+                      TRUE
+                        SKIP
+              IF
+                X < 0
+                  Result := -RWork
+                TRUE
+                  Result := RWork
+    :
+
+    PROC ReFloat (REAL32 Result, VAL INT X)
+      -- Assumes X is in range -2**31 + 1 to 2**31 - 1
+      VAL RealShift      IS         8(INT) :
+      VAL RealExpSh      IS        23(INT) :
+      VAL RealXcess      IS       127(INT) :
+      VAL LSignBit       IS #80000000(INT) :
+      VAL REAL32 Zero RETYPES 0 :
+      INT RWork :
+      IF
+        X = 0
+          Result := Zero
+        TRUE
+          VAL BOOL Negative IS (X < 0) :
+          SEQ
+            IF
+              Negative
+                RWork := -X
+              TRUE
+                RWork := X
+            INT XExp, LostBits :
+            SEQ
+              XExp, RWork, LostBits := NORMALISE (RWork, 0)
+              RWork, LostBits := SHIFTRIGHT (RWork /\ (~LSignBit), 0, RealShift)
+              RWork := ((RealXcess - XExp) << RealExpSh) \/ RWork
+              IF
+                LostBits >= 0         -- Round down
+                  SKIP
+                LostBits <> LSignBit  -- Round up
+                  RWork := RWork + 1
+                (RWork /\ 1) = 1      -- Round up to even
+                  RWork := RWork + 1
+                TRUE
+                  SKIP
+              REAL32 RWork.r RETYPES RWork :
+              IF
+                Negative
+                  Result := - RWork.r
+                TRUE
+                  Result := RWork.r
+    :
+
+    --PROC SQRTP (REAL32 Root, VAL REAL32 X)
+    --  VAL Sign           IS #80000000(INT) :
+    --  VAL RealShift      IS         8(INT) :
+    --  VAL RealExp        IS       255(INT) :
+    --  VAL RealRBit       IS       128(INT) :
+    --  VAL RealXcess      IS       127(INT) :
+    --  VAL RealInf        IS #7F800000(INT) :
+    --  VAL REAL32 undefined.NaN RETYPES #7F800010(INT) :
+    --  VAL R2C2 IS #D413CCD0(INT) :
+    --  VAL R2K2 IS #4C1E24CD(INT) :
+    --  VAL R2C IS #93000000(INT) :
+    --  VAL R2K IS #6CFFFFFF(INT) :
+    --  VAL INT X.i RETYPES X :
+    --  VAL PosX IS X.i /\ (~Sign) :
+    --  INT Root.i RETYPES Root :
+    --  IF
+    --    (PosX > RealInf) OR (PosX = 0)   -- NaN or 0
+    --      Root := X
+    --    (X.i <> PosX) OR  (X.i = RealInf) -- negative or Inf
+    --      Root := undefined.NaN
+    --    TRUE                                --proper case
+    --      INT Y, Xexp, Xfrac :
+    --      SEQ
+    --        Xexp, Xfrac := SHIFTLEFT (0, PosX, RealShift + 1)
+    --        IF
+    --          Xexp = 0                       --denormal
+    --            SEQ
+    --              INT Discard :
+    --              Xexp, Xfrac, Discard := NORMALISE (Xfrac, 0)
+    --              Xexp :=  - Xexp
+    --          TRUE
+    --            Xfrac := (Xfrac >> 1) \/ Sign     --set proper value
+    --        --Xexp := Xexp - RealXcess
+    --        IF
+    --          (Xexp /\ 1) = 1                 --is even exp
+    --            INT Carry :
+    --            SEQ
+    --              Xfrac := Xfrac >> 1
+    --              Y, Carry := LONGPROD (Xfrac, R2C2, 0)  -- linear approximation
+    --              Carry, Y := LONGSUM (Y, R2K2, 0)       -- over [1/4,1/2)
+    --          TRUE
+    --            INT Carry :
+    --            SEQ
+    --              Y, Carry := LONGPROD (Xfrac, R2C, 0)   -- linear approximation
+    --              Carry, Y := LONGSUM (Y, R2K, 0)        -- over [1/2, 1)
+    --        VAL XF IS Xfrac >> 1 :                 --ensure no div overflow
+    --        INT Carry, Y0 :
+    --        SEQ
+    --          Y0, Carry := LONGDIV (XF, 0, Y)     --to 14 bits
+    --          Carry, Y := LONGSUM (Y >> 1, Y0, 0)    --always carry into top bit
+    --          Y0, Carry := LONGDIV (XF, 0, Y)     --to 28 bits
+    --          Carry, Y := LONGSUM (Y >> 1, Y0, 0)
+    --        INT Carry, Y0 :
+    --        SEQ
+    --          Y := Y /\ #FFFFFFC0  -- remove from sticky downwards
+    --          Y0,Carry := LONGPROD (Y,Y,0)
+    --          IF
+    --            (Y0 = Xfrac) AND (Carry = 0)
+    --              SKIP
+    --            (Y0 MINUS Xfrac) >= 0
+    --              SEQ
+    --                Y := Y MINUS #20
+    --                IF
+    --                  (Y /\ Sign) = 0
+    --                    SEQ
+    --                      Y := Y << 1
+    --                      Xexp := Xexp - 2   -- -1 after >> 1
+    --                  TRUE
+    --                    SKIP
+    --            (Y0 MINUS Xfrac) < 0
+    --              Y := Y + #20
+    --        Xexp := (Xexp + RealXcess) >> 1
+    --        Xfrac := Y /\ RealExp                --get round mask
+    --        INT Y0 :
+    --        Y0, Y := SHIFTRIGHT (Xexp, Y << 1, RealShift + 1)
+    --        IF
+    --          (Xfrac /\ RealRBit) = 0
+    --            Root.i := Y
+    --          ((Xfrac /\ RealXcess) <> 0) OR ((Y /\ 1) = 1)
+    --            Root.i := Y + 1
+    --          TRUE
+    --            Root.i := Y
+    --:
+
+    PROC SINP (REAL32 Result, VAL REAL32 X)
+      VAL SignBit        IS #80000000(INT) :
+      VAL RealExpSh      IS        23(INT) :
+      VAL RealXcess      IS       127(INT) :
+      VAL RealInf        IS #7F800000(INT) :
+      VAL Pi.i           IS #40490FDB(INT) :
+      VAL REAL32 inexact.NaN   RETYPES #7F800004(INT) :
+      VAL One IS 1.0(REAL32) :
+      VAL Eps IS  ((RealXcess - ((RealExpSh + 1) >> 1)) << RealExpSh) :
+      -- Threshold for sin(x) = x is 2 ** (-ManBits/2), see C&W pp137.
+      VAL Nearly.PiBy2 IS #3FC907DB : -- PiBy2 - Eps
+      VAL XMax IS Pi.i + (((RealExpSh + 1) >> 1) << RealExpSh) :
+      -- Limit on X is Pi * 2**(ManBits/2). See C&W p134.
+      VAL REAL32 InvPi RETYPES #3EA2F983(INT32) :
+      VAL REAL32 C1    RETYPES #40490000(INT32) :
+      VAL REAL32 C2    RETYPES #3A7DAA22(INT32) :-- C1 + C2 = Pi to extra precision
+      VAL INT PIbyTwo  IS #3FC90FDB :
+      VAL INT X.I    RETYPES X :
+      REAL32 XWork :
+      INT XW.i RETYPES XWork :  -- so that comparison is fast, etc.
+      BOOL Negative :
+      SEQ
+        Negative := (X.I < 0)
+        XW.i := X.I /\ (~SignBit)
+        IF
+          XW.i > RealInf
+            Result := X    -- transmit NaN
+          XW.i > XMax      -- Integer compare is safe
+            Result := inexact.NaN
+          TRUE
+            REAL32 RWork :
+            SEQ
+              IF
+                XW.i > PIbyTwo
+                  VAL N IS INT ROUND (XWork * InvPi) :   -- multiply by 1/Pi
+                  VAL XN IS REAL32 ROUND N :
+                  VAL BOOL Odd IS ((N /\ 1) = 1) :
+                  SEQ
+                    XWork := (XWork - (XN * C1)) - (XN * C2) -- extended precision
+                    IF
+                      XW.i < 0
+                        SEQ
+                          Negative := (Odd = Negative)
+                          XWork := - XWork
+                      TRUE
+                        Negative := (Odd <> Negative)
+                TRUE
+                  SKIP
+              IF
+                XW.i < Eps
+                  RWork := XWork
+                XW.i > Nearly.PiBy2
+                  RWork := One
+                TRUE
+                  -- XWork is in the range [0, Pi/2]
+                  -- This implementation uses a polynomial approximation from
+                  -- Cody & Waite "Software Manual for the Elementary Functions", pp125-138.
+                  -- The fixed point version is used here.
+                  VAL R IS [#0015D38B, #FE609BBB, #1110E7B4, #AAAAAE04] :
+                  INT G, H, RW :
+                  SEQ
+                    IncExp(XWork, XWork, -1)  -- divides by 2
+                    FIX (H, XWork)   -- FIX X/2
+                    G  := FRACMUL (   H, H)
+                    RW := FRACMUL (R[0], G)
+                    RW := FRACMUL (RW + R[1], G)
+                    RW := FRACMUL (RW + R[2], G)
+                    RW := FRACMUL (RW + R[3], G)
+                    ReFloat (RWork, RW)
+                    IncExp (RWork, (RWork * XWork) + XWork, 1)
+              IF
+                Negative
+                  Result := - RWork
+                TRUE
+                  Result := RWork
+    :
+
+    PROC COSP (REAL32 Result, VAL REAL32 X)
+      VAL SignBit        IS #80000000(INT) :
+      VAL RealXcess      IS       127(INT) :
+      VAL BitsInFrac     IS        24(INT) :
+      VAL RealExpSh      IS        23(INT) :
+      VAL RealInf        IS #7F800000(INT) :
+      VAL REAL32 inexact.NaN   RETYPES #7F800004(INT) :
+      VAL Pi.i IS #40490FDB(INT) :
+      VAL One         IS 1.0(REAL32) :
+      VAL REAL32 PiBy2    RETYPES #3FC90FDB :
+      VAL Eps IS  (RealXcess - (BitsInFrac >> 1)) << RealExpSh :
+      -- Threshold for sin(x) = x is 2 ** (-ManBits/2), see C&W pp137.
+      -- This is consequently also a threshold for cos(x) = 1.
+      VAL Nearly.PiBy2 IS #3FC907DB : -- PiBy2 - Eps
+      VAL XMax IS Pi.i + ((BitsInFrac >> 1) << RealExpSh) :
+      -- Limit on X is Pi * 2**(ManBits/2). See C&W p134.
+      VAL REAL32 InvPi RETYPES #3EA2F983(INT32) :
+      VAL REAL32 C1 RETYPES #40490000(INT32) :
+      VAL REAL32 C2 RETYPES #3A7DAA22(INT32) :-- C1 + C2 = Pi to extra precision
+      VAL INT X.i RETYPES X :
+      REAL32 XWork :
+      INT XW.i RETYPES XWork :  -- for faster comparison
+      SEQ
+        XW.i := X.i /\ (~SignBit)
+        IF
+          XW.i > RealInf
+            Result := X    -- transmit NaN
+          XW.i > XMax      -- Integer compare is safe
+            Result := inexact.NaN
+          XW.i < Eps
+            Result := One
+          TRUE
+            REAL32 RWork :
+            BOOL Odd :
+            SEQ
+              VAL N  IS INT ROUND ((XWork + PiBy2) * InvPi) :
+              REAL32 XN :
+              SEQ
+                IncExp (XN, REAL32 ROUND ((N << 1) - 1), -1)
+                -- XN is (2N -1)/2 = N -1/2
+                XWork := (XWork - (XN * C1)) - (XN * C2) -- extended precision
+                Odd := ((N /\ 1) = 1)
+              IF
+                XW.i < 0
+                  SEQ
+                    XW.i := XW.i /\ (~SignBit)
+                    Odd := NOT Odd
+                TRUE
+                  SKIP
+              IF
+                XW.i < Eps
+                  RWork := XWork
+                XW.i > Nearly.PiBy2
+                  RWork := One
+                TRUE
+                  -- XWork is in the range [0, Pi/2]
+                  -- This implementation uses a polynomial approximation from
+                  -- Cody & Waite "Software Manual for the Elementary Functions"
+                  -- pp125-138. The fixed point version is used here.
+                  VAL R IS [#0015D38B, #FE609BBB, #1110E7B4, #AAAAAE04] :
+                  INT G, H, RW :
+                  SEQ
+                    IncExp(XWork, XWork, -1)  -- divides by 2
+                    FIX (H, XWork)   -- FIX X/2
+                    G := FRACMUL (H, H)
+                    RW := FRACMUL (G, R[0])
+                    RW := FRACMUL (G, RW + R[1])
+                    RW := FRACMUL (G, RW + R[2])
+                    RW := FRACMUL (G, RW + R[3])
+                    ReFloat (RWork, RW)
+                    IncExp (RWork, (RWork * XWork) + XWork, 1)
+              IF
+                Odd
+                  Result := - RWork
+                TRUE
+                  Result := RWork
+    :
+
+    PROC random ( INT random, seed )
+      SEQ
+        IF
+          seed = 0
+            seed := #1357
+          TRUE
+            INT r :
+            SEQ
+              r := seed
+              SEQ bit = 0 FOR 16
+                r := (r >> 1) \/
+                     ((((r /\ 1)             ><
+                       ((r /\ 4) >> 2))      ><
+                      (((r /\ #800) >> 11)   ><
+                       ((r /\ #8000) >> 15))) << 15)
+              seed := r
+        random := seed
+    :
+
+    PROC normalize ( [3] REAL32 vector, REAL32 oldHyp )
+      REAL32 t :
+      SEQ
+        t :=  (vector [0] * vector [0]) +
+             ((vector [1] * vector [1]) +
+              (vector [2] * vector [2]))
+        --SQRTP( oldHyp, t )
+        oldHyp := SQRT( t )
+        vector [0] := vector [0] / oldHyp
+        vector [1] := vector [1] / oldHyp
+        vector [2] := vector [2] / oldHyp
+    :
+
+    PROC dotProduct ( REAL32 a.b, [3] REAL32 a, b )
+      a.b := (a[0] * b[0]) + ((a[1] * b[1]) + (a[2] * b[2]))
+    :
+
+    [256] INT message :
+    INT mess.p :
+
+    PROC wrch ( VAL INT ch )
+      IF
+        ch = (-7)
+          SEQ
+            pixelsOut ! c.message; mess.p; [ message FROM 0 FOR mess.p ]
+            mess.p := 0
+        mess.p = 256
+          SKIP
+        TRUE
+          SEQ
+            message [ mess.p] := ch
+            mess.p := mess.p + 1
+    :
+
+    PROC writes ( VAL [] BYTE s )
+      SEQ
+        SEQ i = 0 FOR SIZE s
+          wrch ( INT s [i])
+        wrch ( -7)
+    :
+
+    PROC writen ( VAL INT num)
+      [20] INT stack :
+      INT sp :
+      PROC push (VAL INT push)
+        SEQ
+          stack[sp] := push
+          sp := sp + 1
+          SKIP
+      :
+
+      PROC pop (INT pop)
+        SEQ
+          sp := sp - 1
+          pop := stack[sp]
+          SKIP
+      :
+
+      VAL nil IS #DEAD :
+      INT n :
+      SEQ
+        IF
+          num < 0
+            SEQ
+              n := -num
+              wrch ( INT '-')
+          TRUE
+            n := num
+        sp := 0
+        push (nil)
+        WHILE n > 9
+          SEQ
+            push (n \ 10)
+            n := n / 10
+        WHILE n <> nil
+          SEQ
+            wrch ( n + (INT '0'))
+            pop (n)
+    :
+
+
+    PROC writeReal ( VAL INT X )
+      --Write real number X to channel OUT. Number has IP places of
+      --figures before point, DP places after; sign is either space or minus.
+      --Total field width is Ip+Dp+2. If value out of range then
+      --exponential form used. If Dp is zero then free format using
+      --minimum field width is used (exponential form if number out
+      --of sensible range), Ip should be zero if Dp is zero. If Ip is
+      --zero then the exponential form is used to give Dp places of
+      --accuracy (field width is Dp+6). In exponential form the
+      --fraction (.1 <= f < 1.) is followed be E, sign (+, -) and the
+      --two digit exponent.
+      -- IEEE Standard Floating Point Arithmetic.
+      -- Single length implementation for 32 bit host.
+      -- Martin Bond, Version 6, 16 April 85.
+
+      -- Standard operation routines
+
+      VAL RealShift      IS         8 :
+      VAL RealExpSh      IS        23 :
+      VAL BitsInFrac     IS        24 :
+      VAL RealExp        IS       255 :
+      VAL RealXcess      IS       127 :
+      VAL RealRBit       IS       128 :
+      VAL RealInf        IS #7F800000 :
+      VAL RealNaN        IS #7F800001 :
+      VAL SignBit        IS #80000000 :
+      VAL BitsPerWord    IS        32 :
+      --square root constants
+      VAL R2C            IS #93000000 :
+      VAL R2K            IS #6CFFFFFF :      --word extension always -1
+      VAL R2R            IS #B504F334 :
+
+      -- Useful constants.
+      VAL RealMin        IS #00800000 :      --min normal number
+      VAL RealMax        IS #7F7FFFFF :      --max normal integer
+      VAL One            IS #3F800000 :      --unity
+
+      VAL Pi             IS #40490FDB :
+      VAL E              IS #402DF854 :
+      VAL add IS 0 :
+      VAL sub IS 1 :
+      VAL mul IS 2 :
+      VAL div IS 3 :
+      VAL rem IS 4 :
+      -- write number constants
+      VAL RealBuf        IS     8 :             --buffer size
+
+      VAL Table10        IS    13 :             --exact power ten in word
+      VAL Bias10         IS     3 :             --extras for full pow ten range
+      VAL MaxDecN        IS     9 :             --maximum dec digits
+      VAL R2L            IS #4D10 :             --Log2(10) in low half word
+
+      VAL PowerTenFrac IS [#80000000,
+                       #A0000000,
+                       #C8000000,
+                       #FA000000,
+                       #9C400000,
+                       #C3500000,
+                       #F4240000,
+                       #98968000,
+                       #BEBC2000,
+                       #EE6B2800,
+                       #9502F900,
+                       #BA43B740,
+                       #E8D4A510,
+                       #9184E72A] :
+
+      VAL PowerTenExp  IS [0, 3, 6, 9, 13, 16, 19, 23, 26, 29, 33, 36, 39, 43] :
+
+      VAL BiasTenFrac  IS [#9184E72A,     --P13
+                      #CECB8F28,     --P27
+                      #EB194F8E] :   --P40
+
+      VAL BiasTenExp   IS [43, 89, 132] :
+
+      VAL BiasTen      IS [14, 28, 41, 54] :  --bias changeover points
+
+
+      PROC put.byte ( VAL INT byte )
+        wrch ( byte)
+      :
+
+      PROC ScaleX (INT Xexp, Xfrac, VAL INT Scale)
+        --scale x by value of 10^Scale
+        INT Carry, N, Places, Sb, St, Zexp, Zfrac :
+        SEQ
+          IF
+            Scale < 0                           --get abs value of scale
+              St := -Scale
+            TRUE
+              St := Scale
+          IF
+            St <= Table10                       --easy case, 10 in table
+              SEQ
+                Zexp := PowerTenExp[St]
+                Zfrac := PowerTenFrac[St]
+            St = (BiasTen[1]-1)                 --special case
+              SEQ
+                Zexp := BiasTenExp[1]
+                Zfrac := BiasTenFrac[1]
+            TRUE                                --apply bias
+              SEQ
+                IF                              --get power ten bias
+                  IF i = 0 FOR Bias10
+                    St < BiasTen[i+1]
+                      Sb := i
+                  TRUE                          --too big
+                    Sb := -1
+                IF
+                  Sb < 0                        --too large
+                    Zexp := -1
+                  TRUE                          --valid power
+                    SEQ
+                      St := (St-BiasTen[Sb]) + 1
+                      Zexp := (PowerTenExp[St]+BiasTenExp[Sb]) + 1
+                      Zfrac, Carry := LONGPROD (PowerTenFrac[St],
+                                                  BiasTenFrac[Sb], 0)
+                      Places, Zfrac, Carry := NORMALISE (Zfrac, Carry)
+                      Zexp := Zexp - Places
+          IF
+            Zexp < 0                              --out of range
+              SEQ
+                IF
+                  Scale < 0                      --set to big number
+                    Zexp := -RealExp
+                  TRUE
+                    Zexp := RealExp
+                Zfrac := SignBit                  --prevent normalisation
+            Scale < 0                             --scale down
+              SEQ
+                Zexp := Xexp - Zexp
+                Zfrac, Carry := LONGDIV (Xfrac>>1, 0, Zfrac)
+                IF
+                  Carry = 0                       --get error in result
+                    SEQ
+                  TRUE                            --note sticky bit
+                    Carry := SignBit
+            TRUE                                  --scale up
+              SEQ
+                Zexp := (Xexp+Zexp) + 1
+                Zfrac, Carry := LONGPROD (Xfrac, Zfrac, 0)
+          Places, Xfrac, Carry := NORMALISE (Zfrac, Carry)
+          Xexp := Zexp - Places
+      :
+
+      PROC QuickLog (INT LogX, VAL INT Xexp, Xfrac)
+        --cheap approximation of Log10, may be 1 too small.
+        INT Borrow, Carry, X :
+        SEQ
+          --get cheap approx to Log2 of 1.f*2^e as e.f
+          Carry, X := SHIFTRIGHT (Xexp, Xfrac<<1, BitsPerWord/2)
+          IF
+            X < 0                                     --log2 may be small
+              SEQ
+                X, Carry := LONGPROD (-X, R2L+1, 0)
+                Borrow, Carry := LONGDIFF (0, Carry, 0)
+                Borrow, LogX := LONGDIFF (0, X, Borrow)
+            TRUE                                      --log2 about right
+              LogX, Carry := LONGPROD (X, R2L, 0)       --mul by Log10(2)
+      :
+
+      PROC Round (INT Xexp, Xfrac, Xint)
+        --round number to nearest integer
+        INT Places, Guard :
+        SEQ
+          IF
+            Xexp >= BitsPerWord                   --outside valid range
+              SEQ
+            TRUE                                  --round X to an integer
+              SEQ
+                Places := BitsPerWord - (Xexp+1)
+                Xint, Guard := SHIFTRIGHT (Xfrac, 0, Places)
+                IF
+                  ((Guard /\ SignBit) = 0) OR     --don't round
+                    (((Guard/\(~SignBit))\/(Xint/\1)) = 0)
+                    SKIP                          --round down/even
+                  TRUE
+                    Xint := Xint + 1              --round integer
+                Guard, Xfrac := SHIFTLEFT (0, Xint, Places)   --get int as real
+                Xexp := Xexp + Guard
+      :
+
+      PROC WriteDec ([]INT Buf, INT Length, VAL INT Num)
+        --generate unsigned number (assumed to be non-zero)
+        INT N, ix, iy, W :
+        SEQ
+          N := Num
+          ix := 0                           --build in reverse order
+          WHILE N <> 0
+            SEQ
+              INT temp :
+              SEQ
+                N, temp := LONGDIV (0, N, 10)
+                Buf[ix] := temp
+              IF
+                (ix\/Buf[ix]) = 0           --dump trailing spaces
+                  SKIP
+                TRUE
+                  SEQ
+                    Buf[ix] := Buf[ix] + (INT '0')
+                    ix := ix + 1
+          Length := ix
+          ix := ix - 1
+          iy := 0
+          WHILE iy < ix                     --get correct order
+            SEQ
+              N := Buf[ix]
+              Buf[ix] := Buf[iy]
+              Buf[iy] := N
+              iy := iy + 1
+              ix := ix - 1
+      :
+
+      INT Ip, Dp :
+      INT Carry, LogX, N, Places, Scale :
+      INT Xexp, Xfrac, Xint, Yexp, Yfrac :
+      [MaxDecN]INT Buf :
+      SEQ
+        Ip := 0
+        Dp := 0
+        Xexp, Xfrac := SHIFTLEFT(0, X/\(~SignBit), RealShift+1)
+        IF
+          Xexp = RealExp                    --inf or NaN
+            SEQ
+              IF
+                (X /\ SignBit) = 0
+                  put.byte (INT ' ')
+                TRUE
+                  put.byte (INT '-')
+              IF
+                X = RealNaN
+                  SEQ
+                    put.byte (INT 'N')
+                    put.byte (INT 'a')
+                    put.byte (INT 'N')
+                TRUE
+                  SEQ
+                    put.byte (INT 'I')
+                    put.byte (INT 'n')
+                    put.byte (INT 'f')
+              IF
+                Dp <> 0                     --pad with spaces
+                  SEQ i = 0 FOR (Ip+Dp)-2
+                    put.byte (INT ' ')
+                TRUE
+                  SEQ
+              IF
+                (Ip = 0) AND (Dp <> 0)      --exp form
+                  SEQ
+                    put.byte (INT ' ')      --for e+00
+                    put.byte (INT ' ')
+                    put.byte (INT ' ')
+                    put.byte (INT ' ')
+                TRUE
+                  SEQ
+          (Xexp\/Xfrac) = 0                 --zero
+            SEQ
+              IF
+                (X /\ SignBit) = 0
+                  put.byte (INT ' ')
+                TRUE
+                  put.byte (INT '-')
+              SEQ i = 0 FOR Ip-1
+                put.byte (INT ' ')
+              put.byte (INT '0')
+              put.byte (INT '.')
+              put.byte (INT '0')
+              SEQ i = 0 FOR Dp-1
+                put.byte (INT ' ')
+          TRUE                              --proper value
+            SEQ
+              IF
+                Xexp = 0                    --ensure normal
+                  SEQ
+                    Places, Xfrac, Carry := NORMALISE (Xfrac, 0)
+                    Xexp := - (Places + RealXcess)
+                TRUE                        --set top bit
+                  SEQ
+                    Xfrac := (Xfrac >> 1) \/ SignBit
+                    Xexp := Xexp - RealXcess
+              Yexp := Xexp                  --save extended X
+              Yfrac := Xfrac
+              QuickLog (LogX, Xexp, Xfrac)  --get log
+              IF
+                Dp <> 0                     --field width
+                  SEQ
+                    N := Ip + Dp            --significant digits
+                    IF
+                      N > MaxDecN           --don't print too many
+                        N := MaxDecN
+                      TRUE
+                        SEQ
+                TRUE
+                  N := MaxDecN              --default
+              Scale := (N - 1) - LogX
+              ScaleX (Xexp, Xfrac, Scale)   --get X in range
+              Round (Xexp, Xfrac, Xint)     --now as integer
+              IF
+                (Xexp > PowerTenExp[N]) OR
+                  ((Xexp = PowerTenExp[N]) AND (Xfrac >= PowerTenFrac[N]))
+                  SEQ
+                    LogX := LogX + 1        --new scale
+                    Xexp := Yexp            --reset X
+                    Xfrac := Yfrac
+                    ScaleX (Xexp, Xfrac, Scale-1)
+                    Round (Xexp, Xfrac, Xint)
+                TRUE                        --X in correct range
+                  SEQ
+              WriteDec (Buf, Places, Xint)         --get number string
+              IF
+                (Dp = 0) AND ((-3) <= LogX) AND (LogX < N)  --good default form
+                  SKIP
+                (Ip = 0) OR (LogX >= Ip) OR
+                  ((-LogX) > Dp)            --use exp form
+                  SEQ
+                    IF
+                      (X /\ SignBit) = 0
+                        put.byte (INT ' ')
+                      TRUE
+                        put.byte (INT '-')
+                    put.byte (Buf[0])
+                    put.byte (INT '.')
+                    IF
+                      Dp <> 0               --exp form requested
+                        SEQ
+                          SEQ i = 1 FOR Dp-1
+                            IF
+                              i < Places
+                                put.byte (Buf[i])
+                              i = 1         --only one digit
+                                put.byte (INT '0')
+                              TRUE          --space fill field
+                                put.byte (INT ' ')
+                      Places <= 1           --only one digit
+                        put.byte (INT '0')
+                      TRUE                  --output all digits
+                        SEQ i = 1 FOR Places-1
+                          put.byte (Buf[i])
+                    put.byte (INT 'E')
+                    IF
+                      LogX < 0
+                        SEQ
+                          put.byte (INT '-')
+                          LogX := -LogX
+                      TRUE
+                        put.byte (INT '+')
+                    put.byte ((LogX/10) + (INT '0'))
+                    put.byte ((LogX\10) + (INT '0'))
+                    Places := 0             --flag done
+                TRUE
+                  SKIP
+              IF
+                Places = 0                  --number already output
+                  SKIP
+                TRUE                        --output number
+                  INT Ipl, Dpl :
+                  SEQ
+                    IF
+                      LogX <= 0                  --always 0.
+                        Scale := 0
+                      TRUE
+                        Scale := LogX
+                    IF
+                      Dp = 0                     --free format
+                        SEQ
+                          IF
+                            LogX < 0
+                              Ipl := 1             --sign and 0.
+                            TRUE
+                              Ipl := LogX + 1
+                          Dpl := Places - LogX
+                          IF
+                            Dpl <= 0
+                              Dpl := 1
+                            TRUE
+                              SEQ
+                      TRUE
+                        SEQ
+                          Ipl := Ip
+                          Dpl := Dp
+                    SEQ i = LogX-Ipl FOR Ipl+1
+                      IF
+                        ((i = LogX) AND (LogX < 0)) OR (i >= Places)
+                          put.byte (INT '0')
+                        i = (LogX-(Scale+1))
+                          IF
+                            (X /\ SignBit) = 0
+                              put.byte (INT ' ')
+                            TRUE
+                              put.byte (INT '-')
+                        i < (-1)
+                          put.byte (INT ' ')
+                        (0 <= i) AND (i < Places)
+                          put.byte (Buf[i])
+                    put.byte (INT '.')
+                    SEQ i = (LogX+1) FOR Dpl
+                      IF
+                        ((i = (LogX+1)) AND (i >= Places)) OR (i < 0)
+                          put.byte (INT '0')
+                        (0 <= i) AND (i < Places)
+                          put.byte (Buf[i])
+                        i >= Places
+                          put.byte (INT ' ')
+    :
+
+    PROC writef ( VAL [] BYTE str, VAL INT a, b, c, d)
+      INT chptr, ch, ptr :
+      [4] INT args :
+      SEQ
+        ptr     := 0
+        chptr   := 0
+        args[0] := a
+        args[1] := b
+        args[2] := c
+        args[3] := d
+        WHILE chptr < (SIZE str)
+          TIMER clock :
+          INT now :
+          SEQ
+            ch := INT str[chptr]
+            IF
+              ch = (INT '%')
+                SEQ
+                  chptr := chptr + 1
+                  ch := INT str [chptr]
+                  IF
+                    (ch = (INT 'I')) OR (ch = (INT 'i'))
+                      SEQ
+                        writen ( args[ptr])
+                        IF
+                          ptr = 3
+                            SKIP
+                          TRUE
+                            ptr := ptr + 1
+                    (ch = (INT 'F')) OR (ch = (INT 'f'))
+                      SEQ
+                        writeReal ( args[ptr])
+                        IF
+                          ptr = 3
+                            SKIP
+                          TRUE
+                            ptr := ptr + 1
+                    TRUE
+                      SKIP
+
+              TRUE
+                wrch ( ch)
+            chptr := chptr + 1
+        wrch ( -7)
+    :
+
+    PROC initBYTEvec ( [] BYTE vec, VAL INT pattern, bytes )
+      INT dest, xfer :
+      BYTE set :
+      SEQ
+        set := BYTE (pattern /\ #FF)
+        vec [0] := set
+        vec [1] := set
+        vec [2] := set
+        vec [3] := set
+        xfer    := 4
+        dest    := xfer
+        WHILE dest < bytes
+          SEQ
+            IF
+              (dest + xfer) < bytes
+                [ vec FROM dest FOR xfer ] := [ vec FROM 0 FOR xfer ]
+              TRUE
+                SEQ
+                  xfer := bytes - dest
+                  [ vec FROM dest FOR xfer ] := [ vec FROM 0 FOR xfer ]
+            dest := dest + xfer
+            xfer := xfer + xfer
+    :
+
+    PROC initWORDvec ( [] INT vec, VAL INT pattern, words )
+      INT dest, xfer :
+      BYTE set :
+      SEQ
+        vec [0] := pattern
+        xfer    := 1
+        dest    := xfer
+        WHILE dest < words
+          SEQ
+            IF
+              (dest + xfer) < words
+                [ vec FROM dest FOR xfer ] := [ vec FROM 0 FOR xfer ]
+              TRUE
+                SEQ
+                  xfer := words - dest
+                  [ vec FROM dest FOR xfer ] := [ vec FROM 0 FOR xfer ]
+            dest := dest + xfer
+            xfer := xfer + xfer
+    :
+
+     --The classic ray tracing paper is
+
+     --   'An improved illumination model for shaded display'
+
+     --   Turner Whitted CACM June 1980
+     --                             -
+     --                           . V
+     --                    -  -  /
+     --                - ^ V'+N /
+     --                N |<----.
+     --           - \    |    /
+     --           R  \   |   / -
+     --               \  |-./  V'
+     --                \ |a/
+     --       __________\|/__________
+     --       ///////////////////////
+     --                 /
+     --             -  /
+     --             P  /
+     --               /
+     --               /
+     --              -   -
+     --   VN cos a = N.(-V)
+     --
+     --   N / V' = cos a
+     --
+     --   N = 1, V = 1
+     --            - -
+     --   V' = -1/(N.V)
+     
+     --   hence ( p. 344 CACM)
+     --
+     --     -    -    - -
+     --     V' = V / |V.N|
+     --     -    -     -
+     --     R  = V' + 2N
+     --     -       -   -     -
+     --     P  = kf(N + V') - N
+     --
+     --                   2   2     -    -  2  -1/2
+     --      where kf = (kn |V'| - |V' + N'| )
+     --
+     --     kn = index of refraction
+     --                - -
+     --   NOTE that if V.N < 0 we are INSIDE the object - be careful about
+     --   the refractive index
+
+
+    PROC reflectRay ( INT reflected, incident,
+                      REAL32 Vprime, [3] REAL32 Vvec, BOOL flip )
+      --
+      -- this code assumes a ray normalized on entry. if it is not, you are in
+      -- trouble
+      --
+      -- normalization is not maintained after a reflection, but from the
+      -- geometry of the system ( see above) we can determine that
+      -- the ratio of V' to V is the ratio of R' to R
+      --
+      -- now V is 1, R is 1, so to obtain R from R'
+      -- R = (R' * V) / V'
+      -- or R = R'/V'
+      --
+      -- so renormalization now costs 3 divides, not 3 muls, 2 adds and 1 root
+      --
+      [] REAL32 node IS [ ftree FROM incident  FOR nodeSize ] :
+      [] REAL32 spec IS [ ftree FROM reflected FOR nodeSize ] :
+      REAL32 V.N, hyp :
+      SEQ
+        dotProduct ( V.N, [ node FROM n.dx FOR 3 ], [ node FROM n.normx FOR 3 ] )
+        IF
+          V.N > 0.0 (REAL32)
+            [3] INT normal RETYPES [ node FROM n.normx FOR 3 ] :
+            SEQ
+              normal [0] := normal [0] >< mint
+              normal [1] := normal [1] >< mint
+              normal [2] := normal [2] >< mint
+              Vprime := 1.0 (REAL32) / V.N
+              flip   := TRUE
+          TRUE
+            SEQ
+              Vprime := (-1.0 (REAL32)) / V.N
+              flip   := FALSE
+        --
+        --  V'/V = dxV' / dxV
+        --                  _ _
+        --  V = 1, V' = -1/(N.V)
+        --
+        --  so dxV' = dxV*Vprime
+        --
+        --  so Rx = Nx + Nx + dxV*Vprime
+        --     Ry = Ny + Ny + dyV*Vprime
+        --     Rz = Nz + Nz + dzV*Vprime
+        --
+        REAL32 twoN :
+        SEQ
+          twoN        := node [ n.normx] * 2.0 (REAL32)
+          Vvec [0]    := node [ n.dx] * Vprime
+          spec [n.dx] := Vvec [0]  + twoN
+
+          twoN        := node [ n.normy] * 2.0 (REAL32)
+          Vvec [1]    := node [ n.dy] * Vprime
+          spec [n.dy] := Vvec [1]  + twoN
+
+          twoN        := node [n.normz] * 2.0 (REAL32)
+          Vvec [2]    := node [n.dz] * Vprime
+          spec [n.dz] := Vvec [2]  + twoN
+
+        spec [ n.dx] := spec [ n.dx] / Vprime
+        spec [ n.dy] := spec [ n.dy] / Vprime
+        spec [ n.dz] := spec [ n.dz] / Vprime
+
+        spec [ n.startx] := node [ n.sectx] + node [ n.normx]
+        spec [ n.starty] := node [ n.secty] + node [ n.normy]
+        spec [ n.startz] := node [ n.sectz] + node [ n.normz]
+    :
+    PROC refractRay ( INT refracted, incident,
+                      REAL32 Vprime, [3] REAL32 Vvec,
+                      BOOL   flip, totalInternal )
+      --   _       _   _     _
+      --   P  = kf(N + V') - N
+      --
+      --                  2    2   _    _  2  -1/2
+      --    where kf = (kn |V'| - |V' + N'| )
+      --
+      --    kn = index of refraction
+      --               _ _
+      --  NOTE that if V.N < 0 we are INSIDE the object - be careful about
+      --  the refractive index
+
+
+      node IS [ ftree FROM incident  FOR nodeSize ] :
+      [nodeSize] INT inode RETYPES node :
+
+      frac IS [ ftree FROM refracted FOR nodeSize ] :
+      [nodeSize] INT ifrac RETYPES frac :
+
+      VAL  objptr IS inode  [ n.objptr] :  -- points to size word
+      VAL  kn     IS fworld [ objptr + (o.refix + 1)] : -- skip size word
+
+      REAL32 kn.Vprime, Vprime.plus.N :
+
+      [3] REAL32 t : -- temporary vector
+
+      [3] REAL32 norm IS [ node FROM n.normx FOR 3 ] :
+      [3] INT inorm RETYPES norm :
+      SEQ
+        IF
+          flip
+            kn.Vprime := (Vprime * Vprime) / kn
+          TRUE
+            kn.Vprime := (Vprime * Vprime) * kn
+
+        t [0] := norm [0] + Vvec [0]
+        t [1] := norm [1] + Vvec [1]
+        t [2] := norm [2] + Vvec [2]
+
+        Vprime.plus.N  := (t [0] * t [0]) +
+                         ((t [1] * t [1]) +
+                          (t [2] * t [2]))
+
+        IF
+          Vprime.plus.N > kn.Vprime
+            totalInternal := TRUE
+          TRUE
+            REAL32 kf2, kf :
+            SEQ
+              totalInternal := FALSE
+
+              kf2 := kn.Vprime - Vprime.plus.N
+              --SQRTP ( kf, kf2 )
+              kf := SQRT ( kf2 )
+
+              t [0] := t [0] / kf  -- get kf (N + V')
+              t [1] := t [1] / kf
+              t [2] := t [2] / kf
+
+              frac [ n.dx] := t [0] - norm [0]
+              frac [ n.dy] := t [1] - norm [1]
+              frac [ n.dz] := t [2] - norm [2]
+
+              normalize ( [ frac FROM n.dx FOR 3 ], kf )
+
+              frac [ n.startx] := node [ n.sectx] - node [ n.normx]
+              frac [ n.starty] := node [ n.secty] - node [ n.normy]
+              frac [ n.startz] := node [ n.sectz] - node [ n.normz]
+    :
+
+    --
+    --  the leaf intersector processes act on nodes in the shade tree,
+    --  and either set the t record to 0 if no intersection, or
+    --  set up t, sectxyz, normxyz if intersection occurs
+    --  they locally test for t < nastyFrig to save computation
+    --
+    VAL minSect IS 0.001 (REAL32) :
+    VAL a.11  IS 0:
+    VAL a.12  IS 1:
+    VAL a.13  IS 2:
+    VAL a.21  IS 3:
+    VAL a.22  IS 4:
+    VAL a.23  IS 5:
+    VAL a.31  IS 6:
+    VAL a.32  IS 7:
+    VAL a.33  IS 8:
+
+    VAL p.xx  IS 0:
+    VAL p.yy  IS 1:
+    VAL p.zz  IS 2:
+
+    PROC TransLocal(VAL [9] REAL32 matrix,[3] REAL32 point )
+      [3] REAL32 newpoint:
+      SEQ
+        newpoint[p.xx] := (( matrix[a.11] * point[p.xx] ) +
+                          (( matrix[a.12] * point[p.yy] ) +
+                           ( matrix[a.13] * point[p.zz] )))
+        newpoint[p.yy] := (( matrix[a.21] * point[p.xx] ) +
+                          (( matrix[a.22] * point[p.yy] ) +
+                           ( matrix[a.23] * point[p.zz] )))
+        newpoint[p.zz] := (( matrix[a.31] * point[p.xx] ) +
+                          (( matrix[a.32] * point[p.yy] ) +
+                           ( matrix[a.33] * point[p.zz] )))
+        SEQ i = 0 FOR 3
+          point[i] := newpoint[i]
+    :
+
+    PROC TransGlobal(VAL [9] REAL32 matrix,[3] REAL32 point )
+      [9] REAL32 invers:
+      SEQ
+        invers[a.11]:=matrix[a.11]
+        invers[a.12]:=matrix[a.21]
+        invers[a.13]:=matrix[a.31]
+        invers[a.21]:=matrix[a.12]
+        invers[a.22]:=matrix[a.22]
+        invers[a.23]:=matrix[a.32]
+        invers[a.31]:=matrix[a.13]
+        invers[a.32]:=matrix[a.23]
+        invers[a.33]:=matrix[a.33]
+        TransLocal(invers,point)
+    :
+
+    PROC sphereSect ( [nodeSize] REAL32 node, VAL [] REAL32 sphere )
+      REAL32 xoff, yoff, zoff,
+             xcomp, ycomp, zcomp,
+             minusb, rootb2m4ac,
+             b2, c :
+      [nodeSize] INT iNode RETYPES node :
+      t IS node [n.t] :
+      SEQ
+        xoff := node [ n.startx] - sphere [ s.x]
+        yoff := node [ n.starty] - sphere [ s.y]
+        zoff := node [ n.startz] - sphere [ s.z]
+
+        xcomp := xoff * node [ n.dx]
+        ycomp := yoff * node [ n.dy]
+        zcomp := zoff * node [ n.dz]
+
+        minusb := -(xcomp + (ycomp + zcomp))
+        b2     := minusb * minusb
+
+        xcomp := xoff * xoff
+        ycomp := yoff * yoff
+        zcomp := zoff * zoff
+
+        c := (xcomp + (ycomp + zcomp)) - (sphere [s.rad] * sphere [s.rad])
+        IF
+          b2 > c
+            REAL32 t1, t2 :
+            BOOL proceed, t2ok, t1ok :
+            SEQ
+              --SQRTP ( rootb2m4ac, b2 - c )
+              rootb2m4ac := SQRT (b2 - c )
+              t1 := minusb - rootb2m4ac
+              t2 := minusb + rootb2m4ac
+              IF
+                t1 > minSect
+                  t1ok := TRUE
+                TRUE
+                  t1ok := FALSE
+              IF
+                t2 > minSect
+                  t2ok := TRUE
+                TRUE
+                  t2ok := FALSE
+              IF
+                t1ok AND t2ok
+                  SEQ
+                    proceed := TRUE
+                    IF
+                      t2 > t1
+                        t := t1
+                      TRUE
+                        t := t2
+                t1ok
+                  SEQ
+                    t := t1
+                    proceed := TRUE
+                t2ok
+                  SEQ
+                    t := t2
+                    proceed := TRUE
+                TRUE
+                  proceed := FALSE
+              IF
+                proceed
+                  SEQ
+                    node [ n.sectx] := (node [ n.dx] * t) + node [ n.startx]
+                    node [ n.secty] := (node [ n.dy] * t) + node [ n.starty]
+                    node [ n.sectz] := (node [ n.dz] * t) + node [ n.startz]
+
+                    node [ n.normx] := (node [n.sectx] - sphere [s.x]) / sphere [s.rad]
+                    node [ n.normy] := (node [n.secty] - sphere [s.y]) / sphere [s.rad]
+                    node [ n.normz] := (node [n.sectz] - sphere [s.z]) / sphere [s.rad]
+
+                TRUE
+                  iNode [n.t] := 0  -- no intersection
+          TRUE
+            iNode [n.t] := 0
+    :
+
+    PROC ellipsoidSect ( [nodeSize] REAL32 node, VAL [] REAL32 ellipsoid )
+      [nodeSize] INT iNode RETYPES node :
+      t IS node [n.t] :
+
+      REAL32 aa,bb,cc,b2mac,rootb2mac,length:
+      [3] REAL32 point :
+      [3] REAL32 normal:
+      [9] REAL32 matrix:
+      [3] REAL32 origin:
+      SEQ
+        SEQ i = 0 FOR 3
+          point[i] := node[ i + n.startx] - ellipsoid[i + e.x]
+        SEQ i = 0 FOR 3
+          normal[i] := node[ i + n.dx]
+        SEQ i = 0 FOR 9
+          matrix[i] := ellipsoid[i + e.a11]
+        TransLocal(matrix,point)
+        SEQ i = 0 FOR 3
+          point[i] := point[i] / ellipsoid[e.radx + i]
+        TransLocal(matrix,normal)
+        SEQ i = 0 FOR 3
+          normal[i] := normal[i] / ellipsoid[e.radx + i]
+        dotProduct( aa, normal, normal )
+        dotProduct( bb, normal, point  )
+        dotProduct( cc, point,  point  )
+        cc := ( cc - 1.0 (REAL32) )
+        b2mac := (bb * bb) - (aa * cc)
+        IF
+          b2mac > 0.0 (REAL32)
+            REAL32 t1, t2 :
+            BOOL proceed, t2ok, t1ok :
+            SEQ
+              --SQRTP ( rootb2mac, b2mac )
+              rootb2mac := SQRT ( b2mac )
+              t1 := -((rootb2mac + bb) / aa)
+              t2 :=  ((rootb2mac - bb) / aa)
+              IF
+                t1 > minSect
+                  t1ok := TRUE
+                TRUE
+                  t1ok := FALSE
+              IF
+                t2 > minSect
+                  t2ok := TRUE
+                TRUE
+                  t2ok := FALSE
+              IF
+                t1ok AND t2ok
+                  SEQ
+                    proceed := TRUE
+                    IF
+                      t2 > t1
+                        t := t1
+                      TRUE
+                        t := t2
+                t1ok
+                  SEQ
+                    t := t1
+                    proceed := TRUE
+                t2ok
+                  SEQ
+                    t := t2
+                    proceed := TRUE
+                TRUE
+                  proceed := FALSE
+              IF
+                proceed
+                  SEQ
+                    SEQ i = 0 FOR 3
+                      point [i] := ((normal [i] * t) + point [i])
+                    SEQ i = 0 FOR 3
+                      normal [i] := point [i] / ellipsoid[e.radx + i]
+                    SEQ i = 0 FOR 3
+                      point [i] := point [i] * ellipsoid[e.radx + i]
+                    TransGlobal(matrix,point)
+                    TransGlobal(matrix,normal)
+                    node [ n.sectx] := (ellipsoid [e.x] + point [p.xx])
+                    node [ n.secty] := (ellipsoid [e.y] + point [p.yy])
+                    node [ n.sectz] := (ellipsoid [e.z] + point [p.zz])
+                    normalize(normal,length)
+                    node [ n.normx] := normal [ p.xx]
+                    node [ n.normy] := normal [ p.yy]
+                    node [ n.normz] := normal [ p.zz]
+                TRUE
+                  iNode [n.t] := 0  -- no intersection
+          TRUE
+            iNode [n.t] := 0
+    :
+
+    PROC cylinderSect ( [nodeSize] REAL32 node, VAL [] REAL32 cylinder )
+      [nodeSize] INT iNode RETYPES node :
+      t IS node [n.t] :
+
+      REAL32 t1,t2,t3,t4,t12,t34:
+      BOOL t1ok,t2ok,t3ok,t4ok:
+      BOOL proceed12,proceed34:
+      REAL32 zaxis:
+      REAL32 aa,bb,cc,b2mac,rootb2mac,length:
+      [3] REAL32 point :
+      [3] REAL32 normal:
+      [9] REAL32 matrix:
+      [3] REAL32 origin:
+      SEQ
+        SEQ i = 0 FOR 3
+          point[i] := node[ i + n.startx] - cylinder[i + c.x]
+        SEQ i = 0 FOR 3
+          normal[i] := node[ i + n.dx]
+        SEQ i = 0 FOR 9
+          matrix[i] := cylinder[i + c.a11]
+        TransLocal(matrix,point)
+        point[0] := point[0] / cylinder[c.rad]
+        point[1] := point[1] / cylinder[c.rad]
+        point[2] := point[2] / cylinder[c.len]
+        TransLocal(matrix,normal)
+        normal[0] := normal[0] / cylinder[c.rad]
+        normal[1] := normal[1] / cylinder[c.rad]
+        normal[2] := normal[2] / cylinder[c.len]
+        aa := (normal[0] * normal[0]) + (normal[1] * normal[1])
+        bb := (normal[0] *  point[0]) + (normal[1] *  point[1])
+        cc := ( point[0] *  point[0]) + ( point[1] *  point[1])
+        cc := ( cc - 1.0 (REAL32) )
+        b2mac := (bb * bb) - (aa * cc)
+        IF
+          b2mac > 0.0 (REAL32)
+            SEQ
+              --SQRTP ( rootb2mac, b2mac )
+              rootb2mac := SQRT ( b2mac )
+              t1 := -((rootb2mac + bb) / aa)
+              t2 :=  ((rootb2mac - bb) / aa)
+              zaxis := point[2] + (t1 * normal[2])
+              IF
+                zaxis < 0.0 (REAL32)
+                  t1ok := FALSE
+                zaxis > 1.0 (REAL32)
+                  t1ok := FALSE
+                t1 > minSect
+                  t1ok := TRUE
+                TRUE
+                  t1ok := FALSE
+              zaxis := point[2] + (t2 * normal[2])
+              IF
+                zaxis < 0.0 (REAL32)
+                  t2ok := FALSE
+                zaxis > 1.0 (REAL32)
+                  t2ok := FALSE
+                t2 > minSect
+                  t2ok := TRUE
+                TRUE
+                  t2ok := FALSE
+              IF
+                t1ok AND t2ok
+                  SEQ
+                    proceed12 := TRUE
+                    IF
+                      t2 > t1
+                        t12 := t1
+                      TRUE
+                        t12 := t2
+                t1ok
+                  SEQ
+                    t12 := t1
+                    proceed12 := TRUE
+                t2ok
+                  SEQ
+                    t12 := t2
+                    proceed12 := TRUE
+                TRUE
+                  proceed12 := FALSE
+          TRUE
+            SEQ
+              proceed12 := FALSE
+              t1ok := FALSE
+              t2ok := FALSE
+        IF
+          normal[2] = 0.0 (REAL32)
+            SEQ
+              proceed34 := FALSE
+              t3ok := FALSE
+              t4ok := FALSE
+          TRUE
+            SEQ
+              t3  := ((   - point[2] ) / normal[2])
+              t4  := (( 1.0 (REAL32) - point[2] ) / normal[2])
+
+              IF
+                t3 < minSect
+                  t3ok := FALSE
+                ( (aa * (t3 * t3)) + (bb * (2.0 (REAL32) * t3)) ) < (-cc)
+                  t3ok := TRUE
+                TRUE
+                  t3ok := FALSE
+              IF
+                t4 < minSect
+                  t4ok := FALSE
+                ( (aa * (t4 * t4)) + (bb * (2.0 (REAL32) * t4)) ) < (-cc)
+                  t4ok := TRUE
+                TRUE
+                  t4ok := FALSE
+              IF
+                t3ok AND t4ok
+                  SEQ
+                    proceed34 := TRUE
+                    IF
+                      t4 > t3
+                        SEQ
+                          t34 := t3
+                          zaxis := 0.0 (REAL32)
+                      TRUE
+                        SEQ
+                          t34 := t4
+                          zaxis := cylinder[ c.len]
+                t3ok
+                  SEQ
+                    t34 := t3
+                    zaxis := 0.0 (REAL32)
+                    proceed34 := TRUE
+                t4ok
+                  SEQ
+                    t34 := t4
+                    zaxis := cylinder [c.len]
+                    proceed34 := TRUE
+                TRUE
+                  proceed34 := FALSE
+        IF
+          proceed12 AND proceed34
+            IF
+              t34 > t12
+                SEQ
+                  t := t12
+                  point [0] := ((normal [0] * t) + point [0]) * cylinder[c.rad]
+                  point [1] := ((normal [1] * t) + point [1]) * cylinder[c.rad]
+                  point [2] := ((normal [2] * t) + point [2]) * cylinder[c.len]
+                  normal [0] := point [0]
+                  normal [1] := point [1]
+                  normal [2] := 0.0 (REAL32)
+                  TransGlobal(matrix,point)
+                  node [ n.sectx] := (cylinder [c.x] + point [p.xx])
+                  node [ n.secty] := (cylinder [c.y] + point [p.yy])
+                  node [ n.sectz] := (cylinder [c.z] + point [p.zz])
+                  TransGlobal(matrix,normal)
+                  normalize(normal,length)
+                  node [ n.normx] := normal [ p.xx]
+                  node [ n.normy] := normal [ p.yy]
+                  node [ n.normz] := normal [ p.zz]
+              TRUE
+                SEQ
+                  t := t34
+                  point [0] := ((normal [0] * t) + point [0]) * cylinder[c.rad]
+                  point [1] := ((normal [1] * t) + point [1]) * cylinder[c.rad]
+                  point [2] := zaxis
+                  normal [0] := 0.0 (REAL32)
+                  normal [1] := 0.0 (REAL32)
+                  normal [2] := 1.0 (REAL32)
+                  TransGlobal(matrix,point)
+                  node [ n.sectx] := (cylinder [c.x] + point [p.xx])
+                  node [ n.secty] := (cylinder [c.y] + point [p.yy])
+                  node [ n.sectz] := (cylinder [c.z] + point [p.zz])
+                  TransGlobal(matrix,normal)
+                  node [ n.normx] := normal [ p.xx]
+                  node [ n.normy] := normal [ p.yy]
+                  node [ n.normz] := normal [ p.zz]
+          proceed12
+            SEQ
+              t := t12
+              point [0] := ((normal [0] * t) + point [0]) * cylinder[c.rad]
+              point [1] := ((normal [1] * t) + point [1]) * cylinder[c.rad]
+              point [2] := ((normal [2] * t) + point [2]) * cylinder[c.len]
+              normal [0] := point [0]
+              normal [1] := point [1]
+              normal [2] := 0.0 (REAL32)
+              TransGlobal(matrix,point)
+              node [ n.sectx] := (cylinder [c.x] + point [p.xx])
+              node [ n.secty] := (cylinder [c.y] + point [p.yy])
+              node [ n.sectz] := (cylinder [c.z] + point [p.zz])
+              TransGlobal(matrix,normal)
+              normalize(normal,length)
+              node [ n.normx] := normal [ p.xx]
+              node [ n.normy] := normal [ p.yy]
+              node [ n.normz] := normal [ p.zz]
+          proceed34
+            SEQ
+              t := t34
+              point [0] := ((normal [0] * t) + point [0]) * cylinder[c.rad]
+              point [1] := ((normal [1] * t) + point [1]) * cylinder[c.rad]
+              point [2] := zaxis
+              normal [0] := 0.0 (REAL32)
+              normal [1] := 0.0 (REAL32)
+              normal [2] := 1.0 (REAL32)
+              TransGlobal(matrix,point)
+              node [ n.sectx] := (cylinder [c.x] + point [p.xx])
+              node [ n.secty] := (cylinder [c.y] + point [p.yy])
+              node [ n.sectz] := (cylinder [c.z] + point [p.zz])
+              TransGlobal(matrix,normal)
+              node [ n.normx] := normal [ p.xx]
+              node [ n.normy] := normal [ p.yy]
+              node [ n.normz] := normal [ p.zz]
+          TRUE
+            iNode [n.t] := 0  -- no intersection
+    :
+
+    PROC coneSect ( [nodeSize] REAL32 node, VAL [] REAL32 cone )
+      [nodeSize] INT iNode RETYPES node :
+      t IS node [n.t] :
+
+      REAL32 t1,t2,t3,t4,t12,t34:
+      BOOL t1ok,t2ok,t3ok,t4ok:
+      BOOL proceed12,proceed34:
+      REAL32 zaxis:
+      REAL32 aa,bb,cc,b2mac,rootb2mac,length:
+      REAL32 delta,delta.2,bma:
+      [3] REAL32 point :
+      [3] REAL32 normal:
+      [9] REAL32 matrix:
+      [3] REAL32 origin:
+      SEQ
+        bma := cone[co.radb] - cone[co.rada]
+        delta := (cone[co.radb]/cone[co.rada]) - 1.0 (REAL32)
+        delta.2 := delta * delta
+        SEQ i = 0 FOR 3
+          point[i] := node[ i + n.startx] - cone[i + co.x]
+        SEQ i = 0 FOR 3
+          normal[i] := node[ i + n.dx]
+        SEQ i = 0 FOR 9
+          matrix[i] := cone[i + co.a11]
+        TransLocal(matrix,point)
+        point[0] := point[0] / cone[co.rada]
+        point[1] := point[1] / cone[co.rada]
+        point[2] := point[2] / cone[co.len]
+        TransLocal(matrix,normal)
+        normal[0] := normal[0] / cone[co.rada]
+        normal[1] := normal[1] / cone[co.rada]
+        normal[2] := normal[2] / cone[co.len]
+        aa := (((normal[0] * normal[0]) + (normal[1] * normal[1])) -
+              ((normal[2] * normal[2]) * delta.2))
+        bb := (((normal[0] *  point[0]) + (normal[1] *  point[1])) -
+              (((normal[2] *  point[2]) * delta.2) + (delta * normal[2])))
+        cc := ((( point[0] *  point[0]) +
+                ( point[1] *  point[1])) -
+                ((( point[2] *  point[2]) * delta.2) +
+                 (( delta *  point[2]) * 2.0 (REAL32) )))
+        cc := ( cc - 1.0 (REAL32) )
+        b2mac := (bb * bb) - (aa * cc)
+        IF
+          b2mac > 0.0 (REAL32)
+            SEQ
+              --SQRTP ( rootb2mac, b2mac )
+              rootb2mac := SQRT ( b2mac )
+              t1 := -((rootb2mac + bb) / aa)
+              t2 :=  ((rootb2mac - bb) / aa)
+              zaxis := point[2] + (normal[2] * t1)
+              IF
+                zaxis < 0.0 (REAL32)
+                  t1ok := FALSE
+                zaxis > 1.0 (REAL32)
+                  t1ok := FALSE
+                t1 > minSect
+                  t1ok := TRUE
+                TRUE
+                  t1ok := FALSE
+              zaxis := point[2] + (normal[2] * t2)
+              IF
+                zaxis < 0.0 (REAL32)
+                  t2ok := FALSE
+                zaxis > 1.0 (REAL32)
+                  t2ok := FALSE
+                t2 > minSect
+                  t2ok := TRUE
+                TRUE
+                  t2ok := FALSE
+              IF
+                t1ok AND t2ok
+                  SEQ
+                    proceed12 := TRUE
+                    IF
+                      t2 > t1
+                        t12 := t1
+                      TRUE
+                        t := t2
+                t1ok
+                  SEQ
+                    t12 := t1
+                    proceed12 := TRUE
+                t2ok
+                  SEQ
+                    t12 := t2
+                    proceed12 := TRUE
+                TRUE
+                  proceed12 := FALSE
+          TRUE
+            SEQ
+              proceed12 := FALSE
+              t1ok := FALSE
+              t2ok := FALSE
+        IF
+          normal[2] = 0.0 (REAL32)
+            SEQ
+              proceed34 := FALSE
+              t3ok := FALSE
+              t4ok := FALSE
+          TRUE
+            SEQ
+              t3  := ((   - point[2] ) / normal[2])
+              t4  := (( 1.0 (REAL32) - point[2] ) / normal[2])
+              IF
+                t3 < minSect
+                  t3ok := FALSE
+                ( (aa * (t3 * t3)) + (bb * (2.0 (REAL32) * t3)) ) < (-cc)
+                  t3ok := TRUE
+                TRUE
+                  t3ok := FALSE
+              IF
+                t4 < minSect
+                  t4ok := FALSE
+                ( (aa * (t4 * t4)) + (bb * (2.0 (REAL32) * t4)) ) < (-cc)
+                  t4ok := TRUE
+                TRUE
+                  t4ok := FALSE
+              IF
+                t3ok AND t4ok
+                  SEQ
+                    proceed34 := TRUE
+                    IF
+                      t4 > t3
+                        t34 := t3
+                      TRUE
+                        t34 := t4
+                t3ok
+                  SEQ
+                    t34 := t3
+                    proceed34 := TRUE
+                t4ok
+                  SEQ
+                    t34 := t4
+                    proceed34 := TRUE
+                TRUE
+                  proceed34 := FALSE
+        IF
+          proceed12 AND proceed34
+            IF
+              t34 > t12
+                REAL32 sinus,cosinus,hyperbole:
+                SEQ
+                  --SQRTP( hyperbole,((bma * bma) + (cone[co.len] * cone[co.len])))
+                  hyperbole := SQRT(((bma * bma) + (cone[co.len] * cone[co.len])))
+                  cosinus := cone[co.len] / hyperbole
+                  sinus := bma / hyperbole
+                  t := t12
+                  point [0] := ((normal [0] * t) + point [0]) * cone[co.rada]
+                  point [1] := ((normal [1] * t) + point [1]) * cone[co.rada]
+                  point [2] := ((normal [2] * t) + point [2]) * cone[co.len]
+                  normal [0] := point [0]
+                  normal [1] := point [1]
+                  normal [2] := 0.0 (REAL32)
+                  normalize(normal,length)
+                  normal [0] := normal [0] * cosinus
+                  normal [1] := normal [1] * cosinus
+                  normal [2] := - sinus
+                  TransGlobal(matrix,point)
+                  node [ n.sectx] := (cone [co.x] + point [p.xx])
+                  node [ n.secty] := (cone [co.y] + point [p.yy])
+                  node [ n.sectz] := (cone [co.z] + point [p.zz])
+                  TransGlobal(matrix,normal)
+                  node [ n.normx] := normal [ p.xx]
+                  node [ n.normy] := normal [ p.yy]
+                  node [ n.normz] := normal [ p.zz]
+              TRUE
+                SEQ
+                  t := t34
+                  point [0] := ((normal [0] * t) + point [0]) * cone[co.rada]
+                  point [1] := ((normal [1] * t) + point [1]) * cone[co.rada]
+                  point [2] := ((normal [2] * t) + point [2])
+                  normal [0] := 0.0 (REAL32)
+                  normal [1] := 0.0 (REAL32)
+                  normal [2] := 1.0 (REAL32)
+                  point [2] := point [2] * cone [co.len]
+                  TransGlobal(matrix,point)
+                  node [ n.sectx] := (cone [co.x] + point [p.xx])
+                  node [ n.secty] := (cone [co.y] + point [p.yy])
+                  node [ n.sectz] := (cone [co.z] + point [p.zz])
+                  TransGlobal(matrix,normal)
+                  node [ n.normx] := normal [ p.xx]
+                  node [ n.normy] := normal [ p.yy]
+                  node [ n.normz] := normal [ p.zz]
+          proceed12
+            REAL32 sinus,cosinus,hyperbole:
+            SEQ
+              --SQRTP( hyperbole,((bma * bma) + (cone[co.len] * cone[co.len])))
+              hyperbole := SQRT(((bma * bma) + (cone[co.len] * cone[co.len])))
+              cosinus := cone[co.len] / hyperbole
+              sinus := bma / hyperbole
+              t := t12
+              point [0] := ((normal [0] * t) + point [0]) * cone[co.rada]
+              point [1] := ((normal [1] * t) + point [1]) * cone[co.rada]
+              point [2] := ((normal [2] * t) + point [2]) * cone[co.len]
+              normal [0] := point [0]
+              normal [1] := point [1]
+              normal [2] := 0.0 (REAL32)
+              normalize(normal,length)
+              normal [0] := normal [0] * cosinus
+              normal [1] := normal [1] * cosinus
+              normal [2] := - sinus
+              TransGlobal(matrix,point)
+              node [ n.sectx] := (cone [co.x] + point [p.xx])
+              node [ n.secty] := (cone [co.y] + point [p.yy])
+              node [ n.sectz] := (cone [co.z] + point [p.zz])
+              TransGlobal(matrix,normal)
+              node [ n.normx] := normal [ p.xx]
+              node [ n.normy] := normal [ p.yy]
+              node [ n.normz] := normal [ p.zz]
+          proceed34
+            SEQ
+              t := t34
+              point [0] := ((normal [0] * t) + point [0]) * cone[co.rada]
+              point [1] := ((normal [1] * t) + point [1]) * cone[co.rada]
+              point [2] := ((normal [2] * t) + point [2])
+              normal [0] := 0.0 (REAL32)
+              normal [1] := 0.0 (REAL32)
+              normal [2] := 1.0 (REAL32)
+              point [2] := point [2] * cone [co.len]
+              TransGlobal(matrix,point)
+              node [ n.sectx] := (cone [co.x] + point [p.xx])
+              node [ n.secty] := (cone [co.y] + point [p.yy])
+              node [ n.sectz] := (cone [co.z] + point [p.zz])
+              TransGlobal(matrix,normal)
+              node [ n.normx] := normal [ p.xx]
+              node [ n.normy] := normal [ p.yy]
+              node [ n.normz] := normal [ p.zz]
+          TRUE
+            iNode [n.t] := 0  -- no intersection
+    :
+
+    PROC planeSect ( [nodeSize] REAL32 node, VAL [] REAL32 plane )
+      [nodeSize] INT iNode RETYPES node :
+      t IS node [n.t] :
+      REAL32 pw,rw,ou,ov :
+      [3] REAL32 q :
+      BOOL proceed:
+      SEQ
+        rw := (( plane [ p.wx ] * node [ n.dx ] ) +
+               ( plane [ p.wy ] * node [ n.dy ] )) +
+               ( plane [ p.wz ] * node [ n.dz ] )
+        IF
+          rw <> 0.0 (REAL32)
+            SEQ
+              pw := (( plane [ p.wx ] * ( node [ n.startx ] - plane [ p.x ] )) +
+                     ( plane [ p.wy ] * ( node [ n.starty ] - plane [ p.y ] ))) +
+                     ( plane [ p.wz ] * ( node [ n.startz ] - plane [ p.z ] ))
+              t := - ( pw / rw )
+              IF
+                t > 0.0 (REAL32)
+                  SEQ
+                    SEQ i = 0 FOR 3
+                      q [i] := node [ n.startx + i ] + ( node [ n.dx + i ] * t )
+                    ou := (( plane [ p.ux ] * ( q[0] - plane [ p.x ] )) +
+                           ( plane [ p.uy ] * ( q[1] - plane [ p.y ] ))) +
+                           ( plane [ p.uz ] * ( q[2] - plane [ p.z ] ))
+                    IF
+                      ou < 0.0 (REAL32)
+                        proceed := FALSE
+                      ou > plane [ p.sizeu ]
+                        proceed := FALSE
+                      TRUE
+                        proceed := TRUE
+                    IF
+                      proceed  -- e.g. value on u axis valid.
+                        SEQ
+                          ov := (( plane [ p.vx ] * ( q [0] - plane [ p.x ] )) +
+                                 ( plane [ p.vy ] * ( q [1] - plane [ p.y ] ))) +
+                                 ( plane [ p.vz ] * ( q [2] - plane [ p.z ] ))
+                          IF
+                            ov < 0.0 (REAL32)
+                              proceed := FALSE
+                            ov > plane [ p.sizev ]
+                              proceed := FALSE
+                            TRUE
+                              SKIP
+                          IF
+                            proceed  -- e.g. value on u and v axis valid
+                              SEQ i = 0 FOR 3
+                                SEQ
+                                  node [ n.sectx + i ] := q [i]
+                                  IF
+                                    rw < 0.0 (REAL32)
+                                      node [ n.normx + i ] := plane [ p.wx + i ]
+                                    TRUE
+                                      node [ n.normx + i ] := - plane [ p.wx + i ]
+                            TRUE
+                              iNode [n.t] := 0
+                      TRUE
+                        iNode [n.t] := 0
+                TRUE
+                  iNode [n.t] := 0
+          TRUE
+            iNode [n.t] := 0  -- no intersection
+    :
+
+    PROC xyPlaneSect ( [nodeSize] REAL32 node, VAL [] REAL32 plane )
+      [nodeSize] INT iNode RETYPES node :
+      t IS node [n.t] :
+
+      REAL32 aa,bb:
+      BOOL proceed:
+      SEQ
+        IF
+          node [ n.dz ] <> 0.0 (REAL32)
+            SEQ
+              t := ( plane [ pxy.z ] - node [ n.startz ] ) / node [ n.dz ]
+              IF
+                t > 0.0 (REAL32)
+                  SEQ
+                    aa := node [ n.startx ] + ( node [ n.dx ] * t )
+                    IF
+                      aa < plane [ pxy.x ]
+                        proceed := FALSE
+                      aa > ( plane [ pxy.x ] + plane [ pxy.sizex ] )
+                        proceed := FALSE
+                      TRUE
+                        proceed := TRUE
+                    IF
+                      proceed  -- e.g. value on x axis valid
+                        SEQ
+                          bb := node [ n.starty ] + ( node [ n.dy ] * t )
+                          IF
+                            bb < plane [ pxy.y ]
+                              proceed := FALSE
+                            bb > ( plane [ pxy.y ] + plane [ pxy.sizey ] )
+                              proceed := FALSE
+                            TRUE
+                              SKIP
+                          IF
+                            proceed  -- e.g. value on y axis valid
+                              SEQ
+                                node [ n.sectx] := aa
+                                node [ n.secty] := bb
+                                node [ n.sectz] := plane [ pxy.z ]
+                                node [ n.normx] := 0.0 (REAL32)
+                                node [ n.normy] := 0.0 (REAL32)
+                                IF
+                                  node [ n.dz ] > 0.0 (REAL32)
+                                    node [ n.normz] := -1.0 (REAL32)
+                                  TRUE
+                                    node [ n.normz] := 1.0 (REAL32)
+                            TRUE
+                              iNode [n.t] := 0
+                      TRUE
+                        iNode [n.t] := 0
+                TRUE
+                  iNode [n.t] := 0
+          TRUE
+            iNode [n.t] := 0  -- no intersection
+    :
+
+    PROC yzPlaneSect ( [nodeSize] REAL32 node, VAL [] REAL32 plane )
+      [nodeSize] INT iNode RETYPES node :
+      t IS node [n.t] :
+
+      REAL32 aa,bb:
+      BOOL proceed:
+      SEQ
+        IF
+          node [ n.dx ] <> 0.0 (REAL32)
+            SEQ
+              t := ( plane [ pyz.x ] - node [ n.startx ] ) / node [ n.dx ]
+              IF
+                t > 0.0 (REAL32)
+                  SEQ
+                    aa := node [ n.startz ] + ( node [ n.dz ] * t )
+                    IF
+                      aa < plane [ pyz.z ]
+                        proceed := FALSE
+                      aa > ( plane [ pyz.z ] + plane [ pyz.sizez ] )
+                        proceed := FALSE
+                      TRUE
+                        proceed := TRUE
+                    IF
+                      proceed  -- e.g. value on z axis valid
+                        SEQ
+                          bb := node [ n.starty ] + ( node [ n.dy ] * t )
+                          IF
+                            bb < plane [ pyz.y ]
+                              proceed := FALSE
+                            bb > ( plane [ pyz.y ] + plane [ pyz.sizey ] )
+                              proceed := FALSE
+                            TRUE
+                              SKIP
+                          IF
+                            proceed  -- e.g. value on y axis valid
+                              SEQ
+                                node [ n.sectx] := plane [ pyz.x ]
+                                node [ n.secty] := bb
+                                node [ n.sectz] := aa
+                                IF
+                                  node [ n.dx ] > 0.0 (REAL32)
+                                    node [ n.normx] := -1.0 (REAL32)
+                                  TRUE
+                                    node [ n.normx] := 1.0 (REAL32)
+                                node [ n.normy] := 0.0 (REAL32)
+                                node [ n.normz] := 0.0 (REAL32)
+                            TRUE
+                              iNode [n.t] := 0
+                      TRUE
+                        iNode [n.t] := 0
+                TRUE
+                  iNode [n.t] := 0
+          TRUE
+            iNode [n.t] := 0  -- no intersection
+    :
+
+    PROC xzPlaneSect ( [nodeSize] REAL32 node, VAL [] REAL32 plane )
+      [nodeSize] INT iNode RETYPES node :
+      t IS node [n.t] :
+
+      REAL32 aa,bb:
+      BOOL proceed:
+      SEQ
+        IF
+          node [ n.dy ] <> 0.0 (REAL32)
+            SEQ
+              t := ( plane [ pxz.y ] - node [ n.starty ] ) / node [ n.dy ]
+              IF
+                t > 0.0 (REAL32)
+                  SEQ
+                    aa := node [ n.startx ] + ( node [ n.dx ] * t )
+                    IF
+                      aa < plane [ pxz.x ]
+                        proceed := FALSE
+                      aa > ( plane [ pxz.x ] + plane [ pxz.sizex ] )
+                        proceed := FALSE
+                      TRUE
+                        proceed := TRUE
+                    IF
+                      proceed  -- e.g. value on x axis valid
+                        SEQ
+                          bb := node [ n.startz ] + ( node [ n.dz ] * t )
+                          IF
+                            bb < plane [ pxz.z ]
+                              proceed := FALSE
+                            bb > ( plane [ pxz.z ] + plane [ pxz.sizez ] )
+                              proceed := FALSE
+                            TRUE
+                              SKIP
+                          IF
+                            proceed  -- e.g. value on z axis valid
+                              SEQ
+                                node [ n.sectx] := aa
+                                node [ n.secty] := plane [ pxz.y ]
+                                node [ n.sectz] := bb
+                                node [ n.normx] := 0.0 (REAL32)
+                                IF
+                                  node [ n.dy ] > 0.0 (REAL32)
+                                    node [ n.normy] := -1.0 (REAL32)
+                                  TRUE
+                                    node [ n.normy] := 1.0 (REAL32)
+                                node [ n.normz] := 0.0 (REAL32)
+                            TRUE
+                              iNode [n.t] := 0
+                      TRUE
+                        iNode [n.t] := 0
+                TRUE
+                  iNode [n.t] := 0
+          TRUE
+            iNode [n.t] := 0  -- no intersection
+    :
+    INT nrays :
+
+    PROC sceneSect ( INT nodePtr, VAL BOOL shadowRay )
+      iNode IS [ tree FROM nodePtr FOR nodeSize ] :
+      [nodeSize] REAL32 fNode RETYPES iNode :
+      t IS fNode [n.t] :
+
+      VAL minSect  IS 0.01 (REAL32) :
+      VAL INT iminSect RETYPES minSect  :
+
+      INT  ptr, obj.p :
+      BOOL proceed :
+
+      [nodeSize] INT     closest :
+      [nodeSize] REAL32 fclosest RETYPES closest :
+      SEQ
+        nrays := nrays + 1
+        closest := iNode -- copies ptrs, dx, dy etc.
+        proceed := TRUE  -- a quick 'get out' clause for shadow checking
+        obj.p   := nil
+        ptr     :=   0
+        WHILE (worldModel [ptr] <> nil) AND proceed
+          size   IS worldModel [ptr] :
+          object IS [ worldModel FROM ptr+1 FOR size ] :
+          [] REAL32 fobject RETYPES object :
+          BOOL sect:
+          BOOL garbage:
+          SEQ
+            garbage := TRUE
+            IF
+              object [o.type] = o.sphere
+                SEQ
+                  sphereSect ( fNode, fobject )
+                  garbage := FALSE
+              object [o.type] = o.ellipsoid
+                SEQ
+                  ellipsoidSect ( fNode, fobject )
+                  garbage := FALSE
+              object [o.type] = o.cylinder
+                SEQ
+                  cylinderSect ( fNode, fobject )
+                  garbage := FALSE
+              object [o.type] = o.cone
+                SEQ
+                  coneSect ( fNode, fobject )
+                  garbage := FALSE
+              object [o.type] = o.plane
+                SEQ
+                  planeSect (fNode, fobject )
+                  garbage := FALSE
+              object [o.type] = o.xyplane
+                SEQ
+                  xyPlaneSect (fNode, fobject )
+                  garbage := FALSE
+              object [o.type] = o.yzplane
+                SEQ
+                  yzPlaneSect (fNode, fobject )
+                  garbage := FALSE
+              object [o.type] = o.xzplane
+                SEQ
+                  xzPlaneSect (fNode, fobject )
+                  garbage := FALSE
+              TRUE
+                SKIP
+            IF
+              garbage
+                SEQ
+                  writef ("*N*CGarbage object %I in list at offset %I",
+                    object [o.type], ptr, 0, 0 )
+                  STOP
+              TRUE
+                IF
+                  iNode [n.t] = 0
+                    SKIP
+                  shadowRay
+                    SEQ
+                      proceed := FALSE
+                      iNode [n.objptr] := nil
+                  obj.p = nil
+                    SEQ
+                      obj.p := ptr   -- pointer to type slot in world model
+                      iNode [ n.objptr] := obj.p
+                      closest := iNode
+                  t < fclosest [n.t]
+                    SEQ
+                      obj.p := ptr   -- pointer to size slot in world model
+                      iNode [ n.objptr] := obj.p
+                      closest := iNode
+                  TRUE
+                    SKIP
+            ptr := ptr + (size + 1)
+        IF
+          shadowRay
+            SKIP
+          TRUE
+            iNode := closest
+    :
+
+    PROC claim ( INT nodePtr, VAL INT type )
+      node IS [ tree FROM freeNode FOR nodeSize] :
+      SEQ
+        nodePtr  := freeNode
+        node [n.reflect] := nil
+        node [n.refract] := nil
+        node [   n.next] := nil
+        node [ n.objptr] := nil
+        node [   n.type] := type
+        freeNode := freeNode + nodeSize
+    :
+
+    PROC shadeNode ( VAL INT nodePtr )
+      --
+      -- Total intensity at node is sum of ambient, diffuse, glossy,
+      -- specular and transmitted intensities.
+      --
+      --                            j=ls
+      --                             _  _ _
+      -- I = (Ia * kd) + Ig + kd *   > (N.Lj)
+      --                             -
+      --                            j=1
+      --
+      -- Here we compute ambient diffuse and glossy terms, specular
+      -- and transmitted components are added at mix time.
+      --
+      -- Ig is given by Phong
+      --
+      --      j=ls
+      --       _  _ _   n
+      -- Ig =  > (N.Lj')
+      --       -
+      --      j=1
+      --
+      --
+      --
+
+      inode   IS [  tree FROM nodePtr FOR nodeSize] :
+      node    IS [ ftree FROM nodePtr FOR nodeSize] :
+      objPtr  IS inode [ n.objptr] :
+      colour  IS [ node FROM n.red FOR 3 ] :
+      VAL z     IS 0.0 (REAL32) :
+      VAL black IS [ z, z, z ] :
+      IF
+        objPtr = nil
+          colour := ambient
+        TRUE
+          VAL size    IS worldModel [ objPtr] :
+          VAL object  IS [ fworld FROM objPtr + 1 FOR size ] : -- float
+          VAL spec    IS object [ o.kg] : -- gloss coefficient
+          VAL INT attr RETYPES object [ o.attr] :
+
+          INT shadow, phong :  -- ptr into tree for shadow ray, pseudo light
+          INT lightPtr :
+          SEQ
+            IF
+              (attr /\ a.spec) = 0
+                SEQ
+                  colour [0] := ambient [0] * object [ o.kdR]
+                  colour [1] := ambient [1] * object [ o.kdG]
+                  colour [2] := ambient [2] * object [ o.kdB]
+              TRUE
+                colour := black
+            claim ( shadow, rt.root )
+            claim ( phong,  rt.root )
+
+            shadowNode IS [ ftree FROM shadow FOR nodeSize ] :
+            phongNode  IS [ ftree FROM phong  FOR nodeSize ] :
+
+            [nodeSize] INT ishadowNode RETYPES shadowNode :
+            [nodeSize] INT iphongNode  RETYPES phongNode :
+            SEQ
+              lightPtr := 0
+              shadowNode [n.startx] := node [ n.sectx] + node [ n.normx]
+              shadowNode [n.starty] := node [ n.secty] + node [ n.normy]
+              shadowNode [n.startz] := node [ n.sectz] + node [ n.normz]
+              WHILE lights [ lightPtr] <> nil
+                size  IS lights [ lightPtr] :
+                light IS [ flights FROM lightPtr + 1 FOR size ] :  -- float
+                SEQ
+                  SEQ
+                    -- set up shadow ray direction cosines
+                    [ shadowNode FROM n.dx FOR 3 ] := [ light FROM l.dx FOR 3 ]
+                    sceneSect ( shadow, TRUE )
+                  IF
+                    ishadowNode [n.t] <> 0
+                      SKIP
+                    TRUE
+                      REAL32 lambert :
+                      SEQ
+                        dotProduct ( lambert,
+                                   [ light FROM l.dx    FOR 3 ],
+                                   [ node  FROM n.normx FOR 3 ] )
+                        INT iLambert RETYPES lambert :
+                        IF
+                          (iLambert /\ mint) <> 0  -- -ve !
+                            SKIP
+                          TRUE
+                            SEQ
+                              colour [0] := colour [0] +
+                                      (lambert * (object [ o.kdR] * light [ l.ir]))
+                              colour [1] := colour [1] +
+                                      (lambert * (object [ o.kdG] * light [ l.ig]))
+                              colour [2] := colour [2] +
+                                      (lambert * (object [ o.kdB] * light [ l.ib]))
+                        --
+                        -- the phong shader is a mite messy at the moment, with lots of
+                        -- sign inversions all over the place. I'm not sure they can be avoided
+                        --
+                        IF
+                          (attr /\ a.spec) <> 0
+                            REAL32 cosPhong :
+                            INT    iCosPhong RETYPES cosPhong :
+                            SEQ
+                              [ shadowNode  FROM n.normx FOR 3 ] :=
+                                     [ node FROM n.normx FOR 3 ]
+
+                              [ shadowNode  FROM n.sectx FOR 3 ] :=
+                                     [ node FROM n.sectx FOR 3 ]
+                              --
+                              --  a nasty sign inversion due to the light direction being optimized
+                              --  for shadow spotting
+                              --
+                              ishadowNode [ n.dx] := ishadowNode [ n.dx] >< mint
+                              ishadowNode [ n.dy] := ishadowNode [ n.dy] >< mint
+                              ishadowNode [ n.dz] := ishadowNode [ n.dz] >< mint
+
+
+                              REAL32 Vprime :   -- to keep reflect ray happy
+                              [3] REAL32 Vvec :
+                              BOOL signFlip :
+
+                              reflectRay ( phong, shadow, Vprime,
+                                           Vvec, signFlip )
+                              [3] REAL32 flipNode :
+                              [3] INT iflip RETYPES flipNode :
+                              --
+                              --  again, a nasty sign inversion is required here - see diagram
+                              -- newmann / sproull, p. 391
+                              --
+                              SEQ
+                                flipNode := [ node FROM n.dx FOR 3 ]
+                                iflip [0] := iflip [0] >< mint
+                                iflip [1] := iflip [1] >< mint
+                                iflip [2] := iflip [2] >< mint
+                                dotProduct ( cosPhong,
+                                           flipNode,
+                                           [ phongNode FROM n.dx FOR 3 ] )
+                              IF
+                                (iCosPhong /\ mint) <> 0
+                                  iCosPhong := iCosPhong >< mint
+                                TRUE
+                                  SEQ
+
+                                    cosPhong := (cosPhong * cosPhong) -- power := 2
+                                    cosPhong := (cosPhong * cosPhong) -- power := 4
+                                    cosPhong := (cosPhong * cosPhong) -- power := 8
+                                    colour [0] := colour [0] +
+                                         (spec * (cosPhong * light [ l.ir]))
+                                    colour [1] := colour [1] +
+                                         (spec * (cosPhong * light [ l.ig]))
+                                    colour [2] := colour [2] +
+                                         (spec * (cosPhong * light [ l.ib]))
+                          TRUE
+                            SKIP
+                  lightPtr := lightPtr + (size + 1)
+
+    :
+
+
+    PROC mixChildren ( VAL INT nodePtr )
+      --
+      -- Total intensity at node is sum of ambient, diffuse, glossy, specular and
+      -- transmitted intensities.
+      --
+      --
+      --                    j=ls _ _
+      -- I = Ia + Ig + kd *   { (N.Lj)
+      --                    j=1
+      --
+      -- Here we attenuate specular and transmitted components
+      -- from the children, and add into the parent node.
+      --
+
+
+      inode   IS [  tree FROM nodePtr FOR nodeSize] :
+      node    IS [ ftree FROM nodePtr FOR nodeSize] :
+
+      objPtr IS inode [ n.objptr] :
+      size   IS worldModel [ objPtr] :
+      object IS [ fworld FROM objPtr + 1 FOR size ] :  -- float
+
+      VAL z IS 0.0 (REAL32) :
+      VAL black IS [ z, z, z ] :
+
+      [3] REAL32 xmit, spec :
+      VAL specPtr IS inode [ n.reflect ] :
+      VAL fracPtr IS inode [ n.refract ] :
+      SEQ
+        IF
+          specPtr = nil
+            SEQ
+              spec := black
+          TRUE
+            SEQ
+              -- specular contribution is independent of colour of surface
+              -- but here we should attenuate according to 't' ( distance
+              -- ray has travelled)
+              spec := [ ftree FROM specPtr + n.red FOR 3 ]
+              spec [0] := spec [0] * object [ o.ks]
+              spec [1] := spec [1] * object [ o.ks]
+              spec [2] := spec [2] * object [ o.ks]
+        IF
+          fracPtr = nil
+            SEQ
+              xmit := black
+          TRUE
+            SEQ
+              xmit := [ ftree FROM fracPtr + n.red FOR 3 ]
+              xmit [0] := xmit [0] * object [ o.xmitR]
+              xmit [1] := xmit [1] * object [ o.xmitG]
+              xmit [2] := xmit [2] * object [ o.xmitB]
+              -- colour the transmitted light
+              -- but here we should attenuate according to 't' of ray
+
+
+        node [   n.red] := node [   n.red] + (spec [0] + xmit [0])
+        node [ n.green] := node [ n.green] + (spec [1] + xmit [1])
+        node [  n.blue] := node [  n.blue] + (spec [2] + xmit [2])
+    :
+
+
+    PROC shade ( VAL INT rootNode )
+      --  Action
+      --  ------
+      --
+      --  We enter proc shade with a pointer into the root node of the tree,
+      --  and exit with 3 10-bit integer values in the root node's r g b fields
+      --
+      --  This proc performs bottom-up shading of the ray intersection tree
+      --
+      --  Its action is equivalent to
+      --
+      --  PROC shade ( VAL INT node )
+      --    SEQ
+      --      IF
+      --        tree [ node + n.reflect] <> nil
+      --          shade ( tree [ node + n.reflect])
+      --        TRUE
+      --          SKIP
+      --      IF
+      --        tree [ node + n.refract] <> nil
+      --          shade ( tree [ node + n.refract])
+      --        TRUE
+      --          SKIP
+      --      shadeNode ( node)
+      --      mixNode   ( node)
+      --  :
+      --
+      --  where shadeNode () shades this intersection according to lighting
+      --        conditions and surface properties
+      --
+      --  and   mixNode () mixes together the node + its children according to the
+      --        surface transmission / reflectance properties
+      --
+      VAL a.stop    IS 0 :
+      VAL a.refract IS 1 :
+      VAL a.mix     IS 2 :
+      VAL a.reflect IS 3 :
+
+      --
+      -- these are designed so that
+      --
+      --   push2 ( action, node )
+      --  and
+      --   pop2  ( action, node )  do what you expect
+      --
+      -- is equivalent to
+      --
+      -- SEQ
+      --   c := a
+      --   d := b
+      --
+      [(maxDepth + 2) * 2] INT stack :
+      INT sp :
+
+      PROC push2 ( VAL INT a,b )
+        SEQ
+          stack [   sp] := a
+          stack [ sp+1] := b
+          sp := sp + 2
+      :
+
+      PROC pop2 ( INT a,b )
+        SEQ
+          sp := sp - 2
+          a  := stack [   sp]
+          b  := stack [ sp+1]
+      :
+
+      INT nodePtr, action :
+      SEQ
+        sp      := 0
+        push2 ( nil, a.stop )          -- pre load stack with 'terminate' action
+        nodePtr := rootNode
+        action  := a.reflect
+        WHILE action <> a.stop
+          node IS [ tree FROM nodePtr FOR nodeSize] :
+          spec IS node [ n.reflect] :
+          frac IS node [ n.refract] :
+          IF
+            action = a.reflect
+              IF
+                spec = nil   -- no reflected ray, shade refracted ray
+                  action := a.refract
+                frac = nil
+                  SEQ
+                    push2 ( nodePtr, a.mix )
+                    nodePtr := spec
+                TRUE
+                  SEQ
+                    push2 ( nodePtr, a.refract )  -- direction to go on return
+                    nodePtr := spec
+            frac = nil
+              SEQ
+                shadeNode   ( nodePtr )      -- shade leaf node
+                pop2 ( nodePtr, action )
+                WHILE action = a.mix         -- all these nodes have had their
+                  SEQ                        -- children shaded, so we can shade
+                    shadeNode   ( nodePtr )  -- and mix them
+                    mixChildren ( nodePtr )
+                    pop2 ( nodePtr, action )
+            TRUE
+              SEQ
+                push2 ( nodePtr, a.mix )
+                nodePtr := frac
+                action  := a.reflect
+        root    IS [ ftree FROM rootNode FOR nodeSize ] :
+        [nodeSize] INT iroot   RETYPES root :
+
+        red     IS root [   n.red] :
+        green   IS root [ n.green] :
+        blue    IS root [  n.blue] :
+
+        ired    IS iroot [   n.red] :
+        igreen  IS iroot [ n.green] :
+        iblue   IS iroot [  n.blue] :
+
+        VAL maxC IS 1022.99  (REAL32) :  -- just under 10 bits
+        REAL32 maxP, fudge :
+        BOOL desaturate :
+        SEQ
+          desaturate := TRUE
+          IF
+            red > green
+              maxP := red
+            TRUE
+              maxP := green
+          IF
+            maxP > blue
+              IF
+                maxP > maxC
+                  fudge := maxC / maxP
+                TRUE
+                  desaturate := FALSE
+            blue > maxC
+              fudge := maxC / blue
+            TRUE
+              desaturate := FALSE
+          IF
+            desaturate
+              SEQ
+                ired   := INT TRUNC (red   * fudge)
+                igreen := INT TRUNC (green * fudge)
+                iblue  := INT TRUNC (blue  * fudge)
+            TRUE
+              SEQ
+                ired   := INT TRUNC red
+                igreen := INT TRUNC green
+                iblue  := INT TRUNC blue
+    :
+
+    PROC buildShadeTree ( INT rootNode, VAL REAL32 x, y )
+      --
+      -- This is a fairly complex piece of code, and isnt obvious.
+      --
+      -- buildShadeTree is the recursive guts of the ray tracer, performing
+      -- reflection / refraction where necessary.
+      --
+      -- we build the tree breadth first rather than depth first, hence
+      -- maintaining a balanced tree. To do this we must maintain a linked
+      -- list of active leaf nodes during the build process
+      --
+      -- We walk down the linked list of leaf nodes at tree level N,
+      -- chaining out these leaf nodes whilst constructing a new linked list
+      -- of leaf nodes for level N+1.
+      --
+      -- PROC buildNode ...
+      --
+      -- intoNode  is passed as a location in the tree, and can thus be assigned
+      --
+      -- e.g tree [ prev + n.next]
+      --
+      -- outofNode is a variable POINTER into the tree, and must be indirected
+      --
+      -- e.g node + n.next
+      --
+      -- On exiting buildNode outofNode has been updated to point to the location
+      -- in the tree which should be passed as 'intoNode' for the next instance
+      --
+      PROC evolveNode ( INT intoNode, outofNode, nodePtr, spawn )
+        SEQ
+          sceneSect ( nodePtr, FALSE ) -- NOT casting shadow rays
+          node IS [ tree FROM nodePtr FOR nodeSize ] :  -- integer node
+          SEQ
+            IF
+              node [ n.objptr] = nil
+                spawn := 0
+              TRUE
+
+                VAL  objptr IS node [ n.objptr] :
+                VAL  attr   IS worldModel [ objptr + (o.attr  + 1)] : -- skip size
+
+                REAL32 Vprime :
+                [3] REAL32 Vvec :
+
+                BOOL flect, signFlip, tIR :
+                INT  spec :
+                SEQ
+                  IF
+                    (attr /\ a.spec) <> 0
+                      SEQ
+                        claim  ( spec, rt.spec )
+                        node [ n.reflect ] := spec
+                        intoNode := spec         -- chain me into list of leaves
+                        reflectRay ( spec, nodePtr, Vprime, Vvec, signFlip )
+                        flect := TRUE
+                    TRUE
+                      flect := FALSE
+                  IF
+                    flect AND ((attr /\ a.frac) <> 0)
+                      INT frac :
+                      SEQ
+                        claim ( frac, rt.frac )
+                        refractRay ( frac, nodePtr, Vprime, Vvec, signFlip, tIR )
+                        IF
+                          tIR   -- total internal reflection
+                            SEQ
+                              outofNode := spec + n.next  -- return pointer into tree
+                              spawn := 1
+                          TRUE
+                            SEQ
+                              node [ n.refract ] := frac
+                              tree [ spec + n.next] := frac
+                              spawn := 2
+                              outofNode := frac + n.next
+                    flect
+                      SEQ
+                        outofNode := spec + n.next  -- return pointer into tree
+                        spawn := 1
+                    TRUE
+                      spawn := 0
+      :
+
+      INT head :
+      PROC evolveTree ( INT nodesAdded  )
+        INT spawn, node, next, prev :
+        SEQ
+          node  := head
+          next  := node + n.next
+          evolveNode ( head, next, node, nodesAdded )
+          WHILE tree [ node + n.next] <> nil
+            SEQ
+              prev := next
+              next := node + n.next
+              node := tree [ next]
+              evolveNode ( tree [ prev], next, node, spawn )
+              nodesAdded := nodesAdded + spawn
+          tree [ next] := nil
+      :
+
+      PROC createRay ( VAL INT rootRay, VAL REAL32 x, y )
+        --
+        --  takes an (x, y) in screen space, floating point and turns it into
+        --  an (x,y,z) (dx,dy,dz) vector
+        --
+        node IS [ ftree FROM rootRay FOR nodeSize ] :
+        REAL32 scrx, scry, hyp :
+        SEQ
+
+          scrx := 512.0 (REAL32) - x
+          scry := 512.0 (REAL32) - y
+
+          node [ n.startx] := screenOrg [0] +
+                            ((scrx * screendX [0]) +
+                             (scry * screendY [0]))
+
+          node [ n.starty] := screenOrg [1] +
+                            ((scrx * screendX [1]) +
+                             (scry * screendY [1]))
+
+          node [ n.startz] := screenOrg [2] +
+                            ((scrx * screendX [2]) +
+                             (scry * screendY [2]))
+
+          node [ n.dx] := pinhole [0] - node [ n.startx]
+          node [ n.dy] := pinhole [1] - node [ n.starty]
+          node [ n.dz] := pinhole [2] - node [ n.startz]
+          normalize ( [ node FROM n.dx FOR 3 ], hyp )
+      :
+
+      INT newNodes, nodes, depth :
+      SEQ
+        freeNode := 0                     -- initialize tree
+        nodes    := 0
+        depth    := 1
+        claim     ( rootNode, rt.root )    -- get root ray
+        createRay ( rootNode, x, y    )    -- build direction cosines etc.
+        head := rootNode                   -- init linked list of leaves
+        tree [ rootNode + n.next] := nil   -- close linked list
+        evolveTree ( newNodes )
+        WHILE (depth < maxDepth) AND (newNodes <> 0)
+          SEQ
+            nodes := nodes + newNodes
+            depth := depth + 1
+            evolveTree ( newNodes )
+    :
+
+    PROC renderPixels ( VAL INT patchx, patchy,
+                          x0, y0,
+                  [gridSize][gridSize] INT patch,
+                  INT colour,
+                  VAL INT patchSize, renderingMode, VAL BOOL debug )
+
+      PROC findRange ( INT range, VAL INT a, b, c, d )
+        INT max, min :
+        SEQ
+          IF
+            a > b
+              SEQ
+                max := a
+                min := b
+            TRUE
+              SEQ
+                max := b
+                min := a
+          IF
+            c > max
+              max := c
+            c < min
+              min := c
+            TRUE
+              SKIP
+          IF
+            d > max
+              max := d
+            d < min
+              min := d
+            TRUE
+              SKIP
+          range := max - min
+      :
+
+      PROC pointSample ( INT colour, VAL INT x, y )
+        patch.p IS patch [y][x] :
+        IF
+          patch.p = notRendered
+            INT tx, ty :
+            REAL32 wx, wy :
+            INT iwx RETYPES wx :
+            INT iwy RETYPES wy :
+            INT tree.p :
+            SEQ
+              tx := (patchx << maxDescend) + x
+              ty := (patchy << maxDescend) + y
+
+              wx := (REAL32 TRUNC tx) / (REAL32 TRUNC descendPower)
+              wy := (REAL32 TRUNC ty) / (REAL32 TRUNC descendPower)
+
+              buildShadeTree ( tree.p, wx, wy )
+              shade ( tree.p )
+              node IS [ tree FROM tree.p FOR nodeSize ] :
+              colour :=   node [   n.red] \/
+                        ((node [ n.green] <<  colourBits) \/
+                        ( node [  n.blue] << (colourBits + colourBits)))
+              patch.p := colour
+          TRUE
+            colour := patch.p
+      :
+
+      [maxDescend * (4 * 17)] INT    stack : -- 4 * (render, x, y, hop); shade
+      [(maxDescend + 1) *  4] INT colstack : --
+      INT sp, cp :
+      INT    x, y, hop :
+      VAL a.render IS 0 :
+      VAL a.shade  IS 1 :
+      VAL a.stop   IS 2 :
+
+      INT action :
+      IF
+        renderingMode = m.adaptive
+          SEQ
+            cp        := 0                 -- empty colour stack
+            action    := a.render          -- init action
+
+            stack [0] := a.stop
+            stack [1] := descendPower      -- set grid hop value to gross pixel level
+            stack [2] := y0 << maxDescend
+            stack [3] := x0 << maxDescend  -- locations within this patch
+            sp        := 4                 -- pre load stack with render x y hop; stop
+            WHILE action <> a.stop
+              IF
+                action = a.render
+                  INT a, b, c, d, rRange, gRange, bRange :
+                  VAL sg IS colourBits :
+                  VAL sb IS colourBits + colourBits :
+                  SEQ
+                    VAL record IS [ stack FROM sp - 3 FOR 3 ] :
+                    SEQ
+                      x   := record [2]
+                      y   := record [1]
+                      hop := record [0]
+                    sp := sp - 3
+
+                    pointSample ( a, x,       y      )
+                    pointSample ( b, x + hop, y      )
+                    pointSample ( c, x,       y + hop)
+                    pointSample ( d, x + hop, y + hop)
+
+                    findRange ( rRange, a /\ rMask, b /\ rMask,
+                                        c /\ rMask, d /\ rMask)
+
+                    findRange ( gRange, (a /\ gMask) >> sg, (b /\ gMask) >> sg,
+                                        (c /\ gMask) >> sg, (d /\ gMask) >> sg)
+
+                    findRange ( bRange, a >> sb, b >> sb,
+                                        c >> sb, d >> sb)
+
+                    IF
+                      (hop <> 1) AND
+                        ((rRange > threshold) OR
+                        ((gRange > threshold) OR (bRange > threshold)))
+                        record IS [ stack FROM sp FOR 17 ] :
+                        SEQ
+                          hop := hop >> 1
+                          record [0] := a.shade
+                          VAL recordStart IS 1 :
+                          SEQ
+                            record [recordStart + 0] := hop
+                            record [recordStart + 1] := y
+                            record [recordStart + 2] := x
+                            record [recordStart + 3] := a.render
+                          VAL recordStart IS 5 :
+                          SEQ
+                            record [recordStart + 0] := hop
+                            record [recordStart + 1] := y
+                            record [recordStart + 2] := x + hop
+                            record [recordStart + 3] := a.render
+                          VAL recordStart IS 9 :
+                          SEQ
+                            record [recordStart + 0] := hop
+                            record [recordStart + 1] := y + hop
+                            record [recordStart + 2] := x
+                            record [recordStart + 3] := a.render
+                          VAL recordStart IS 13 :
+                          SEQ
+                            record [recordStart + 0] := hop
+                            record [recordStart + 1] := y + hop
+                            record [recordStart + 2] := x + hop
+                            record [recordStart + 3] := a.render
+                          sp := sp + 17
+                      TRUE
+                        INT R, G, B, m :
+                        SEQ
+                          m := rMask
+                          R := ((((a /\ m) + (b /\ m)) +
+                                 ((c /\ m) + (d /\ m))) >> 2) /\ m
+                          m := gMask
+                          G := ((((a /\ m) + (b /\ m)) +
+                                 ((c /\ m) + (d /\ m))) >> 2) /\ m
+                          m := bMask
+                          B := ((((a /\ m) PLUS (b /\ m)) PLUS
+                                 ((c /\ m) PLUS (d /\ m))) >> 2) /\ m
+                          colstack [cp] := R \/ (G \/ B)
+                          cp := cp + 1
+                    sp     := sp - 1
+                    action := stack [sp]
+                action = a.shade
+                  INT a, b, c, d, R, G, B, m :
+                  record IS [ colstack FROM cp - 4 FOR 4 ] :
+                  SEQ
+                    a  := record [3]
+                    b  := record [2]
+                    c  := record [1]
+                    d  := record [0]
+                    m := rMask
+                    R := ((((a /\ m) + (b /\ m)) +
+                           ((c /\ m) + (d /\ m))) >> 2) /\ m
+                    m := gMask
+                    G := ((((a /\ m) + (b /\ m)) +
+                           ((c /\ m) + (d /\ m))) >> 2) /\ m
+                    m := bMask
+                    B := ((((a /\ m) PLUS (b /\ m)) PLUS
+                           ((c /\ m) PLUS (d /\ m))) >> 2) /\ m
+                    record [0] := R \/ (G \/ B)
+                    cp := cp - 3
+                    sp := sp - 1
+                    action := stack [ sp]
+            colour := colstack [ cp-1]
+        renderingMode = m.stochastic
+          SEQ
+        renderingMode = m.dumb
+          INT tree.p :
+          INT    tx, ty :
+          REAL32 wx, wy :
+          INT iwx RETYPES wx :
+          INT iwy RETYPES wy :
+          SEQ
+            tx := ((patchx + x0) << maxDescend)
+            ty := ((patchy + y0) << maxDescend)
+
+            wx := (REAL32 TRUNC tx) / (REAL32 TRUNC descendPower)
+            wy := (REAL32 TRUNC ty) / (REAL32 TRUNC descendPower)
+
+            buildShadeTree ( tree.p, wx, wy )
+            shade ( tree.p )
+            node IS [ tree FROM tree.p FOR nodeSize ] :
+            colour :=   node [   n.red] \/
+                      ((node [ n.green] <<  colourBits) \/
+                      ( node [  n.blue] << (colourBits + colourBits)))
+
+        renderingMode = m.test
+          colour := (x0 + (y0 * patchSize))
+    :
+
+    VAL ticksPerSecond IS 625000 / 64 :  -- lo priority
+    INT command :
+    INT nobj, nlight, secs, ticks, then :
+    TIMER TIME :
+    SEQ
+      secs    := 0
+      ticks   := 0
+      TIME ? then
+      nrays   := 0
+      nobj    := 0
+      nlight  := 0
+      command := 0         -- clear command for when i move to bytes
+      world.p := 0         -- empty world model
+      light.p := 0         -- and lights list
+      mess.p  := 0         -- clear debug message
+      workIn ? command     -- (eventually) pull in 1 byte
+      WHILE command <> c.stop
+        SEQ
+          IF
+            command = c.render
+              INT x0, y0 :
+              SEQ
+                workIn ? x0; y0
+                IF
+                  renderingMode = m.adaptive
+                    initWORDvec ( rawSamples, notRendered, gridSize * gridSize )
+                  TRUE
+                    SKIP
+                SEQ x = 0 FOR runPatchSize
+                  SEQ y = 0 FOR runPatchSize
+                    renderPixels ( x0, y0, x, y, samples, colours [y][x],
+                                   runPatchSize, renderingMode, (x=0) AND (y=0))
+                pixelsOut ! c.patch; x0; y0; runPatchSize
+                SEQ y = 0 FOR runPatchSize
+                  pixelsOut ! [ colours [y] FROM 0 FOR runPatchSize ]
+                done ! 42
+            command = c.object
+              SEQ
+                nobj := nobj + 1
+                workIn ? worldModel [ world.p];
+                       [ worldModel FROM world.p + 1 FOR worldModel [ world.p]]
+                world.p := world.p + (worldModel [ world.p] + 1)
+            command = c.light
+              REAL32 hyp :
+              SEQ
+                nlight := nlight + 1
+                workIn ? lights [ light.p] ;
+                       [ lights FROM light.p + 1 FOR lights [ light.p]]
+                normalize ( [ flights FROM light.p + (l.dx + 1) FOR 3 ], hyp )
+                light.p := light.p + (lights [ light.p] + 1)
+            command = c.runData
+              INT size :
+              SEQ
+                workIn ? size; [ runData FROM 0 FOR size ]
+                lights     [ light.p] := nil
+                worldModel [ world.p] := nil
+            TRUE
+              SEQ
+                writef ( "*N*C received garbage command %I", command, 0,0,0)
+                STOP
+          INT now, delay :
+          SEQ
+            TIME ? now
+            delay := now MINUS then
+            IF
+              delay > ticksPerSecond
+                SEQ
+                  secs  := secs + (delay / ticksPerSecond)
+                  ticks := delay \ ticksPerSecond
+                  then  := now PLUS ticks
+              TRUE
+                SKIP
+          workIn ? command
+      writef ( "*N*C D O N E in %I seconds, scene of %I objects",
+        secs, nobj, 0,0 )
+      writef ( "*N*C %I lights traced %I rays", nlight, nrays, 0, 0 )
+      pixelsOut ! command
+  :
+
+  CHAN OF ANY feedPixels, pixelTrigger, pixelsOut :
+
+  [4][256] INT buffers :
+
+  WHILE TRUE
+    PRI PAR
+      PAR
+        throughPut  ( buffers [0],
+                      fromPrev, toNext, feedPixels, pixelTrigger,
+                      propogate )
+        pixelBypass ( [ buffers FROM 0 FOR 3], toPrev, fromNext,  pixelsOut )
+      renderer   ( feedPixels, pixelsOut, pixelTrigger )
+:
+

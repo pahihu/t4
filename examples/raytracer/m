@@ -1,0 +1,1 @@
+make -f raymainT8.mak 2>&1 | tee make.log

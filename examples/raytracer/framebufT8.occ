@@ -1,0 +1,690 @@
+#INCLUDE "hostio.inc"
+#INCLUDE "streamio.inc"
+
+PROC frameBuffer (CHAN OF SP fs, ts, CHAN OF ANY in, CHAN OF INT image, 
+                  VAL INT processors,
+                  VAL INT frameRate, lineFreq, interLace, pixelClock )
+  #USE "hostio.lib"
+  #USE "streamio.lib"
+  #USE "occam8.lib"
+
+  ---------------------------- HARDWARE ADDRESSES -----------------------------
+  VAL bpw      IS 4 :
+  VAL bpwShift IS 2 :
+  VAL bpwMask  IS #03 :
+  VAL mint     IS MOSTNEG INT :
+  VAL mintWord IS mint >> bpwShift :
+
+  [512][512] BYTE screenRAM :  -- buffered 512 x 512 x 8-bit pixels
+  
+  ---------------------------- TEXT RELATED STUFF -----------------------------
+
+  VAL bytesPerChar      IS 16 :
+  VAL bytesPerCharShift IS 4 :
+
+  ---------------------------- COLOURS ----------------------------------------
+
+  VAL black   IS 0 :
+  VAL blue    IS 1 :
+  VAL red     IS 2 :
+  VAL magenta IS 3 :
+  VAL green   IS 4 :
+  VAL cyan    IS 5 :
+  VAL yellow  IS 6 :
+  VAL white   IS 7 :
+
+  ---------------------------- PLOT MODES -------------------------------------
+
+  VAL nil     IS #DEFACED :
+  VAL modeOR  IS 0 :
+  VAL modeXOR IS 1 :
+  VAL modeSET IS 2 :
+
+  ---------------------------- GLOBALS ----------------------------------------
+
+  INT visibleScreen, invisibleScreen,
+      currentScreen, screenX, screenY, mode :
+
+
+  PROC displayPatch ( VAL INT x, y, size, [16][16] INT patch )
+    VAL y.y IS (y + y) - 256 :
+    VAL x.x IS (x + x) - 256 :
+    INT ptr, flip :
+    BOOL display :
+    SEQ
+      ptr := ((511 - y.y) << 9) + x.x
+      -- address of bottom left of patch in screen area
+      --IF
+      --  y.y < (textStart + textHeight)
+      --    display := FALSE
+      --  TRUE
+      --    display := TRUE
+
+      --[512*512] BYTE vscreen RETYPES screenRAM [ currentScreen] :
+      [512*512] BYTE iscreen RETYPES screenRAM :
+      SEQ j = 0 FOR size
+        pLine IS patch [j] :
+        INT lptr :
+        SEQ
+          lptr := ptr
+          SEQ i = 0 FOR size    -- inner loop in x
+            VAL colour IS pLine [i] :
+            INT r, g, b :
+            SEQ
+              -- word is xxbbbbbbbbbbggggggggggrrrrrrrrrr
+              r := (colour >>  2) /\ #FF -- bottom 8 bits
+              g := (colour >> 12) /\ #FF
+              b := (colour >> 22) /\ #FF
+
+              iscreen [     lptr] := BYTE r
+              iscreen [   lptr+1] := BYTE g
+              iscreen [ lptr-512] := BYTE b
+              iscreen [ lptr-511] := BYTE 0
+
+              --IF
+              --  display
+              --    SEQ
+              --      vscreen [     lptr] := BYTE (r >> 2)
+              --      vscreen [   lptr+1] := BYTE ((g >> 2) + 64)
+              --      vscreen [ lptr-512] := BYTE ((b >> 2) + 128)
+              --      vscreen [ lptr-511] := BYTE 0
+              --  TRUE
+              --    SKIP
+              lptr := lptr + 2
+          ptr := ptr - 1024
+  :
+
+
+  ---------------------------- FOLDED COMMENT -------------------------------
+
+  --PROC displayPatch ( VAL INT x, y, size, [16][16] INT patch )
+  --  VAL y.y IS (y + y) - 256 :
+  --  VAL x.x IS (x + x) - 256 :
+  --  INT ptr, flip :
+  --  SEQ
+  --    ptr := ((511 - y.y) << 9) + x.x
+  --    -- address of bottom left of patch in screen area
+  --    IF
+  --      y.y < (textStart + textHeight)
+  --        flip := 1
+  --      TRUE
+  --        flip := 0
+  --    [512*512] BYTE screen RETYPES screenRAM [ currentScreen >< flip ] :
+  --    SEQ j = 0 FOR size
+  --      pLine IS patch [j] :
+  --      INT lptr :
+  --      SEQ
+  --        lptr := ptr
+  --        SEQ i = 0 FOR size    -- inner loop in x
+  --          VAL colour IS pLine [i] :
+  --          INT r, g, b :
+  --          SEQ
+  --            r := (colour >>  4) /\ 63
+  --            g := (colour >> 14) /\ 63
+  --            b := (colour >> 24) /\ 63
+  --            screen [     lptr] := BYTE r
+  --            screen [   lptr+1] := BYTE (g + 64)
+  --            screen [ lptr-512] := BYTE (b + 128)
+  --            screen [ lptr-511] := BYTE 0
+  --            lptr := lptr + 2
+  --        ptr := ptr - 1024
+  --:
+
+
+  ---------------------------- COMMANDS PROTOCOL -----------------------------
+  
+  VAL c.stop    IS 0 :
+  VAL c.render  IS 1 :  -- render; x0; y0
+  VAL c.object  IS 2 :  -- object; size; [ size ]
+  VAL c.light   IS 3 :  -- light;  size; [ size ]
+  VAL c.patch   IS 4 :  -- patch;  x; y; patchSize; [ patchSize][patchSize]
+  VAL c.runData IS 5 :  -- ambient light, rendering mode, screen pos etc.
+  VAL c.message IS 6 :  -- message; size; [ words ]
+
+  ---------------------------- RENDERING MODES ------------------------------
+
+  VAL m.adaptive   IS 0 :
+  VAL m.stochastic IS 1 :
+  VAL m.dumb       IS 2 :
+  VAL m.test       IS 3 :
+
+  ---------------------------- TREE MAINTENANCE FIELDS ----------------------
+
+  VAL nil       IS -1 :
+
+  VAL n.reflect IS 0 :        -- point to children
+  VAL n.refract IS 1 :
+  VAL n.next    IS 2 :        -- maintain linked list of leaf nodes
+  VAL n.type    IS 3 :        -- reflected, refracted or primary ray
+
+  -- Valid ray types for n.type slot
+
+  VAL rt.root IS 0 :   -- only first ray is of this type
+  VAL rt.spec IS 1 :   -- reflected ray
+  VAL rt.frac IS 2 :   -- transmitted ray
+
+
+  ---------------------------- SURFACE INTERSECTION FIELDS -------------------
+
+  VAL n.objptr  IS 4 :        -- pointer into world model for intersect
+
+  VAL n.sectx   IS 5 :        -- point of intersection
+  VAL n.secty   IS 6 :
+  VAL n.sectz   IS 7 :
+
+  VAL n.normx   IS 8 :        -- surface normal at point of intersection
+  VAL n.normy   IS 9 :
+  VAL n.normz   IS 10 :
+
+  VAL n.t       IS 11 :       -- distance parameter 't' of intersection
+
+
+  ---------------------------- RAY START / DIRECTION FIELDS ------------------
+
+  VAL n.startx  IS 12 :       -- ray origin
+  VAL n.starty  IS 13 :
+  VAL n.startz  IS 14 :
+
+  VAL n.dx      IS 15 :       -- ray direction
+  VAL n.dy      IS 16 :
+  VAL n.dz      IS 17 :
+
+
+  ---------------------------- SHADE FIELDS ----------------------------------
+
+  VAL n.red   IS 18 :
+  VAL n.green IS 19 :
+  VAL n.blue  IS 20 :
+
+  VAL nodeSize IS n.blue + 1 :
+
+  ---------------------------- SIZE OF TREE ----------------------------------
+
+  VAL maxDepth IS 6 :
+  VAL maxNodes IS 4 + (2 << maxDepth) :  -- traverse tree 5 deep max,
+                                         -- PLUS 4 for good measure
+  VAL treeSize  IS nodeSize * maxNodes : -- shadow generation
+
+  ---------------------------- OBJECT TYPES ----------------------------------
+
+  VAL o.sphere    IS 0 :
+  VAL o.xyplane   IS 1 :
+  VAL o.xzplane   IS 2 :
+  VAL o.yzplane   IS 3 :
+  VAL o.plane     IS 4 :
+  VAL o.cone      IS 5 :
+  VAL o.cylinder  IS 6 :
+  VAL o.ellipsoid IS 7 :
+  VAL o.quadric   IS 8 : -- general quadric, hell to compute
+
+  ---------------------------- FIELDS COMMON TO ALL OBJECT CLASSES -----------
+
+  VAL x.axis     IS  0 :
+  VAL y.axis     IS  1 :
+  VAL z.axis     IS  2 :
+
+  -- the attribute word contains gross attributes of the object as
+  -- bits. The relevant words in the object descriptor expand upon these
+
+  VAL a.spec     IS #01 :  -- use lambert / use phong and reflect
+  VAL a.frac     IS #02 :  -- refract on surface
+  VAL a.bound0   IS #04 :  -- bounded in 1 dimension
+  VAL a.bound1   IS #08 :  -- bounded in 2 dimension
+  VAL a.tex      IS #10 :  -- texture map ?
+  VAL a.bump     IS #20 :  -- bump map    ?
+
+  VAL o.type     IS  0 : -- type field of all objects
+  VAL o.attr     IS  1 : -- attribute field of all object
+
+  VAL o.kdR      IS  2 :  -- coeffs of diffuse reflection R G B
+  VAL o.kdG      IS  3 :
+  VAL o.kdB      IS  4 :
+
+  VAL o.ks       IS  5 :  -- coeff of specular reflection ( for reflections)
+
+  VAL o.kg       IS  6 :  -- coeff of gloss for phong shading
+  VAL o.xmitR    IS  7 :  -- coeffs of transmission R G B
+  VAL o.xmitG    IS  8 :
+  VAL o.xmitB    IS  9 :
+
+  VAL o.power    IS 10 :  -- power for phong shading
+  VAL o.refix    IS 11 :  -- refractive index (relative)
+
+  VAL o.specific IS 12 :
+
+
+  ---------------------------- SPHERE RECORD ---------------------------------
+
+  VAL first      IS o.specific :
+
+  VAL s.rad      IS  first + 0 :
+  VAL s.x        IS  first + 1 :
+  VAL s.y        IS  first + 2 :
+  VAL s.z        IS  first + 3 :
+
+  VAL s.map      IS  first + 4 :  -- which map ( texture or bump)
+  VAL s.uoffs    IS  first + 5 :  -- offsets for u and v in map
+  VAL s.voffs    IS  first + 6 :
+  VAL s.size     IS  first + 7 :
+
+
+  ---------------------------- PLANE RECORD ----------------------------------
+
+  VAL first      IS o.specific :
+
+  VAL p.axis     IS first + 0 : -- is axis x y or z ?
+  VAL p.x        IS first + 1 : -- offset from x  -- or y or z
+  VAL p.y        IS first + 2 : -- offset from x  -- or y or z
+  VAL p.z        IS first + 3 : -- offset from x  -- or y or z
+  VAL p.size0    IS first + 4 : -- offset from y  -- bounding
+  VAL p.size1    IS first + 5 : -- offset from z  -- bounding value
+
+  VAL p.map      IS first + 6 :  -- which map ( texture or bump)
+  VAL p.uoffs    IS first + 7 :  -- offsets for u and v in map
+  VAL p.voffs    IS first + 8 :
+  VAL p.size     IS first + 9 :
+
+  ---------------------------- SIZE OF RECORD ---------------------------------
+
+  VAL sizeWorld IS 1800 :  -- a sphere = 17 words + nextPtr,
+                           -- giving 100 spheres
+
+
+  ---------------------------- LIGHTS LIST ------------------------------------
+
+  VAL l.ir   IS 0 :   -- light intensity fields  R G B
+  VAL l.ig   IS 1 :
+  VAL l.ib   IS 2 :
+
+  VAL l.dx   IS 3 :   -- light direction cosines x y z
+  VAL l.dy   IS 4 :   -- this is a quick'n'tacky shading sheme
+  VAL l.dz   IS 5 :
+
+  VAL l.size IS 6 :
+
+
+  ---------------------------- SIZE OF LIGHTS LIST ----------------------------
+
+  -- each light is |nextPtr|r|g|b|dx|dy|dz
+
+  VAL sizeLight  IS  7 :
+
+  VAL maxLights  IS 10 :   -- any more than 2 is hell to shade !!
+
+  VAL sizeLights IS sizeLight * maxLights :
+
+
+  ---------------------------- RUN DATA FOR FRAME -----------------------------
+
+  --
+  -- run data is a vector of
+  --
+  --  runData [0] ->  ambient R
+  --           1      ambient G
+  --           2      ambient B
+  --           3      rendering mode  -- m.adaptive / m.dumb / m.stochastic
+  --           4      patch size
+  --           5      scale factor    -- 1 2 or 4
+  --           6      screenOrg x
+  --           7                y
+  --           8                z
+  --           9      screen  dxX
+  --           10             dyX
+  --           11             dzX
+  --           12     screen  dxY
+  --           13             dyY
+  --           14             dzY
+  --           15     pinhole  x
+  --           16     pinhole  y
+  --           17     pinhole  z
+  --
+
+  [20] INT runData :
+
+  [3] REAL32 ambient RETYPES [ runData FROM 0 FOR 3 ] :
+
+  renderingMode IS runData [3] :
+  runPatchSize  IS runData [4] :
+  scaleFactor   IS runData [5] :
+
+  [3] REAL32 screenOrg RETYPES [ runData FROM  6 FOR 3 ] :
+  [3] REAL32 screendX  RETYPES [ runData FROM  9 FOR 3 ] :
+  [3] REAL32 screendY  RETYPES [ runData FROM 12 FOR 3 ] :
+  [3] REAL32 pinhole   RETYPES [ runData FROM 15 FOR 3 ] :
+
+
+  ---------------------------- MAX RECURSION LEVEL -----------------------------
+
+  VAL maxDescend   IS 2 :    -- this is a space limitation on the sub-pixel
+                             -- grid rather than a compute saver
+  VAL descendPower IS 4 :    -- 2 ^^ maxDescend
+
+
+  ---------------------------- SUB PIXEL ARRAY ---------------------------------
+
+  VAL patchSize IS 16 :
+  VAL gridSize  IS ((patchSize + 1) * descendPower) + 1 :
+
+  ---------------------------- MINT --------------------------------------------
+
+  VAL mint  IS MOSTNEG INT :
+
+
+  ---------------------------- COLOURS IN WORD ---------------------------------
+
+  -- colours are nr | 10 blue bits | 10 green bits | 10 red bits |
+
+  VAL threshold   IS 10 << 2 : -- this is 10 on a scale of 256, but we
+  VAL colourBits  IS 10 :      -- generate 10 bits
+
+  VAL rMask       IS (1 << colourBits) - 1 :
+  VAL gMask       IS rMask    << colourBits :
+  VAL bMask       IS gMask    << colourBits :
+
+  VAL rMaxDiff    IS threshold :               -- threshold values for
+  VAL gMaxDiff    IS rMaxDiff << colourBits :  -- instancing super sample
+  VAL bMaxDiff    IS gMaxDiff << colourBits :
+
+  VAL notRendered IS mint :  -- top bit set = not rendered
+
+
+  ---------------------------- DITHERING ------------------------------------
+
+  [2][257] INT gerror :  -- saves an IF in iner loop
+
+  PROC dither ( VAL INT x0, y0, mask, colourBase )
+    [512*512] BYTE screen RETYPES screenRAM :
+    error IS gerror :
+    INT lptr, gptr, this :
+    VAL NOTmask IS mask >< #FF :
+    SEQ
+      SEQ i = 0 FOR 256
+        SEQ
+          error [0][i] := 0
+          error [1][i] := 0
+      gptr := x0 + (y0 << 9)
+      this := 1
+      SEQ i = 0 FOR 256
+        SEQ
+          lptr := gptr
+          SEQ j = 0 FOR 256
+            thisErr IS error [this] :
+            nextErr IS error [this>< 1] :
+            INT pixel, xCess :
+            SEQ
+              pixel := (INT screen[lptr]) + (thisErr [j] >> 4)
+              IF
+                pixel > 255
+                  pixel := 255
+                TRUE
+                  SKIP
+              xCess := (pixel /\ NOTmask) << 4
+              thisErr [  j] := 0
+              thisErr [j+1] := ((xCess TIMES 3) >> 3)
+              nextErr [  j] := nextErr [j] +   ((xCess TIMES 3) >> 3)
+              nextErr [j+1] := nextErr [j+1] + ((xCess TIMES 2) >> 3)
+              screen [lptr] := BYTE (colourBase + ((pixel /\ mask) >> 2))
+              lptr := lptr + 2
+          this := this >< 1
+          gptr := gptr + 1024
+
+  :
+
+  ------------------------------------------------------------------------------------------
+  -- This procedure has been developed to print the image to file called 'ray.mtv'.
+  -- The file is written as Mark VanDeWettering's (mtv) file format.
+  -- The image is a 24 bit colour in 256 * 256 resolution.
+  ------------------------------------------------------------------------------------------ 
+  PROC FileImage (INT32 Status)
+    VAL OutFileName IS "ray.mtv" :
+    VAL OutFileType IS spt.binary :
+    VAL OutFileMode IS spm.output :
+    VAL INT WriteBlock IS (INT ((256*256)-1)) : -- same as 2^16 - 1, max. so.write can send
+
+    [512*512] BYTE screen RETYPES screenRAM :
+    [WriteBlock+1] BYTE filebuffer :
+    INT Rptr, Gptr, Bptr, LRptr, LGptr, LBptr, LenWritten, Fptr :
+    INT32 OutFileId :
+    BYTE FileResult, WriteStatus, CloseStatus :
+
+    SEQ  
+      so.open (fs, ts, OutFileName, OutFileType, OutFileMode, OutFileId, FileResult)
+      IF
+        (FileResult = spr.operation.failed)
+          SEQ
+            so.write.string    (fs, ts, " Open failed for  `")
+            so.write.string    (fs, ts, OutFileName)
+            so.write.string.nl (fs, ts, "`")
+        (FileResult = spr.bad.name)
+          SEQ
+            so.write.string    (fs, ts, " `")
+            so.write.string    (fs, ts, OutFileName)
+            so.write.string.nl (fs, ts, "`  is an invalid file name")
+        (FileResult = spr.bad.type)
+          so.write.string.nl (fs, ts, " Invalid file type")
+        (FileResult = spr.bad.mode)
+          so.write.string.nl (fs, ts, " Invalid file mode")
+        (FileResult = spr.bad.packet.size)
+          so.write.string.nl (fs, ts, " File name too large")
+        TRUE
+          SEQ
+            so.puts (fs, ts, OutFileId, "256 256", WriteStatus)
+            IF
+              (WriteStatus = spr.operation.failed)
+                SEQ
+                  so.write.string    (fs, ts, " The write failed for output file  `")
+                  so.write.string    (fs, ts, OutFileName)
+                  so.write.string.nl (fs, ts, "`")
+              (WriteStatus = spr.bad.packet.size)
+                SEQ
+                  so.write.string    (fs, ts, " Bad packet size for output file  `")
+                  so.write.string    (fs, ts, OutFileName)
+                  so.write.string.nl (fs, ts, "`")
+              (WriteStatus = spr.ok)
+                SEQ
+                  so.write.nl        (fs, ts)
+                  so.write.string    (fs, ts, " PRODUCING  `")
+                  so.write.string    (fs, ts, OutFileName)
+                  so.write.string.nl (fs, ts, "`  as the output file...")
+                  so.write.nl        (fs, ts)
+                  Bptr := 0 + (0 << 9)       -- Blue  screenRAM memory pointer
+                  Gptr := 1 + (1 << 9)       -- Green screenRAM memory pointer
+                  Rptr := 0 + (1 << 9)       -- Red   screenRAM memory pointer
+                  Fptr := 0                  -- file buffer pointer
+                  SEQ i = 0 FOR 256
+                    SEQ                                        -- convert screenRAM pointers...
+                      LBptr, LGptr, LRptr := Bptr, Gptr, Rptr  -- ... to screen memory pointers
+                      SEQ j = 0 FOR 256
+                        SEQ                
+                          IF
+                            (Fptr = WriteBlock)        -- when output limit reached..
+                              SEQ                      -- write out file block.
+                                so.write (fs, ts, OutFileId, [filebuffer FROM 0 FOR WriteBlock], LenWritten)
+                                Fptr := 0              -- reset buffer pointer
+                            TRUE
+                              SKIP                     -- copy screen contents to file buffer
+                          [filebuffer FROM Fptr FOR 1]     := [screen FROM LRptr FOR 1]
+                          [filebuffer FROM (Fptr+1) FOR 1] := [screen FROM LGptr FOR 1]
+                          [filebuffer FROM (Fptr+2) FOR 1] := [screen FROM LBptr FOR 1]
+                          Fptr := Fptr + 3             -- increment file buffer pointer
+                          LBptr, LGptr, LRptr := LBptr + 2, LGptr + 2, LRptr + 2
+                      Bptr, Gptr, Rptr := Bptr + 1024, Gptr + 1024, Rptr + 1024
+                  IF
+                    (Fptr <> 0)                        -- if buffer not empty... then write out remainder
+                      so.write (fs, ts, OutFileId, [filebuffer FROM 0 FOR Fptr], LenWritten)
+                    TRUE
+                      SKIP
+                  so.write.string.nl (fs, ts, " OK, all done!!")
+              TRUE
+                SKIP
+            so.close (fs, ts, OutFileId, CloseStatus)
+      
+      IF 
+        ((FileResult = spr.ok) AND (WriteStatus = spr.ok) AND (CloseStatus = spr.ok))
+          Status := sps.success
+        TRUE
+          Status := sps.failure
+  :
+
+
+  PROC MenuSelection (CHAN OF INT image)
+    BYTE InKey, Result :
+    BOOL Selected :
+
+    SEQ
+      Selected := FALSE
+      so.write.string.nl(fs,ts,"                                                           ")
+      so.write.string.nl(fs,ts,"               RayTracer Image Selection                   ")
+      so.write.string.nl(fs,ts,"               =========================                   ")
+      so.write.string.nl(fs,ts,"                                                           ")
+      so.write.string.nl(fs,ts,"               <1>  10 Sphere Image                        ")
+      so.write.string.nl(fs,ts,"               <2>  14 Sphere Image                        ")
+      so.write.string.nl(fs,ts,"               <3>  Cone, Ellipsoid Image                  ")
+      so.write.string.nl(fs,ts,"               <4>  Cylinder, Sphere Image                 ")
+      so.write.string.nl(fs,ts,"                                                           ")
+      so.write.string   (fs,ts," Your Selection ")                      
+
+      WHILE NOT (Selected)
+        SEQ
+          so.getkey(fs,ts,InKey,Result)
+          IF
+            (Result = spr.ok)
+              SEQ
+                IF
+                  ((InKey >= '1') AND (InKey <= '4'))
+                    SEQ
+                      image ! (INT InKey) - (INT '0')
+                      so.write.int(fs, ts, (INT InKey) - (INT '0'), 1)
+                      so.write.nl (fs, ts)
+                      Selected := TRUE
+                  TRUE
+                    SKIP
+            TRUE
+              SKIP
+  :
+                        
+
+  ---------------------------- COMMANDS PROTOCOL -----------------------------
+
+  VAL ticksPerSecond IS 625000 / 64 :  -- lo priority
+
+  CHAN OF ANY fromRenderer :
+  PRI PAR
+    WHILE TRUE
+      INT command :
+      SEQ
+        in ? command
+        IF
+          command = c.patch
+            INT x, y, size :
+            [16][16] INT patch :
+            SEQ
+              in ? x; y; size
+              SEQ i = 0 FOR size
+                in ? [ patch [i] FROM 0 FOR size ]
+              fromRenderer ! command; x; y; size
+              SEQ i = 0 FOR size
+                fromRenderer ! [ patch [i] FROM 0 FOR size ]
+          command = c.message
+            INT size :
+            [256] INT chars :
+            SEQ
+              in ? size; [ chars FROM 0 FOR size ]
+              fromRenderer ! command; size; [ chars FROM 0 FOR size ]
+          command = c.stop
+            fromRenderer ! command
+    SEQ
+
+      ---------------------------- SETS UP G170 -----------------------------
+      --resetVideoSystem ( 1, 1, modeSET )
+      --G170 [ pixelMaskReg] := BYTE #FF
+      --SEQ i = 0 FOR 64
+      --  SEQ
+      --    setColour (       i, i * 4,     0,     0 )
+      --    setColour (  64 + i,     0, i * 4,     0 )
+      --    setColour ( 128 + i,     0,     0, i * 4 )
+      --    setColour ( 192 + i, i * 4, i * 4, i * 4 )
+    
+      ---------------------------- MAX COLOUR ------------------------------
+      [512] BYTE line :
+      SEQ
+        SEQ i = 0 FOR 256
+          line [i] := BYTE i
+        [ line FROM 256 FOR 256 ] := [ line FROM 0 FOR 256 ]
+        SEQ y = 0 FOR 512
+          screenRAM [y] := line
+
+      ---------------------------- DO THE ACTION ---------------------------
+
+      TIMER clock :
+      INT start, end :
+
+      REAL32 realTime, realTicks :
+
+      VAL uSecsPerTick IS 64 :
+      VAL iticks       IS 1000000 / 64 :
+      VAL ticks IS REAL32 TRUNC iticks :
+      INT command :
+      SEQ
+        MenuSelection(image)
+        so.write.string.nl (fs, ts, " The inmos ray tracer is GO")
+        clock ? start
+        fromRenderer ? command
+        WHILE command <> c.stop
+          SEQ
+            IF
+              command = c.patch
+                INT x, y, size :
+                [16][16] INT patch :
+                SEQ
+                  -- so.write.string (fs, ts, " p ")
+                  fromRenderer ? x; y; size
+                  SEQ i = 0 FOR size
+                    fromRenderer ? [ patch [i] FROM 0 FOR size ]
+                  displayPatch ( x, y, size, patch )
+              command = c.message
+                INT size :
+                [256] INT chars :
+                [256] BYTE OutString : 
+                SEQ
+                  fromRenderer ? size; [ chars FROM 0 FOR size ]
+                  SEQ i = 0 FOR size   
+                    OutString[i] := BYTE (chars[i] /\ #FF)
+                  -- so.write.string.nl (fs, ts, [OutString FROM 0 FOR size])
+              TRUE
+                SEQ
+                  -- so.write.string.nl (fs, ts," GARBAGE COMMAND")
+                  STOP
+            fromRenderer ? command
+        clock ? end
+        SEQ
+          realTicks := REAL32 TRUNC (end MINUS start)
+          realTime  := realTicks / ticks
+          so.write.nl (fs, ts)
+          so.write.string (fs, ts, " DONE, took ")
+          so.write.real32 (fs,ts, realTime, 5, 2)
+          so.write.string (fs,ts, " seconds on ")
+          so.write.int (fs,ts, processors, 2)
+          so.write.string.nl (fs, ts, " processors.")
+        clock ? start
+        clock ? AFTER (start PLUS (20 * iticks))
+
+        --SEQ y = textStart FOR textHeight
+        --  screenRAM [ currentScreen][511-y] :=
+        --    screenRAM [ currentScreen >< 1][511-y]
+        --screenRAM [currentScreen] := screenRAM [currentScreen><1]
+
+
+      ---------------------------- DITHER RED, GREEN, BLUE -------------------
+
+      -- x and y are measured from TOP of screen
+      --VAL top6Bits IS #FC :
+      --VAL top5Bits IS #F8 :
+      INT32 Status :
+      SEQ
+        --dither ( 0, 0, top5Bits, 128)
+        --dither ( 1, 1, top6Bits,  64)
+        --dither ( 0, 1, top5Bits,   0)
+        FileImage(Status)
+        so.exit (fs, ts, Status)      
+:

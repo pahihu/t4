@@ -1,44 +1,46 @@
-The following files are from the excellent Transputer Emulator from Gavin Crate
-(https://sites.google.com/site/transputeremulator/):
-
 hello/
 knight.btl
 prime.btl
 sqrroots.btl
-
-
-The Savage, Dhrystone, Whetstone OCCAM code is from "Lies, damned lies and benchmarks", 72-TCH-027-00 INMOS Technical Note 27
+        from the excellent Transputer Emulator from Gavin Crate
+        (https://sites.google.com/site/transputeremulator/)
 
 damnedlies/
-
-
-The Minix demo and the Whetstone-benchmark is from Ram's Transputer Home page (http://www.classiccmp.org/transputer):
+        The Savage, Dhrystone, Whetstone OCCAM code is from
+        "Lies, damned lies and benchmarks",
+        72-TCH-027-00 INMOS Technical Note 27
 
 minix-demo/
 whetston/
 whetston8/
-
-
-The following file is from Daniel Hyde's "Introduction to the Programming Language Occam", Mar 20, 1995:
+        The Minix demo and the Whetstone-benchmark is from 
+        Ram's Transputer Home page (http://www.classiccmp.org/transputer)
 
 sqrroots/sqrroots.occ
-
-
-These examples are in C or OCCAM (savage):
+        from Daniel Hyde's "Introduction to the Programming Language Occam",
+        Mar 20, 1995
 
 chello/
 dhrystone/
 savage/
-
-
-These examples are from comp.sys.transputer, written by Michael Bruestle:
+        examples are in C or OCCAM (savage)
 
 inoutswap.asm
 linkwdesc.asm
-
-
-These files are from the "occam 2 toolset user manual - part 2 (occam libraries and appendices)" 72-TDS-267-02 March 1991:
+        examples are from comp.sys.transputer, written by Michael Bruestle
 
 bootload.asm
 netload.occ
+        from the "occam 2 toolset user manual - part 2
+        (occam libraries and appendices)" 72-TDS-267-02 March 1991:
+
+rayshade/
+        rayshade from http://transputer.net/sw/sw.asp#RayShade
+
+raytracer/
+        "Exploiting concurrency: a ray tracing example"
+        72-TCH-007 INMOS Technical Note 7
+        
+
+
 

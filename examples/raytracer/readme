@@ -1,0 +1,34 @@
+
+Compiling the Raytracer
+
+To compile the raytracer the following files are required.
+
+* cntlsysT8.occ
+* raytraceT8.occ
+* framebufT8.occ
+* raytraceT8.pgm
+* raymainT8.occ
+
+The following steps are required for successful compilation.
+
+imakef raytraceT8.btl        --create the make file
+make -f raytraceT8.mak       --run the make file
+iserver -sb raytraceT8.btl   --run the raytracer
+
+The imakef statement will create a make file called raytraceT8.mak.
+Before executing the make file, the following compiler options must be 
+included to allow successful compilation. At the line identified as 
+OCCONF= the following compiler options must be appended, as they appear below:
+
+OCCONF=-A -U -NWP -NWU
+
+After these options have been added, save the make file and begin the 
+compilation by running the make file.
+
+
+The raytracer produces an output file called "ray.mtv". To do something useful
+with this file (like view it) you need to translate it into something viewable.
+On a Sun4, the program "/usr/bin/X11/mtvtoppm" creates a ppm-format file. Use
+a program such as "xv" to view this.
+
+	eg. mtvtoppm <ray.mtv | xv

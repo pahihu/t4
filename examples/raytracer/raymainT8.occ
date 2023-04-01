@@ -1,0 +1,30 @@
+#INCLUDE "hostio.inc"
+
+PROC RayTracer(CHAN OF SP fs, ts, []INT memory)
+
+  #USE "hostio.lib"
+  #USE "framebufT8"
+  #USE "cntlsysT8"
+  #USE "raytraceT8"
+
+  VAL true      IS #FFFF :
+  VAL false     IS #0000 :
+
+  VAL number.of.transputers IS 43 :
+  VAL processors IS 8192 :
+
+  [processors] CHAN OF ANY forward, back :
+  CHAN OF ANY graphics :
+  CHAN OF ANY soft :
+  CHAN OF INT image :
+
+  PAR
+    frameBuffer (fs, ts, graphics, image, processors, 50, 34500, 0, 25000000 )
+    controlSystem ( forward[0], back[0], graphics, image, processors )
+
+    PAR i = 0 FOR processors - 1
+      rayTrace ( forward [i], back[i], back[i+1], forward[i+1], true, i )
+
+    VAL i IS processors - 1 :
+    rayTrace ( forward [i], back[i], soft, soft, false, i )
+:

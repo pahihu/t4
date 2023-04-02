@@ -44,6 +44,7 @@
 #include <fcntl.h>
 #endif
 #include "processor.h"
+#include "netcfg.h"
 
 #ifdef __MWERKS__
   #include "mac_input.h"
@@ -71,10 +72,13 @@
 #define TRUE  0x0001
 #define FALSE 0x0000
 
+int verbose     = FALSE;
+int serve       = FALSE;
 int analyse     = FALSE;
 int copy        = FALSE;
 int exitonerror = false;
 int peeksize    = 8;
+int nodeid      = -1;
 
 int membits     = 0;
 
@@ -148,10 +152,9 @@ int main (int argc, char **argv)
 {
 	static char CopyFileName[256];
         static char InpFileName[256], OutFileName[256];
+        static char NetConfigName[256];
         char IBoardSize[32];
-	int verbose     = FALSE;
 	int reset       = FALSE;
-	int serve       = FALSE;
 	int arg;
 	int temp;
 	int temp2;
@@ -162,6 +165,11 @@ int main (int argc, char **argv)
 
         msgdebug = NULL != getenv ("MSGDEBUG");
         CopyIn = InpFile = OutFile = (FILE *) NULL;
+        for (temp = 0; temp < 4; temp++)
+        {
+                Link[temp].In.sock  = -1;
+                Link[temp].Out.sock = -1;
+        }
 
 #ifdef __MWERKS__
 	/* Create some menus, etc. */
@@ -186,6 +194,7 @@ int main (int argc, char **argv)
                 printf("    -s8                  Select T800 mode.\n");
                 printf("    -sg                  Halt on uninitialized memory read.\n");
                 printf("    -sm #bits            Memory size in address bits (default 21, 2Mbyte).\n");
+                printf("    -sn id               Node ID.\n");
                 printf("    -su                  Instruction profiling.\n");
                 printf("    -sv inp.tbo inp.bin out.bin\n");
                 printf("                         Select Mike's TVS: T800 + T414 FP support.\n");
@@ -327,6 +336,32 @@ int main (int argc, char **argv)
 							printf ("\nMemory bits should be in [16,30] range!\n");
 							handler (-1);
 						}
+                                          }
+					  break;
+				case 'n': if (argv[arg][3]!='\0')
+					  {
+						strcat (CommandLineMost, argv[arg]);
+						strcat (CommandLineMost, " ");
+					  }
+                                          else
+                                          {
+						arg++;
+						if (arg>=argc)
+						{
+							printf ("\nMissing number after -sn\n");
+							handler (-1);
+						}
+						if (sscanf(argv[arg], "%d", &nodeid)!=1)
+						{
+							printf ("\nBad number after -sn\n");
+							handler (-1);
+						}
+						if ((nodeid < 0) || (nodeid > 8191))
+						{
+							printf ("\nNode ID  should be in [0,8191] range!\n");
+							handler (-1);
+						}
+                                                strcpy (NetConfigName, "spy.net");
                                           }
 					  break;
 				case 'r': if (argv[arg][3]!='\0')
@@ -487,58 +522,95 @@ int main (int argc, char **argv)
         if (emudebug)
         {
 	        printf("Most command line is : %s\n", CommandLineMost);
-	        printf("T%d (%d/%dKB); analyse %d; copy %d; exit %d; verbose %d; reset %d; peek %d; serve %d\n",
-                        Txxx,CoreSize/1024,MemSize/1024,analyse,copy,exitonerror,verbose,reset,peeksize,serve);
+	        printf("T%d (%d/%dKB); analyse %d; copy %d; exit %d; verbose %d; reset %d; peek %d; serve %d; node %d\n",
+                        Txxx,CoreSize/1024,MemSize/1024,analyse,copy,exitonerror,verbose,reset,peeksize,serve,nodeid);
         }
-
-        /* Initialize memory with 'random' values. */
-        init_memory ();
-
-	/* Open boot file. */
-	if ((CopyIn = fopen(CopyFileName, "rb"))==NULL)
-	{
-		printf("Failed to open file %s for copy to link!\n", CopyFileName);
-		handler (-1);
-	}
-
-	/* Load bootstrap into emulator. */
-        if (usetvs)
-        {
-                printf ("-I-EMUTVS: Running test %s\n", CopyFileName);
-                /* Optional InpFileName. */
-                if ((0 != strlen (InpFileName)) &&
-                    (InpFile = fopen (InpFileName, "rb")) == NULL)
-                {
-                        printf ("-E-EMUTVS: Error - failed to open file %s for input!\n", InpFileName);
-                        handler (-1);
-                }
-                if ((OutFile = fopen (OutFileName, "wb")) == NULL)
-                {
-                        printf ("-E-EMUTVS: Error - failed to open file %s for output!\n", OutFileName);
-                        handler (-1);
-                }
-        }
-
-        /* TVS tbo code is bootstrap code. */
-	temp = getc (CopyIn);
-	if (temp < 2)
-	{
-		printf ("\nFile does not start with bootstrap code!\n");
-		handler (-1);
-	}
-
-	for (temp2=0; temp2<temp; temp2++)
-	{
-		writebyte_int ((MemStart+temp2), getc (CopyIn));
-	}
-	WPtr = MemStart + temp2;
-	while ((WPtr & 0x00000003) != 0x00000000)
-		WPtr++;
-	ProcPriority = LoPriority;
 
 	/* Initialise profiling array. */
 	for (temp=0; temp<10; temp++)
 		profile[temp] = 0;
+
+        /* Initialize memory with 'random' values. */
+        init_memory ();
+
+        /* Read network config file. */
+        if (nodeid >= 0)
+        {
+                FILE *NetIn;
+                if ((NetIn = fopen (NetConfigName, "r")) == NULL)
+                {
+                        printf("Failed to open network config file %s!\n", NetConfigName);
+                        handler (-1);
+                } 
+                if (readNetConfig (NetIn) < 0)
+                {
+                        handler (-1);
+                }
+                fclose (NetIn);
+        }
+
+        /* Initialize processor. */
+        init_processor ();
+
+        if ((FALSE == serve) && (nodeid >= 0))
+        {
+                temp = 1;
+                do
+                {
+                        if (verbose)
+                                printf ("-I-EMU414: Waiting for bootstrap code... (%d)\n", temp);
+                } while ((temp++ < 60) && (0 == linkcomm (TRUE)));
+                if (temp > 60)
+                {
+                        printf ("-E-EMU414: Failed to get bootstrap code!\n");
+                        handler (-1);
+                }
+        }
+        else
+        {
+                /* Open boot file. */
+                if ((CopyIn = fopen(CopyFileName, "rb"))==NULL)
+	        {
+		        printf("Failed to open file %s for copy to link!\n", CopyFileName);
+		        handler (-1);
+	        }
+
+	        /* Load bootstrap into emulator. */
+                if (usetvs)
+                {
+                        printf ("-I-EMUTVS: Running test %s\n", CopyFileName);
+                        /* Optional InpFileName. */
+                        if ((0 != strlen (InpFileName)) &&
+                            (InpFile = fopen (InpFileName, "rb")) == NULL)
+                        {
+                                printf ("-E-EMUTVS: Error - failed to open file %s for input!\n", InpFileName);
+                                handler (-1);
+                        }
+                        if ((OutFile = fopen (OutFileName, "wb")) == NULL)
+                        {
+                                printf ("-E-EMUTVS: Error - failed to open file %s for output!\n", OutFileName);
+                                handler (-1);
+                        }
+                }
+
+                /* TVS tbo code is bootstrap code. */
+	        temp = getc (CopyIn);
+	        if (temp < 2)
+	        {
+		        printf ("\nFile does not start with bootstrap code!\n");
+		        handler (-1);
+	        }
+
+	        for (temp2=0; temp2<temp; temp2++)
+	        {
+		        writebyte_int ((MemStart+temp2), getc (CopyIn));
+	        }
+	        WPtr = MemStart + temp2;
+        }
+
+	while ((WPtr & 0x00000003) != 0x00000000)
+		WPtr++;
+	ProcPriority = LoPriority;
 
 #ifdef CURTERM
         /* Initialise terminal settings. */
@@ -615,6 +687,8 @@ int main (int argc, char **argv)
         if (OutFile)
                 fclose (OutFile);
 
+        close_channels ();
+
 	if (profiling)
 	{
 		/* Print out profile counts. */
@@ -666,6 +740,8 @@ void handler (int signal)
                 fclose (InpFile);
         if (OutFile)
                 fclose (OutFile);
+
+        close_channels ();
 
 #ifdef CURTERM
    	prepterm (0);

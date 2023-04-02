@@ -11,7 +11,7 @@ PROC RayTracer(CHAN OF SP fs, ts, []INT memory)
   VAL false     IS #0000 :
 
   VAL number.of.transputers IS 43 :
-  VAL processors IS 8192 :
+  VAL processors IS 9 :
 
   [processors] CHAN OF ANY forward, back :
   CHAN OF ANY graphics :

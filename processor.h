@@ -101,6 +101,9 @@ void add_profile   (uint32_t);
 void print_profile (void);
 void reset_channel (uint32_t);
 void init_memory   (void);
+void init_processor(void);
+int  linkcomm(int doBoot);
+void close_channels(void);
 
 /* Processor definitions. */
 #define Link0Out 0x80000000 /****/
@@ -114,11 +117,17 @@ void init_memory   (void);
 
 #define IsLinkOut(x) ((Link0Out <= (x)) && ((x) <= Link3Out) && (0 == ((x) & 3)))
 #define IsLinkIn(x)  ((Link0In  <= (x)) && ((x) <= Link3In)  && (0 == ((x) & 3)))
-#define TheLink(x)   ((x) & 3)
+#define TheLink(x)   (((x) >> 2) & 3)
+
+#define MAX_CHANNEL_URL 128
 
 typedef struct _Channel_ {
+        uint32_t LinkAddress; /* the address of the Channel */
         uint32_t Address;
         uint32_t Length;
+        int  Link;
+        int  sock;
+        char url[MAX_CHANNEL_URL];
 } Channel;
 
 typedef struct _LinkIface_ {

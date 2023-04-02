@@ -48,6 +48,35 @@
 #include <unistd.h>
 #endif
 #include <math.h>
+
+#ifdef T4_SPYNET
+#include <nanomsg/nn.h>
+#include <nanomsg/pipeline.h>
+#else
+#include <errno.h>
+#define AF_SP 		0
+#define NN_PUSH         0
+#define NN_PULL         0
+#define NN_POLLIN       0
+#define NN_POLLOUT      0
+int nn_errno() { return EINVAL; }
+char *nn_strerror(int errnum) { return strerror (errnum); }
+int nn_socket(int domain, int protocol) { return EINVAL; }
+int nn_close(int s) { return EBADF; }
+int nn_bind(int s, const char *addr) { return EINVAL; }
+int nn_connect(int s, const char *addr) { return EINVAL; }
+int nn_shutdown(int s, int how) { return EINVAL; }
+int nn_send(int s, const void *buf, size_t len, int flags) { return EINVAL; }
+int nn_recv(int s, void *buf, size_t len, int flags) { return EINVAL; }
+int nn_setsockopt(int s, int lvl, int opt, const void *optval, size_t optvallen) { return EINVAL; }
+struct nn_pollfd {
+        int fd;
+        short events, revents;
+};
+int nn_poll(struct nn_pollfd *fds, int nfds, int opt) { return EINVAL; }
+#endif
+#include "netcfg.h"
+
 #include "processor.h"
 #include "arithmetic.h"
 #include "server.h"
@@ -200,6 +229,9 @@ int32_t quitstatus;
 
 /* External variables. */
 extern int analyse;
+extern int nodeid;
+extern int verbose;
+extern int serve;
 extern int exitonerror;
 extern int FromServerLen;
 extern int profiling;
@@ -488,25 +520,264 @@ void update_tod (struct timeval *tp)
         }
 }
 
+unsigned char *nextWord (unsigned char *data, uint32_t *result)
+{
+        *result = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
+        return data + 4;
+}
+
+int handleboot (Channel *chan, unsigned char *data, int ndata)
+{
+        uint32_t address, value;
+        int i;
+
+        fprintf (stderr, "ndata = %d\n", ndata);
+
+        switch (data[0])
+        {
+                case 0:
+                        if (9 != ndata)
+                        {
+                                printf ("-E-EMU414: Invalid POKE message size %d.\n", ndata);
+                                handler (-1);
+                        }
+                        data = nextWord (data, &address);
+                        data = nextWord (data, &value);
+                        writeword_int (address, value);
+                        break;
+                case 1:
+                        if (5 != ndata)
+                        {
+                                printf ("-E-EMU414: Invalid PEEK message size %d.\n", ndata);
+                                handler (-1);
+                        }
+                        data = nextWord (data, &address);
+                        value = word_int (address);
+                        data[0] = value & 255; value >>= 8;
+                        data[1] = value & 255; value >>= 8;
+                        data[2] = value & 255; value >>= 8;
+                        data[3] = value & 255;
+                        ndata = nn_send (chan->sock, data, ndata, 0);
+                        if (-1 == ndata)
+                        {
+                                printf ("-E-EMU414: Send failed on Link%dOut (%s)\n", chan->Link, nn_strerror (nn_errno ()));
+                                handler (-1);
+                        }
+                        if (4 != ndata)
+                        {
+                                printf ("-E-EMU414: Failed to send %d bytes on Link%dOut (%s)\n", ndata, chan->Link, nn_strerror (nn_errno ()));
+                                handler (-1);
+                        }
+                        break;
+                default:
+                        data++; ndata--;
+                        for (i = 0; i < ndata; i++)
+                        {
+                                writebyte_int ((MemStart + i), data[i]);
+                        }
+                        WPtr = MemStart + ndata;
+                        return 0;
+        }
+        return 1;
+}
+
+int linkcomm (int doBoot)
+{
+        struct nn_pollfd pfd[8];
+        int npfd;
+        uint32_t LinkWdesc;
+        Channel *channels[8];
+        unsigned char data[512];
+        int ndata;
+        int i, ret;
+
+        npfd = 0;
+        for (i = 0; i < 4; i++)
+        {
+                if ((0 == i) && serve) /* skip Host link */
+                        continue;
+
+                LinkWdesc = word (Link[i].In.LinkAddress);
+                if (doBoot || ((LinkWdesc != NotProcess_p) && Link[i].In.Length))
+                {
+                        pfd[npfd].fd = Link[i].In.sock;
+                        pfd[npfd].events = NN_POLLIN;
+                        channels[npfd++] = &Link[i].In;
+                }
+                if (doBoot)
+                        continue;
+
+                LinkWdesc = word (Link[i].Out.LinkAddress);
+                if ((LinkWdesc != NotProcess_p) && Link[i].Out.Length)
+                {
+                        pfd[npfd].fd = Link[i].Out.sock;
+                        pfd[npfd].events = NN_POLLOUT;
+                        channels[npfd++] = &Link[i].Out;
+                }
+        }
+        if (0 == npfd)
+                return 0;
+        ret = nn_poll (pfd, npfd, doBoot ? 1000 : 0);
+        if (0 == ret) /* timeout */
+                return 0;
+        if (-1 == ret) /* error */
+        {
+                printf ("-E-EMU414: Failed polling Links (%s)\n", nn_strerror (nn_errno ()));
+                handler (-1);
+        }
+        for (i = 0; i < npfd; i++)
+        {
+                if (0 == pfd[i].revents)
+                        continue;
+                if (pfd[i].revents & NN_POLLIN)
+                {
+                        ret = nn_recv (pfd[i].fd, data, sizeof (data), 0);
+                        if (-1 == ret)
+                        {
+                                printf ("-E-EMU414: Receive failed on Link%dIn (%s)\n", channels[i]->Link, nn_strerror (nn_errno ()));
+                                handler (-1);
+                        }
+                        if (doBoot)
+                        {
+                                if (0 == handleboot (&Link[channels[i]->Link].Out, data, ret))
+                                {
+                                        CReg = channels[i]->LinkAddress;
+                                        return 1;
+                                }
+                                return 0;
+                        }
+                        else
+                                for (i = 0; i < ret; i++)
+                                {
+                                        writebyte_int (channels[i]->Address++, data[i]);
+                                        channels[i]->Length--;
+                                }
+                }
+                else if (pfd[i].revents & NN_POLLOUT)
+                {
+                        ndata = 512;
+                        if (channels[i]->Length < 512)
+                                ndata = channels[i]->Length;
+                        for (i = 0; i < ndata; i++)
+                        {
+                                data[i] = byte_int (channels[i]->Address++);
+                                channels[i]->Length--;
+                        }
+                        ret = nn_send (pfd[i].fd, data, ndata, 0);
+                        if (-1 == ret)
+                        {
+                                printf ("-E-EMU414: Send failed on Link%dOut (%s)\n", channels[i]->Link, nn_strerror (nn_errno ()));
+                                handler (-1);
+                        }
+                        if (ret != ndata)
+                        {
+                                printf ("-E-EMU414: Failed to send %d bytes on Link%dOut (%s)\n", ndata, channels[i]->Link, nn_strerror (nn_errno ()));
+                                handler (-1);
+                        }
+                }
+                if (0 == channels[i]->Length)
+                {
+                        channels[i]->Address = MostNeg;
+                        LinkWdesc = word (channels[i]->LinkAddress);
+                        schedule (LinkWdesc);
+                }
+        }
+        return 1;
+}
+
+
+/* Close link channels */
+void close_channels (void)
+{
+        int i;
+
+        for (i = 0; i < 4; i++)
+                if (-1 != Link[i].Out.sock)
+                        nn_close (Link[i].Out.sock);
+
+        for (i = 0; i < 4; i++)
+                if (-1 != Link[i].In.sock)
+                        nn_close (Link[i].In.sock);
+}
+
+
 /* Reset a link channel */
 void reset_channel (uint32_t addr)
 {
         Channel *chan;
+        int chanIn, theLink;
+        int ret;
 
 
         /* Reset channel control word. */
         writeword (addr, NotProcess_p);
 
         chan = (Channel *)0;
+        chanIn = 0;
+        theLink = TheLink(addr);
         if (IsLinkIn(addr))
-                chan = &Link[TheLink(addr)].In;
+        {
+                chan = &Link[theLink].In;
+                chanIn = 1;
+        }
         else if (IsLinkOut(addr))
-                chan = &Link[TheLink(addr)].Out;
+                chan = &Link[theLink].Out;
         
         if (chan)
         {
+                chan->LinkAddress = addr;
                 chan->Address = MostNeg;
                 chan->Length  = 0;
+                chan->Link = theLink;
+                chan->url[0] = '\0';
+                chan->sock = -1;
+                if (serve && 0 == theLink) /* host link */
+                        return;
+                if (nodeid >= 0)
+                {
+                        int othernode, otherlink;
+                        if (chanIn)
+                        {
+                                strcpy (&chan->url[0], netLinkURL (nodeid, theLink));
+                        }
+                        else
+                        {
+                                if (0 == connectedNetLink(nodeid, theLink, &othernode, &otherlink))
+                                {
+                                        strcpy (&chan->url[0], netLinkURL (othernode, otherlink));
+                                }
+                        }
+                        if (chanIn)
+                        {
+                                if ((chan->sock = nn_socket (AF_SP, NN_PULL)) < 0)
+                                {
+                                        printf ("-E-EMU414: Error - Cannot create socket for Link%dIn\n", theLink);
+                                        handler (-1);
+                                }
+                                if ((ret = nn_bind (chan->sock, chan->url)) < 0)
+                                {
+                                        printf ("-E-EMU414: Error - Cannot bind Link%dIn to %s\n", theLink, chan->url);
+                                        handler (-1);
+                                }
+                                if (verbose)
+                                        printf ("-I-EMU414: Link%dIn  at %s\n", theLink, chan->url);
+                        }
+                        else if (0 != chan->url[0]) /* only if connected to other node */
+                        {
+                                if ((chan->sock = nn_socket(AF_SP, NN_PUSH)) < 0)
+                                {
+                                        printf ("-E-EMU414: Error - Cannot create socket for Link%dOut.\n", theLink);
+                                        handler(-1);
+                                }
+                                if ((ret = nn_connect (chan->sock, chan->url)) < 0)
+                                {
+                                        printf ("-E-EMU414: Error - Cannot connect Link%dOut to %s\n", theLink, chan->url);
+                                        handler (-1);
+                                }
+                                if (verbose)
+                                        printf ("-I-EMU414: Link%dOut at %s\n", theLink, chan->url);
+                        }
+                }
         }
 }
 
@@ -677,17 +948,15 @@ void init_processor (void)
         int i;
 
         /* M.Bruestle 15.2.2012 */
-        reset_channel (Link0Out);
         reset_channel (Link0In);
-
-        reset_channel (Link1Out);
         reset_channel (Link1In);
-
-        reset_channel (Link2Out);
         reset_channel (Link2In);
-
-        reset_channel (Link3Out);
         reset_channel (Link3In);
+
+        reset_channel (Link0Out);
+        reset_channel (Link1Out);
+        reset_channel (Link2Out);
+        reset_channel (Link3Out);
 
         IPtr = MemStart;
         CReg = Link0In;
@@ -766,8 +1035,6 @@ void mainloop (void)
         instrBytes  = 0;
         asmLines    = 0;
         m2dSourceStride = m2dDestStride = m2dLength = Undefined_p;
-
-        init_processor ();
 
 	count1 = 0;
 	count2 = 0;
@@ -3289,8 +3556,10 @@ void start_process (void)
                 if (emudebug)
 		        printf ("-I-EMUDBG: StartProcess: Empty process list. Update comms.\n");
 
-                /* Update comms. */
+                /* Update host comms. */
 		active = 0 != server ();
+
+                active = active || (0 != linkcomm (FALSE));
 
 		/* Update timers, check timer queues. */
                 active = active ||

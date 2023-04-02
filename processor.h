@@ -71,40 +71,6 @@ extern uint32_t CoreSize;
 
 #define INT32(x)        ((int32_t)(x))
 
-/* Function prototypes. */
-void mainloop      (void);
-void execute       (void);
-void operate       (void);
-void schedule      (uint32_t);
-int  run_process   (void);
-void start_process (void);
-void deschedule    (void);
-void D_check       (void);
-void interrupt     (void);
-void insert        (uint32_t);
-void purge_timer   (void);
-INLINE void update_time   (void);
-uint32_t word (uint32_t);
-void     writeword     (uint32_t, uint32_t);
-unsigned char byte (uint32_t);
-INLINE
-void writebyte     (uint32_t, unsigned char);
-fpreal32_t real32 (uint32_t);
-void    writereal32 (uint32_t, fpreal32_t);
-fpreal64_t real64 (uint32_t);
-void    writereal64 (uint32_t, fpreal64_t);
-uint32_t   word_int (uint32_t);
-void    writeword_int (uint32_t, uint32_t);
-unsigned char byte_int (uint32_t);
-void writebyte_int (uint32_t, unsigned char);
-void add_profile   (uint32_t);
-void print_profile (void);
-void reset_channel (uint32_t);
-void init_memory   (void);
-void init_processor(void);
-int  linkcomm(int doBoot);
-void close_channels(void);
-
 /* Processor definitions. */
 #define Link0Out 0x80000000 /****/
 #define Link1Out 0x80000004 /****/
@@ -142,3 +108,40 @@ extern LinkIface Link[4];
 #define Link0OutLength  Link[0].Out.Length
 #define Link0InDest     Link[0].In.Address
 #define Link0InLength   Link[0].In.Length
+
+
+/* Function prototypes. */
+void mainloop      (void);
+void execute       (void);
+void operate       (void);
+void schedule      (uint32_t);
+int  run_process   (void);
+void start_process (void);
+void deschedule    (void);
+void D_check       (void);
+void interrupt     (void);
+void insert        (uint32_t);
+void purge_timer   (void);
+INLINE void update_time   (void);
+uint32_t word (uint32_t);
+void     writeword     (uint32_t, uint32_t);
+unsigned char byte (uint32_t);
+INLINE
+void writebyte     (uint32_t, unsigned char);
+fpreal32_t real32 (uint32_t);
+void    writereal32 (uint32_t, fpreal32_t);
+fpreal64_t real64 (uint32_t);
+void    writereal64 (uint32_t, fpreal64_t);
+uint32_t   word_int (uint32_t);
+void    writeword_int (uint32_t, uint32_t);
+unsigned char byte_int (uint32_t);
+void writebyte_int (uint32_t, unsigned char);
+void add_profile   (uint32_t);
+void print_profile (void);
+void open_channel (uint32_t);
+Channel *reset_channel (uint32_t);
+void init_memory   (void);
+void init_processor(void);
+int  linkcomm(int doBoot);
+void close_channels(void);
+

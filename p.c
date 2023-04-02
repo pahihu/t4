@@ -560,12 +560,12 @@ int handleboot (Channel *chan, unsigned char *data, int ndata)
                         ndata = nn_send (chan->sock, data, ndata, 0);
                         if (-1 == ndata)
                         {
-                                printf ("-E-EMU414: Send failed on Link%dOut (%s)\n", chan->Link, nn_strerror (nn_errno ()));
+                                printf ("-E-EMU414: Send failed on Link%dOut (%s) @ handleboot()\n", chan->Link, nn_strerror (nn_errno ()));
                                 handler (-1);
                         }
                         if (4 != ndata)
                         {
-                                printf ("-E-EMU414: Failed to send %d bytes on Link%dOut (%s)\n", ndata, chan->Link, nn_strerror (nn_errno ()));
+                                printf ("-E-EMU414: Failed to send %d bytes on Link%dOut (%s) @ handleboot()\n", ndata, chan->Link, nn_strerror (nn_errno ()));
                                 handler (-1);
                         }
                         break;
@@ -589,7 +589,7 @@ int linkcomm (int doBoot)
         Channel *channels[8];
         unsigned char data[512];
         int ndata;
-        int i, ret;
+        int i, j, ret;
 
         npfd = 0;
         for (i = 0; i < 4; i++)
@@ -602,6 +602,7 @@ int linkcomm (int doBoot)
                 {
                         pfd[npfd].fd = Link[i].In.sock;
                         pfd[npfd].events = NN_POLLIN;
+                        pfd[npfd].revents = 0;
                         channels[npfd++] = &Link[i].In;
                 }
                 if (doBoot)
@@ -612,6 +613,7 @@ int linkcomm (int doBoot)
                 {
                         pfd[npfd].fd = Link[i].Out.sock;
                         pfd[npfd].events = NN_POLLOUT;
+                        pfd[npfd].revents = 0;
                         channels[npfd++] = &Link[i].Out;
                 }
         }
@@ -647,9 +649,9 @@ int linkcomm (int doBoot)
                                 return 0;
                         }
                         else
-                                for (i = 0; i < ret; i++)
+                                for (j = 0; j < ret; j++)
                                 {
-                                        writebyte_int (channels[i]->Address++, data[i]);
+                                        writebyte_int (channels[i]->Address++, data[j]);
                                         channels[i]->Length--;
                                 }
                 }
@@ -658,9 +660,9 @@ int linkcomm (int doBoot)
                         ndata = 512;
                         if (channels[i]->Length < 512)
                                 ndata = channels[i]->Length;
-                        for (i = 0; i < ndata; i++)
+                        for (j = 0; j < ndata; j++)
                         {
-                                data[i] = byte_int (channels[i]->Address++);
+                                data[j] = byte_int (channels[i]->Address++);
                                 channels[i]->Length--;
                         }
                         ret = nn_send (pfd[i].fd, data, ndata, 0);

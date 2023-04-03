@@ -76,6 +76,33 @@ static char* read_link (char *ptr, int *node, int *link)
                 *node = NODE_NOTCONNECTED;
                 return ptr;
         }
+        else if (0 == strncmp (ptr, "HOST ", 5))
+        {
+                *node = NODE_HOST;
+                return ptr + 5;
+        }
+        else if (0 == strncmp (ptr, "processor ", 10))
+        {
+                /* "processor" <number> "link" <number> */
+                ptr = read_number (ptr + 10, node);
+                if (NODE_INVALID == *node)
+                        return ptr;
+                ptr = skip (ptr);
+                if (0 == *ptr)
+                {
+                        *node = NODE_INVALID;
+                        return ptr;
+                }
+                if (strncmp (ptr, "link ", 5))
+                {
+                        *node = NODE_INVALID;
+                        return ptr;
+                }
+                ptr = read_number (ptr + 5, link);
+                if (NODE_INVALID == *link)
+                        *node = NODE_INVALID;
+                return ptr;
+        }
         else if (0 == strncmp (ptr, "host", 4))
         {
                 *node = NODE_HOST;
@@ -102,11 +129,8 @@ int readNetConfig (FILE *fin)
         char buf[128];
         int i, nline;
         char *ptr;
-        int node, link, thenode;
+        int node, link, thenode, thelink;
         char url[128];
-
-        if (verbose)
-                printf ("-I-EMU414: Reading network configuration...\n");
 
         nline = 1;
         ptr = fgets (buf, sizeof(buf), fin);
@@ -114,64 +138,102 @@ int readNetConfig (FILE *fin)
         {
                 /* fprintf (stderr, "line = [%s]\n", buf); */
                 ptr = skip (ptr);
-                if (*ptr)
+                if (0 == *ptr)
+                        goto NextLine;
+
+                if (0 == strncmp (ptr, "--", 2))
+                        goto NextLine;
+                else if (0 == strncmp (ptr, "Connect ", 8))
                 {
-                        if (0 == strncmp (ptr, "--", 2))
-                                goto NextLine;
-                        if (0 == strncmp (ptr, "link", 4))
+                        /* Connect HOST to processor <number> link <number> */
+                        /* Connect processor <number> link <number>  to processor <number> link <number> */
+                        ptr = read_link (ptr + 8, &thenode, &thelink);
+                        if (NODE_INVALID == thenode)
                         {
-                                /* "link" <link> string */
-                                ptr = read_link (ptr + 4, &node, &link);
-                                if (node < 0)
+                                printf ("-E-EMU414: Cannot read link at line %d.\n", nline);
+                                return (-1);
+                        }
+                        if (thenode >= 0)
+                        {
+                                ptr = skip (ptr);
+                                if (strncmp (ptr, "to", 2))
                                 {
-                                        printf ("-E-EMU414: Invalid link at line %d.\n", nline);
+                                        printf ("-E-EMU414: Missing 'to' at line %d.\n", nline);
                                         return (-1);
                                 }
-                                ptr = read_string (ptr, url);
-                                if (0 == url[0])
+                                ptr = read_link (ptr + 2, &node, &link);
+                                if (NODE_INVALID == thenode)
                                 {
-                                        printf ("-E-EMU414: Missing URL at line %d.\n", nline);
+                                        printf ("-E-EMU414: Cannot read 'to' link at line %d.\n", nline);
                                         return (-1);
                                 }
                                 if (verbose)
-                                        printf ("-I-EMU414: Node %d Link%dIn at %s\n", node, link, url);
-                                NetURLs[nNetURL].node = node;
-                                NetURLs[nNetURL].link = link;
-                                NetURLs[nNetURL++].url = strdup (url);
+                                        printf ("-I-EMU414: Connect %d-%d => %d-%d\n", thenode, thelink, node, link);
+                                NetLinks[nNetLink].node = thenode;
+                                NetLinks[nNetLink].link = thelink;
+                                NetLinks[nNetLink].othernode = node;
+                                NetLinks[nNetLink++].otherlink = link;
+                                if (verbose)
+                                        printf ("-I-EMU414: Connect %d-%d => %d-%d\n", node, link, thenode, thelink);
+                                NetLinks[nNetLink].node = node;
+                                NetLinks[nNetLink].link = link;
+                                NetLinks[nNetLink].othernode = thenode;
+                                NetLinks[nNetLink++].otherlink = thelink;
                         }
-                        else
+                }
+                else if (0 == strncmp (ptr, "link", 4))
+                {
+                        /* "link" <link> string */
+                        ptr = read_link (ptr + 4, &node, &link);
+                        if (node < 0)
                         {
-                                /* number <link> <link> <link> <link>
-                                 * link := "host" | "-" | number "-" number 
-                                 */
-                                ptr = read_number (ptr, &thenode);
-                                if (-1 == node)
+                                printf ("-E-EMU414: Invalid link at line %d.\n", nline);
+                                return (-1);
+                        }
+                        ptr = read_string (ptr, url);
+                        if (0 == url[0])
+                        {
+                                printf ("-E-EMU414: Missing URL at line %d.\n", nline);
+                                return (-1);
+                        }
+                        if (verbose)
+                                printf ("-I-EMU414: Node %d Link%dIn at %s\n", node, link, url);
+                        NetURLs[nNetURL].node = node;
+                        NetURLs[nNetURL].link = link;
+                        NetURLs[nNetURL++].url = strdup (url);
+                }
+                else if (isdigit(*ptr))
+                {
+                        /* number <link> <link> <link> <link>
+                         * link := "host" | "-" | number "-" number
+                         */
+                        ptr = read_number (ptr, &thenode);
+                        if (-1 == node)
+                        {
+                                printf ("-E-EMU414: Cannot read node id at line %d.\n", nline);
+                                return (-1);
+                        }
+                        for (i = 0; i < 4; i++)
+                        {
+                                ptr = skip (ptr);
+                                if (0 == *ptr)
+                                        break;
+                                if (0 == strncmp (ptr, "--", 2))
+                                        break;
+                                ptr = read_link (ptr, &node, &link);
+                                if (NODE_INVALID == node)
                                 {
-                                        printf ("-E-EMU414: Cannot read node id at line %d.\n", nline);
+                                        printf ("-E-EMU414: Cannot read link at line %d.\n", nline);
                                         return (-1);
                                 }
-                                for (i = 0; i < 4; i++)
+                                if (node >= 0) /* skip HOST and NOT CONNECTED links */
                                 {
-                                        ptr = skip (ptr);
-                                        if (0 == *ptr)
-                                                break;
-                                        if (0 == strncmp (ptr, "--", 2))
-                                                break;
-                                        ptr = read_link (ptr, &node, &link);
-                                        if (NODE_INVALID == node)
-                                        {
-                                                printf ("-E-EMU414: Cannot read link at line %d.\n", nline);
-                                                return (-1);
-                                        }
-                                        if (node >= 0) /* skip HOST and NOT CONNECTED links */
-                                        {
-                                                if (verbose)
-                                                        printf ("-I-EMU414: Connect %d-%d => %d-%d\n", thenode, i, node, link);
-                                                NetLinks[nNetLink].node = thenode;
-                                                NetLinks[nNetLink].link = i;
-                                                NetLinks[nNetLink].othernode = node;
-                                                NetLinks[nNetLink++].otherlink = link;
-                                        }
+                                        if (verbose)
+                                                printf ("-I-EMU414: Connect %d-%d => %d-%d\n", thenode, i, node, link);
+                                        NetLinks[nNetLink].node = thenode;
+                                        NetLinks[nNetLink].link = i;
+                                        NetLinks[nNetLink].othernode = node;
+                                        NetLinks[nNetLink++].otherlink = link;
                                 }
                         }
                 }
@@ -179,8 +241,6 @@ NextLine:
                 ptr = fgets (buf, sizeof(buf), fin);
                 nline++;
         }
-        if (verbose)
-                printf ("-I-EMU414: Done.\n");
         return 0;
 }
 
@@ -215,6 +275,7 @@ char* netLinkURL (int node, int link)
 }
 
 #if defined(NETCFG_TEST)
+int verbose = 1;
 int main(int argc, char*argv[])
 {
         FILE *fin;
@@ -229,7 +290,7 @@ int main(int argc, char*argv[])
                 fprintf (stderr, "cannot open %s\n", argv[1]);
                 exit (1);
         }
-        read_netcfg (fin);
+        readNetConfig (fin);
         fclose (fin);
 
         return 0;

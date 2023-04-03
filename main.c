@@ -361,7 +361,6 @@ int main (int argc, char **argv)
 							printf ("\nNode ID  should be in [0,8191] range!\n");
 							handler (-1);
 						}
-                                                strcpy (NetConfigName, "spy.net");
                                           }
 					  break;
 				case 'r': if (argv[arg][3]!='\0')
@@ -537,15 +536,38 @@ int main (int argc, char **argv)
         if (nodeid >= 0)
         {
                 FILE *NetIn;
+
+                if (verbose)
+                        printf ("-I-EMU414: Node ID = %d.\n", nodeid);
+                strcpy (NetConfigName, "spy.net");
                 if ((NetIn = fopen (NetConfigName, "r")) == NULL)
                 {
-                        printf("Failed to open network config file %s!\n", NetConfigName);
-                        handler (-1);
-                } 
+                        char *p = strchr (CopyFileName, '.');
+                        if (p)
+                        {
+                                temp = p - CopyFileName;
+                                strncpy (NetConfigName, CopyFileName, temp);
+                                NetConfigName[temp] = '\0';
+                        }
+                        else
+                        {
+                                strcpy (NetConfigName, CopyFileName);
+                        }
+                        strcat (NetConfigName, ".map");
+                        if ((NetIn = fopen (NetConfigName, "r")) == NULL)
+                        {
+                                printf ("Failed to open network config file %s!\n", NetConfigName);
+                                handler (-1);
+                        }
+                }
+                if (verbose)
+                        printf ("-I-EMU414: Reading network configration from %s...\n", NetConfigName);
                 if (readNetConfig (NetIn) < 0)
                 {
                         handler (-1);
                 }
+                if (verbose)
+                        printf ("-I-EMU414: Done.\n");
                 fclose (NetIn);
         }
 

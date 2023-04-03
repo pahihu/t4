@@ -59,6 +59,8 @@
 #define NN_PULL         0
 #define NN_POLLIN       0
 #define NN_POLLOUT      0
+#define NN_SOL_SOCKET   0 
+#define NN_SNDTIMEO     0
 int nn_errno() { return EINVAL; }
 char *nn_strerror(int errnum) { return strerror (errnum); }
 int nn_socket(int domain, int protocol) { return EINVAL; }
@@ -186,6 +188,7 @@ uint32_t IntEnabled;            /* Interrupt enabled */
 #define ReadHaltOnError         (STATUSReg & HaltOnErrorFlag)
 
 
+#define Temp_s          ( 0)
 #define Iptr_s          (-1)
 #define Link_s          (-2)
 #define State_s         (-3)
@@ -611,7 +614,7 @@ int linkcomm (int doBoot)
         int ndata;
         int i, j, ret;
 
-        if (emudebug)
+        if (msgdebug || emudebug)
                 printf ("-I-EMUDBG: Link comms %s.\n", doBoot ? "booting" : "running");
         npfd = 0;
         for (i = 0; i < 4; i++)
@@ -620,7 +623,7 @@ int linkcomm (int doBoot)
                         continue;
 
                 LinkWdesc = word (Link[i].In.LinkAddress);
-                if (doBoot || ((LinkWdesc != NotProcess_p) && Link[i].In.Length))
+                if (doBoot || ((LinkWdesc != NotProcess_p) /*&& Link[i].In.Length*/))
                 {
                         if (doBoot && BootLink)
                         {
@@ -631,6 +634,8 @@ int linkcomm (int doBoot)
                         pfd[npfd].events = NN_POLLIN;
                         pfd[npfd].revents = 0;
                         channels[npfd++] = &Link[i].In;
+                        if (msgdebug || emudebug)
+                                printf ("-I-EMUDBG: Polling Link%dIn.\n", i);
                 }
                 if (doBoot)
                         continue;
@@ -642,16 +647,18 @@ int linkcomm (int doBoot)
                         pfd[npfd].events = NN_POLLOUT;
                         pfd[npfd].revents = 0;
                         channels[npfd++] = &Link[i].Out;
+                        if (msgdebug || emudebug)
+                                printf ("-I-EMUDBG: Polling Link%dOut.\n", i);
                 }
         }
-        if (emudebug)
+        if (msgdebug || emudebug)
                 printf ("-I-EMUDBG: Number of channels polled %d.\n", npfd);
         if (0 == npfd)
                 return 0;
         ret = nn_poll (pfd, npfd, 1000);
         if (0 == ret) /* timeout */
         {
-                if (emudebug)
+                if (msgdebug || emudebug)
                         printf ("-I-EMUDBG: Comms timeout.\n");
                 return doBoot ? 0 : 1;
         }
@@ -662,36 +669,50 @@ int linkcomm (int doBoot)
         }
         for (i = 0; i < npfd; i++)
         {
+                int revents;
+
                 if (0 == pfd[i].revents)
                         continue;
+
+                revents = 0;
                 if (pfd[i].revents & NN_POLLIN)
                 {
-                        ret = nn_recv (pfd[i].fd, data, sizeof (data), 0);
-                        if (-1 == ret)
+                        revents = NN_POLLIN;
+                        if (doBoot || channels[i]->Length)
                         {
-                                printf ("-E-EMU414: Receive failed on Link%dIn (%s)\n", channels[i]->Link, nn_strerror (nn_errno ()));
-                                handler (-1);
-                        }
-                        if (emudebug)
-                                printf ("-I-EMUDBG: Received %d bytes on Link%dIn (#%08X).\n", ret, channels[i]->Link, channels[i]->LinkAddress);
-                        if (doBoot)
-                        {
-                                if (0 == handleboot (channels[i], data, ret))
+                                ret = nn_recv (pfd[i].fd, data, sizeof (data), 0);
+                                if (-1 == ret)
                                 {
-                                        CReg = BootLink;
-                                        return 1;
+                                        printf ("-E-EMU414: Receive failed on Link%dIn (%s)\n", channels[i]->Link, nn_strerror (nn_errno ()));
+                                        handler (-1);
                                 }
-                                return 0;
-                        }
-                        else
-                                for (j = 0; j < ret; j++)
+                                if (msgdebug || emudebug)
+                                        printf ("-I-EMUDBG: Received %d bytes on Link%dIn (#%08X).\n", ret, channels[i]->Link, channels[i]->LinkAddress);
+                                if (doBoot)
                                 {
-                                        writebyte_int (channels[i]->Address++, data[j]);
-                                        channels[i]->Length--;
+                                        if (0 == handleboot (channels[i], data, ret))
+                                        {
+                                                CReg = BootLink;
+                                                return 1;
+                                        }
+                                        return 0;
                                 }
+                                else
+                                {
+                                        ndata = ret;
+                                        for (j = 0; j < ret; j++)
+                                        {
+                                                writebyte_int (channels[i]->Address++, data[j]);
+                                                channels[i]->Length--;
+                                        }
+                                }
+                        }
+                        else if (msgdebug || emudebug)
+                                printf ("-I-EMUDBG: Polled on Link%dIn (#%08X).\n", channels[i]->Link, channels[i]->LinkAddress);
                 }
                 else if (pfd[i].revents & NN_POLLOUT)
                 {
+                        revents = NN_POLLOUT;
                         ndata = 512;
                         if (channels[i]->Length < 512)
                                 ndata = channels[i]->Length;
@@ -711,14 +732,49 @@ int linkcomm (int doBoot)
                                 printf ("-E-EMU414: Failed to send %d bytes on Link%dOut (%s).\n", ndata, channels[i]->Link, nn_strerror (nn_errno ()));
                                 handler (-1);
                         }
-                        if (emudebug)
+                        if (msgdebug || emudebug)
                                 printf ("-I-EMUDBG: Sent %d bytes on Link%dOut (#%08X).\n", ndata, channels[i]->Link, channels[i]->LinkAddress);
                 }
                 if (0 == channels[i]->Length)
                 {
-                        LinkWdesc = word (channels[i]->LinkAddress);
+                        uint32_t linkWdesc, linkWPtr, altState, linkPtr;
+
+                        linkWdesc = word (channels[i]->LinkAddress);
+                        if (FALSE) // ((0 == ndata) && (NN_POLLIN == revents))
+                        {
+				/* Ready. */
+                                linkWPtr  = GetDescWPtr(linkWdesc);
+				altState = linkPtr = word (index (linkWPtr, State_s));
+                                if (msgdebug || emudebug)
+                                        printf ("-I-EMUDBG: Link(1): Memory address/ALT state=#%08X.\n", altState);
+				if ((altState & 0xfffffffc) == MostNeg)
+				{
+				        /* ALT guard test - not ready to communicate. */
+                                        if (msgdebug || emudebug)
+                                                printf ("-I-EMUDBG: Link(2): ALT guard test - not ready to communicate.\n");
+
+					/* The alt is waiting. Rechedule it? */
+					if (altState != Ready_p)
+					{
+					        /* The alt has not already been rescheduled. */
+                                                if (msgdebug || emudebug)
+                                                {
+                                                        printf ("-I-EMUDBG: Link(3): ALT state=Ready_p.\n");
+                                                        printf ("-I-EMUDBG: Link(4): Reschedule ALT process (Wdesc=#%08X, IPtr=#%08X).\n",
+                                                                                                linkWdesc, word (index (linkWPtr, Iptr_s)));
+                                                }
+						writeword (index (linkWPtr, State_s), Ready_p);
+					}
+                                }
+                                else
+                                {
+				        /* Ready. */
+                                        if (msgdebug || emudebug)
+                                                printf ("-I-EMUDBG: Link(5): Ready, communicate.\n");
+                                }
+                        }
                         reset_channel (channels[i]->LinkAddress);
-                        schedule (LinkWdesc);
+                        schedule (linkWdesc);
                 }
         }
         return 1;
@@ -729,6 +785,11 @@ int linkcomm (int doBoot)
 void close_channels (void)
 {
         int i;
+
+        /* see comment for NN_LINGER at
+         *      https://nanomsg.org/v1.1.5/nn_setsockopt.html
+         */
+        sleep (1);
 
         for (i = 0; i < 4; i++)
                 if (-1 != Link[i].Out.sock)
@@ -818,14 +879,20 @@ void open_channel (uint32_t addr)
         }
         else if (0 != chan->url[0]) /* only if connected to other node */
         {
+                int send_timeout = 5000;
                 if ((chan->sock = nn_socket(AF_SP, NN_PUSH)) < 0)
                 {
-                        printf ("-E-EMU414: Error - Cannot create socket for Link%dOut.\n", theLink);
+                        printf ("-E-EMU414: Error - Cannot create socket for Link%dOut (%s).\n", theLink, nn_strerror (nn_errno ()));
                         handler(-1);
                 }
                 if ((ret = nn_connect (chan->sock, chan->url)) < 0)
                 {
-                        printf ("-E-EMU414: Error - Cannot connect Link%dOut to %s\n", theLink, chan->url);
+                        printf ("-E-EMU414: Error - Cannot connect Link%dOut to %s (%s)\n", theLink, chan->url, nn_strerror (nn_errno ()));
+                        handler (-1);
+                }
+                if ((ret = nn_setsockopt (chan->sock, NN_SOL_SOCKET, NN_SNDTIMEO, &send_timeout, sizeof(int))) < 0)
+                {
+                        printf ("-E-EMU414: Error - Cannot set SNDTIMEO on Link%dOut (%s)\n", theLink, nn_strerror (nn_errno ()));
                         handler (-1);
                 }
                 if (verbose)
@@ -1939,7 +2006,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   {
                                 if (emudebug)
 				        printf ("-I-EMUDBG: dist(2): Taking branch #%8X.\n", AReg);
-				writeword (index (WPtr, 0), AReg);
+				writeword (index (WPtr, Temp_s), AReg);
 				AReg = true_t;
                                 CReg = TimeNotSet_p;
 			   }
@@ -1999,11 +2066,11 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
           				temp = TRUE;
 				}
           		   }
-			   if ((BReg == true_t) && (temp == TRUE) && (word (index (WPtr, 0)) == NoneSelected_o))
+			   if ((BReg == true_t) && (temp == TRUE) && (word (index (WPtr, Temp_s)) == NoneSelected_o))
 			   {
                                 if (emudebug)
 				        printf ("-I-EMUDBG: disc(4): Taking branch #%8X.\n", AReg);
-				writeword (index (WPtr, 0), AReg);
+				writeword (index (WPtr, Temp_s), AReg);
 				AReg = true_t;
 			   }
 			   else
@@ -2015,9 +2082,9 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   IPtr++;
 			   break;
 		case 0x30: /* diss        */
-			   if ((BReg==true_t) && (word(index(WPtr,0))==NoneSelected_o))
+			   if ((BReg == true_t) && (word (index (WPtr, Temp_s)) == NoneSelected_o))
 			   {
-				writeword (index (WPtr, 0), AReg);
+				writeword (index (WPtr, Temp_s), AReg);
 				AReg = true_t;
 			   }
 			   else
@@ -2175,7 +2242,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			        printf ("-I-EMUDBG: altwt(1): (W  )=NoneSelected_o\n");
 			        printf ("-I-EMUDBG: altwt(2): (W-3)=#%08X\n", word (index (WPtr, State_s)));
                            }
-			   writeword (index (WPtr, 0), NoneSelected_o);
+			   writeword (index (WPtr, Temp_s), NoneSelected_o);
 			   IPtr++;
 			   if ((word (index (WPtr, State_s))) != Ready_p)
 			   {
@@ -2190,7 +2257,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                            if (emudebug)
 			        printf ("-I-EMUDBG: altend: IPtr+#%8X.\n", word (index (WPtr,0)));
 			   IPtr++;
-			   IPtr = IPtr + word (index (WPtr, 0));
+			   IPtr = IPtr + word (index (WPtr, Temp_s));
 			   break;
 		case 0x46: /* and         */
 			   AReg = BReg & AReg;
@@ -2344,7 +2411,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			        printf ("-I-EMUDBG: taltwt(1): (W  )=NoneSelected_o\n");
 			        printf ("-I-EMUDBG: taltwt(2): (W-3)=#%08X\n", word (index (WPtr, State_s)));
                            }
-			   writeword (index (WPtr, 0), NoneSelected_o);
+			   writeword (index (WPtr, Temp_s), NoneSelected_o);
 			   IPtr++;
 			   if ((word (index (WPtr, State_s))) != Ready_p)
 			   {
@@ -2552,7 +2619,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x6c: /* postnormsn  */
                            if (IsT800)
                                 goto BadCode;
-			   temp = (INT32(word (index (WPtr, 0))) - INT32(CReg));
+			   temp = (INT32(word (index (WPtr, Temp_s))) - INT32(CReg));
                            if (INT32(temp) <= -BitsPerWord)
                            {
                                 /* kudos to M.Bruestle: too small. */
@@ -3590,7 +3657,7 @@ int run_process (void)
 /* Start a process. */
 void start_process (void)
 {
-        int active;
+        int active, links_active;
 
         if ((ProcPriority == LoPriority) && !IntEnabled)
                 return;
@@ -3611,7 +3678,8 @@ void start_process (void)
                 /* Update host comms. */
 		active = 0 != server ();
 
-                active = active || (0 != linkcomm (FALSE));
+                links_active = (0 != linkcomm (FALSE));
+                active = active || links_active;
 
 		/* Update timers, check timer queues. */
                 active = active ||
@@ -3622,7 +3690,7 @@ void start_process (void)
 
         if (!active)
         {
-                printf ("-E-EMU414: Error - stopped no Link/Process/Timer activity!\n");
+                printf ("-W-EMU414: Error - stopped no Link/Process/Timer activity!\n");
                 processor_state ();
                 handler (-1);
         }

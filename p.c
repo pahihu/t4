@@ -655,7 +655,7 @@ int linkcomm (int doBoot)
                 printf ("-I-EMUDBG: Number of channels polled %d.\n", npfd);
         if (0 == npfd)
                 return 0;
-        ret = nn_poll (pfd, npfd, 1000);
+        ret = nn_poll (pfd, npfd, doBoot ? 1000 : 0);
         if (0 == ret) /* timeout */
         {
                 if (msgdebug || emudebug)
@@ -671,10 +671,11 @@ int linkcomm (int doBoot)
         {
                 int revents;
 
+                revents = 0;
+                ndata = 0;
                 if (0 == pfd[i].revents)
                         continue;
 
-                revents = 0;
                 if (pfd[i].revents & NN_POLLIN)
                 {
                         revents = NN_POLLIN;
@@ -740,7 +741,7 @@ int linkcomm (int doBoot)
                         uint32_t linkWdesc, linkWPtr, altState, linkPtr;
 
                         linkWdesc = word (channels[i]->LinkAddress);
-                        if (FALSE) // ((0 == ndata) && (NN_POLLIN == revents))
+                        if ((0 == ndata) && (NN_POLLIN == revents))
                         {
 				/* Ready. */
                                 linkWPtr  = GetDescWPtr(linkWdesc);
@@ -772,6 +773,7 @@ int linkcomm (int doBoot)
                                         if (msgdebug || emudebug)
                                                 printf ("-I-EMUDBG: Link(5): Ready, communicate.\n");
                                 }
+                                writeword (channels[i]->LinkAddress, MostPos);
                         }
                         reset_channel (channels[i]->LinkAddress);
                         schedule (linkWdesc);
@@ -1609,8 +1611,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				/* Link communication. */
 				writeword (BReg, Wdesc);
 				writeword (WPtr, AReg);
-                                Link[TheLink(BReg)].In.Address = WPtr;
-                                Link[TheLink(BReg)].In.Length  = 1;
+                                Link0InDest   = WPtr;
+                                Link0InLength = 1;
                                 deschedule ();
                            }
 			   else if (!IsLinkOut(BReg))
@@ -2021,7 +2023,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x2f: /* XXX: support ALT construct on Link0 disc        */
                            if (emudebug)
 			        printf ("-I-EMUDBG: disc(1): Channel=#%08X.\n", CReg);
-          		   if (CReg == Link0In)
+                           if (serve && (CReg == Link0In))
           		   {
                                 if (emudebug)
 				        printf ("-I-EMUDBG: disc(2): Link.\n");
@@ -2296,12 +2298,12 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x48: /* XXX: support ALT construct on Link0  enbc        */
                            if (emudebug)
 			        printf ("-I-EMUDBG: enbc(1): Channel=#%08X.\n", BReg);
-			   if ((AReg == true_t) && (word(BReg) == NotProcess_p))
+			   if ((AReg == true_t) && (word (BReg) == NotProcess_p))
 			   {
                                 if (emudebug)
 				        printf ("-I-EMUDBG: enbc(2): Link or non-waiting channel.\n");
 				/* Link or unwaiting channel. */
-				if (BReg == Link0In)
+				if (serve && (BReg == Link0In))
 				{
                                         if (emudebug)
 					        printf ("-I-EMUDBG: enbc(3): Link.\n");
@@ -2322,7 +2324,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				else
 					writeword (BReg, Wdesc);
 			   }
-			   else if ((AReg == true_t) && (word(BReg) == Wdesc))
+			   else if ((AReg == true_t) && (word (BReg) == Wdesc))
 			   {
                                 if (emudebug) 
 				        printf ("-I-EMUDBG: enbc(2): This process enabled the channel.\n");
@@ -2331,6 +2333,11 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   }
 			   else if (AReg == true_t)
 			   {
+                                if (IsLinkIn(BReg))
+                                {
+                                        printf ("-E-EMU414: enbc(2): Waiting Wdesc=#%08X on external Link%dIn.\n", word (BReg), TheLink(BReg));
+                                        handler (-1);
+                                }
                                 if (emudebug)
 				        printf ("-I-EMUDBG: enbc(2): Waiting internal channel: (W-3)=Ready_p\n");
 				/* Waiting internal channel. */

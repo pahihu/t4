@@ -1,0 +1,6 @@
+-- Configuration File for 3 Transputers
+
+--ID    Link0   Link1   Link2   Link3
+0       host    -       1-1
+1       -       0-2     2-1
+2       -       1-2

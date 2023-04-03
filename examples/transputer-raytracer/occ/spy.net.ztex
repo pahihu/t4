@@ -1,0 +1,4 @@
+-- Configuration File for one Transputer
+
+--ID    Link0   Link1   Link2   Link3
+0       host

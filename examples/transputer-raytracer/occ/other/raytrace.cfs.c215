@@ -1,0 +1,73 @@
+--{{{  kilo, mega 
+VAL K IS 1024:
+VAL M IS K*K:
+--}}}
+
+--{{{  HIGH, LOW priority levels
+VAL HIGH IS 0:
+VAL LOW IS 1:
+--}}}
+
+--{{{  problem size
+VAL processors IS 16 :
+VAL tracers    IS 16 :
+--}}}
+
+--{{{  hardware description litefury/cle215+
+
+[processors]NODE System:
+ARC Hostlink:
+
+NETWORK
+  DO
+    DO i = 0 FOR processors
+      SET System[i] (type, memsize := "T805", 16*M)
+    CONNECT System[0][link][0] TO HOST WITH Hostlink
+    DO i = 0 FOR processors - 1
+      CONNECT System[i][link][1] TO System[i+1][link][0]
+:
+--}}}
+
+--{{{  Mapping
+NODE framebuf.p :
+NODE cntlsys.p :
+[tracers]NODE raytrace.p :
+
+MAPPING
+  DO
+    MAP framebuf.p ONTO System[0] PRI HIGH
+    MAP cntlsys.p  ONTO System[0] PRI HIGH
+    DO i = 0 FOR tracers
+      MAP raytrace.p[i] ONTO System[i]
+:
+--}}}
+
+--{{{  Code
+#INCLUDE "hostio.inc"
+#USE "framebuf.lku"
+#USE "cntlsys.lku"
+#USE "raytrace.lku"
+
+CONFIG
+  CHAN OF SP frame.in, frame.out :
+  PLACE frame.in, frame.out ON Hostlink :
+  [tracers]CHAN OF ANY forward, back :
+  CHAN OF ANY graphics, soft :
+  CHAN OF INT image :
+
+  VAL true      IS #FFFF :
+  VAL false     IS #0000 :
+
+  PAR
+    PROCESSOR framebuf.p
+      frameBuffer (frame.in, frame.out, graphics, image, processors)
+    PROCESSOR cntlsys.p
+      controlSystem (forward[0], back[0], graphics, image, tracers)
+    PAR i = 0 FOR tracers - 1
+      PROCESSOR raytrace.p[i]
+        rayTrace (forward[i], back[i], back[i+1], forward[i+1], true, i)
+    VAL i IS tracers - 1 :
+    PROCESSOR raytrace.p[i]
+      rayTrace (forward [i], back[i], soft, soft, false, i)
+:
+--}}}

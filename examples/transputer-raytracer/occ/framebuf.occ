@@ -1,0 +1,179 @@
+#INCLUDE "hostio.inc"
+#INCLUDE "streamio.inc"
+
+PROC frameBuffer (CHAN OF SP fs, ts, CHAN OF ANY in, CHAN OF INT image, VAL INT processors )
+
+  #USE "hostio.lib"
+  #USE "streamio.lib"
+
+  #INCLUDE "raytrace.inc"
+
+  [256][256] INT screenRAM :
+  
+  PROC FileImage (INT32 Status)
+
+    VAL OutFileName IS "ray.ppm" :
+    VAL OutFileType IS spt.binary :
+    VAL OutFileMode IS spm.output :
+
+    INT32 OutFileId :
+    BYTE Result :
+
+    SEQ  
+      so.open (fs, ts, OutFileName, OutFileType, OutFileMode, OutFileId, Result)
+      IF
+        (Result = spr.ok)
+          SEQ
+            so.puts (fs, ts, OutFileId, "P6 256 256 255", Result)
+            SEQ y = 0 FOR 256
+              INT LenWritten :
+              VAL  line IS screenRAM[ 255 - y ] :
+              [256*4] BYTE line.b RETYPES screenRAM[ 255 - y ] :
+              SEQ
+                SEQ x = 0 FOR 256
+                  INT col :
+                  [4] BYTE col.b RETYPES col :
+                  SEQ
+                    col := line[ x ]
+                    col := ((( col >> 2 ) /\ #FF ) + (( col >> 4 ) /\ #FF00 )) + (( col >> 6 ) /\ #FF0000 )
+                    [line.b FROM x*3 FOR 3] := [col.b FROM 0 FOR 3]
+                so.write (fs, ts, OutFileId, [line.b FROM 0 FOR 256*3], LenWritten)
+            so.write.string.nl (fs, ts, " OK, all done!!")
+            so.close (fs, ts, OutFileId, Result)
+            Status := sps.success
+        TRUE
+          SEQ
+            so.write.string (fs, ts, " so.open failed for ")
+            so.write.string (fs, ts, OutFileName)
+            so.write.string (fs, ts, " with ")
+            so.write.int    (fs, ts, (INT Result), 4 )
+            so.write.nl     (fs, ts )
+            Status := sps.failure
+  :
+
+  PROC MenuSelection (CHAN OF INT image)
+
+    BYTE InKey, Result :
+    BOOL Selected :
+
+    SEQ
+      Selected := FALSE
+      so.write.string.nl(fs,ts,"                                                           ")
+      so.write.string.nl(fs,ts,"               RayTracer Image Selection                   ")
+      so.write.string.nl(fs,ts,"               =========================                   ")
+      so.write.string.nl(fs,ts,"                                                           ")
+      so.write.string.nl(fs,ts,"               <1>  10 Sphere Image                        ")
+      so.write.string.nl(fs,ts,"               <2>  14 Sphere Image                        ")
+      so.write.string.nl(fs,ts,"               <3>  Cone, Ellipsoid Image                  ")
+      so.write.string.nl(fs,ts,"               <4>  Cylinder, Sphere Image                 ")
+      so.write.string.nl(fs,ts,"                                                           ")
+      so.write.string   (fs,ts," Your Selection ")                      
+
+      WHILE NOT (Selected)
+        SEQ
+          so.getkey(fs,ts,InKey,Result)
+          IF
+            (Result = spr.ok)
+              SEQ
+                IF
+                  ((InKey >= '1') AND (InKey <= '4'))
+                    SEQ
+                      image ! (INT InKey) - (INT '0')
+                      so.write.int(fs, ts, (INT InKey) - (INT '0'), 1)
+                      so.write.nl (fs, ts)
+                      Selected := TRUE
+                  TRUE
+                    SKIP
+            TRUE
+              SKIP
+  :
+
+  ---------------------------- COMMANDS PROTOCOL -----------------------------
+
+  CHAN OF ANY fromRenderer :
+  PAR
+    WHILE TRUE
+      INT command :
+      SEQ
+        in ? command
+        IF
+          command = c.patch
+            INT x, y, size :
+            [16][16] INT patch :
+            SEQ
+              in ? x; y; size
+              SEQ i = 0 FOR size
+                in ? [ patch [i] FROM 0 FOR size ]
+              fromRenderer ! command; x; y; size
+              SEQ i = 0 FOR size
+                fromRenderer ! [ patch [i] FROM 0 FOR size ]
+          command = c.message
+            INT size :
+            [256] INT chars :
+            SEQ
+              in ? size; [ chars FROM 0 FOR size ]
+              fromRenderer ! command; size; [ chars FROM 0 FOR size ]
+          command = c.stop
+            fromRenderer ! command
+    SEQ
+
+      ------------------------- CLEAR SCREENRAM ----------------------------
+
+      [256] INT line RETYPES screenRAM [0] :
+      SEQ
+        SEQ i = 0 FOR 256
+          line [i] := 0
+        SEQ y = 1 FOR 255
+          screenRAM [y] := line
+
+      ---------------------------- DO THE ACTION ---------------------------
+
+      TIMER clock :
+      INT start, end, command :
+      REAL32 elapsed :
+      VAL seconds.per.tick IS 0.000001 (REAL32) :
+      INT32 Status :
+
+      SEQ
+        MenuSelection(image)
+        so.write.string.nl (fs, ts, " The inmos ray tracer is GO")
+        clock ? start
+        fromRenderer ? command
+        WHILE command <> c.stop
+          SEQ
+            IF
+              command = c.patch
+                INT x, y, size :
+                SEQ
+                  fromRenderer ? x; y; size
+                  x := x - 128
+                  y := y - 128
+                  SEQ i = y FOR size
+                    fromRenderer ? [ screenRAM [i] FROM x FOR size ]
+              command = c.message
+                INT size :
+                [256] INT chars :
+                [256] BYTE OutString : 
+                SEQ
+                  fromRenderer ? size; [ chars FROM 0 FOR size ]
+                  SEQ i = 0 FOR size   
+                    OutString[i] := BYTE (chars[i] /\ #FF)
+                  so.write.string (fs, ts, [OutString FROM 0 FOR size])
+              TRUE
+                SEQ
+                  so.write.string.nl (fs, ts," GARBAGE COMMAND")
+                  STOP
+            fromRenderer ? command
+        clock ? end
+        SEQ
+          elapsed := ( REAL32 TRUNC ( end MINUS start )) * seconds.per.tick
+          so.write.nl (fs, ts)
+          so.write.string (fs, ts, " DONE, took ")
+          so.write.real32 (fs,ts, elapsed, 5, 2)
+          so.write.string (fs,ts, " seconds on ")
+          so.write.int (fs,ts, processors, 2)
+          so.write.string.nl (fs, ts, " processors.")
+
+        FileImage(Status)
+        so.exit (fs, ts, Status)      
+:

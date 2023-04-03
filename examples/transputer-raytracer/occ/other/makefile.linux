@@ -1,0 +1,51 @@
+# File: makefile
+
+OC=oc
+ILINK=ilink
+OCCONF=occonf
+ICOLLECT=icollect
+
+OCOPT=-T9 -A -U
+ILINKOPT=-T9
+OCCONFOPT=
+ICOLLECTOPT=
+
+all: raytrace.btl
+
+clean:
+	-rm raytrace.btl
+	-rm raytrace.cfb
+	-rm raytrace.clu
+	-rm cntlsys.lku
+	-rm cntlsys.tco
+	-rm framebuf.lku
+	-rm framebuf.tco
+	-rm raytrace.lku
+	-rm raytrace.tco
+	-rm ray.ppm
+
+raytrace.btl: raytrace.cfb makefile
+	$(ICOLLECT) raytrace.cfb -o $@ $(ICOLLECTOPT)
+
+raytrace.cfb: raytrace.cfs cntlsys.lku framebuf.lku raytrace.lku makefile
+	$(OCCONF) raytrace.cfs -o $@ $(OCCONFOPT)
+
+cntlsys.lku: cntlsys.tco makefile
+	$(ILINK) cntlsys.tco -o $@ -f occam8.lnk $(ILINKOPT)
+
+cntlsys.tco: cntlsys.occ raytrace.inc makefile
+	$(OC) cntlsys.occ -o $@ $(OCOPT)
+
+framebuf.lku: framebuf.tco makefile
+	$(ILINK) framebuf.tco hostio.lib convert.lib -o $@ -f occam8.lnk $(ILINKOPT)
+
+framebuf.tco: framebuf.occ raytrace.inc makefile
+	$(OC) framebuf.occ -o $@ $(OCOPT)
+
+raytrace.lku: raytrace.tco makefile
+	$(ILINK) raytrace.tco -o $@ -f occam8.lnk $(ILINKOPT)
+
+raytrace.tco: raytrace.occ raytrace.inc makefile
+	$(OC) raytrace.occ -o $@ $(OCOPT)
+
+# -=EOF=-

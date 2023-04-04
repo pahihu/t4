@@ -84,7 +84,9 @@ Changes
 pahihu,  04 / 04 / 2023
 
 
-### Performance
+Performance
+===========
+Mike Bruestle's [INMOS occam raytracer](https://bitbucket.org/transputer/raytracer/src/master) performance on a 6 processor Linux virtual machine.
 
 Values are in seconds.
 

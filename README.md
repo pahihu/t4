@@ -21,7 +21,6 @@ Non-goals
 
 * cycle accurate emulation
 * support undefined behavior (DReg/EReg)
-* emulate multiple transputers
 * to be efficient
 
 Notes
@@ -44,6 +43,8 @@ The compiled binaries are in the `bin/` directory.
 Changes
 =======
 
+* if you define -DSPYNET=1 and link the executable with the nanonmsg library
+  you can run multiple transputers (experimental)
 * updated macOS, Linux, Windows binaries
 * accept either '-' or '/' as switch options (G.Crate)
 * using 64bit/32bit arithmetic operations, instead of 16bit

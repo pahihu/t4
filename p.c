@@ -49,7 +49,7 @@
 #endif
 #include <math.h>
 
-#ifdef T4_SPYNET
+#ifdef SPYNET
 #include <nanomsg/nn.h>
 #include <nanomsg/pipeline.h>
 #else
@@ -61,6 +61,7 @@
 #define NN_POLLOUT      0
 #define NN_SOL_SOCKET   0 
 #define NN_SNDTIMEO     0
+#define NN_DONTWAIT     0
 int nn_errno() { return EINVAL; }
 char *nn_strerror(int errnum) { return strerror (errnum); }
 int nn_socket(int domain, int protocol) { return EINVAL; }

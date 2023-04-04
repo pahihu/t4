@@ -179,7 +179,7 @@ int main (int argc, char **argv)
 	{
 		printf("\n");
 		printf("Usage : t4 [options] [program arguments]\n\n");
-		printf("t4 V1.5.1   13/11/2020\n\n");
+		printf("t4 V1.6a    04/04/2023\n\n");
 		printf("Options: use either -sX or /sX\n");
 		printf("    -sa                  Analyse transputer.\n");
 		printf("    -sb filename         Boot program \"filename\".\n");

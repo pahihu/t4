@@ -81,8 +81,18 @@ Changes
 **NOTE**: There is the excellent [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) from Gavin Crate. Otherwise here is the code. Good luck!
 
 
-pahihu,  13 / 11 / 2020
+pahihu,  04 / 04 / 2023
 
+
+### Performance
+
+Values are in seconds.
+
+|Workers|Type|Mod1|Mod2|Mod3|Mod4|Notes|
+|--|--|--|--|--|--|--|
+|6  |T800/2MB|30.5|36.2|11.1|8.2|6x T4 emulator with IPC net
+|4  |T800/2MB|43.9|51.1|14.7|10.0|4x T4 emulator with IPC net
+|1  |T800/2MB|125.6|140.6|35.6|27.2|1x T4 emulator
 
 
 Command line arguments
@@ -90,7 +100,7 @@ Command line arguments
 
         Usage : t4 [options] [program arguments]
 
-        t4 V1.5   1/4/2020
+        t4 V1.6a  04/04/2023
 
         Options:
             -sa                  Analyse transputer.
@@ -106,6 +116,9 @@ Command line arguments
             -s8                  Select T800 mode.
             -sg                  Halt on uninitialized memory read.
             -sm #bits            Memory size in address bits (default 21, 2Mbyte).
+            -sn <number>         Set node ID. Read connectivity from "spy.net",
+                                 or filename in SPYNET env var, 
+                                 or from the boot program's map file
             -su                  Instruction profiling.
             -sv inp.tbo inp.bin out.bin
                                  Select Mike's TVS: T800 + T414 FP support.

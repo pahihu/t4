@@ -9,8 +9,8 @@ VAL LOW IS 1:
 --}}}
 
 --{{{  problem size
-VAL processors IS 4 :
-VAL tracers    IS 4 :
+VAL processors IS 6 :
+VAL tracers    IS 6 :
 --}}}
 
 --{{{  hardware description of the four node kria
@@ -21,7 +21,7 @@ ARC Hostlink:
 NETWORK
   DO
     DO i = 0 FOR processors
-      SET System[i] (type, memsize := "T805", 16*M)
+      SET System[i] (type, memsize := "T800", 2*M)
     CONNECT System[0][link][0] TO HOST WITH Hostlink
     DO i = 0 FOR processors - 1
       CONNECT System[i][link][2] TO System[i+1][link][1]

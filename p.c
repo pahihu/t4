@@ -168,8 +168,8 @@ uint32_t BPtrReg1;
 uint32_t STATUSReg;             /* Processor flags: GotoSNPBit, HaltOnError, Error */
 
 uint32_t IntEnabled;            /* Interrupt enabled */
-#define ClearInterrupt          writeword (0x8000002C, MostNeg + 1)
-#define ReadInterrupt           (word (0x8000002C) != (MostNeg + 1))
+#define ClearInterrupt          writeword (0x8000002C, IdleProcess_p)
+#define ReadInterrupt           (word (0x8000002C) != IdleProcess_p)
 
 #define GotoSNPBit              0x00000001
 #define HaltOnErrorFlag         0x00000080
@@ -226,9 +226,19 @@ int count3;
 int timeslice;
 int32_t quit = FALSE;
 int32_t quitstatus;
+int Idle;
+
+// #define Wdesc   (WPtr | ProcPriority)
+
+#define IdleProcess_p   (MostNeg | 1)
 
 /* XXX Wdesc contains MostNeg + 1 in idle state */
-#define Wdesc   (WPtr | ProcPriority)
+uint32_t getWdesc (void)
+{
+        return Idle ? IdleProcess_p : (WPtr | ProcPriority);
+}
+
+#define Wdesc   (getWdesc())
 
 /* External variables. */
 extern int analyse;
@@ -604,19 +614,147 @@ int handleboot (Channel *chan, unsigned char *data, int ndata)
         return 1;
 }
 
-int linkcomm (int doBoot)
+int channel_ready (Channel *chan)
+{
+        struct nn_pollfd pfd[1];
+        int ret;
+
+        if (emudebug)
+                printf ("-I-EMUDBG: ChannelReady. Link%dIn ready ?\n", chan->Link);
+
+        pfd[0].fd = chan->sock;
+        pfd[0].events = NN_POLLIN;
+        pfd[0].revents = 0;
+
+        if (emudebug)
+                printf ("-I-EMUDBG: Polling Link%dIn.\n", chan->Link);
+
+        ret = nn_poll (pfd, 1, LTO_POLL);
+        if (-1 == ret) /* error */
+        {
+                printf ("-E-EMU414: Failed polling Link%dIn (%s)\n", chan->Link, nn_strerror (nn_errno ()));
+                handler (-1);
+        }
+        if (0 == ret) /* timeout */
+        {
+                if (msgdebug || emudebug)
+                        printf ("-I-EMUDBG: Link%dIn timeout.\n", chan->Link);
+                return 1;
+        }
+
+        return 0;
+}
+
+#define MAX_DATA        1024
+
+int Precv_channel(Channel *chan, uint32_t address, uint32_t len)
+{
+        int i, ret;
+        unsigned char data[MAX_DATA];
+        int ndata;
+
+        if (len > MAX_DATA)
+                return 1;
+
+RecvAgain:
+        ret = nn_recv (chan->sock, data, sizeof (data), NN_DONTWAIT);
+        if (-1 == ret)
+        {
+                if (EAGAIN == errno)
+                        return 1;
+
+                printf ("-E-EMU414: recv_channel: Receive failed on Link%dIn (%s)\n",
+                        chan->Link,
+                        nn_strerror (nn_errno ()));
+                handler (-1);
+        }
+        if (msgdebug || emudebug)
+                printf ("-I-EMUDBG: recv_channel: Received %d bytes on Link%dIn (#%08X).\n",
+                                ret,
+                                chan->Link,
+                                chan->LinkAddress);
+
+        ndata = ret;
+        for (i = 0; i < ndata; i++)
+        {
+                writebyte_int (address++, data[i]);
+                if (0 == --len)
+                        break;
+        }
+
+        if (len)
+                goto RecvAgain;
+
+        return 0;
+}
+
+
+int Psend_channel (Channel *chan, uint32_t address, uint32_t len)
+{
+        int i, ret;
+        unsigned char data[MAX_DATA];
+        int ndata;
+
+        if (len > MAX_DATA)
+                return 1;
+
+        for (i = 0; i < len; i++)
+        {
+                data[i] = byte_int (address++);
+        }
+
+        ndata = len;
+        ret = nn_send (chan->sock, data, ndata, NN_DONTWAIT);
+
+        if (-1 == ret)
+        {
+                if (EAGAIN == errno)
+                        return 1;
+
+                printf ("-E-EMU414: send_channel: Send failed on Link%dOut (%s).\n",
+                        chan->Link,
+                        nn_strerror (nn_errno ()));
+                handler (-1);
+        }
+        if (ret != ndata)
+        {
+                printf ("-E-EMU414: send_channel: Failed to send %d bytes on Link%dOut (%s).\n",
+                        ndata,
+                        chan->Link,
+                        nn_strerror (nn_errno ()));
+                handler (-1);
+        }
+        if (msgdebug || emudebug)
+                printf ("-I-EMUDBG: send_channel: Sent %d bytes on Link%dOut (#%08X).\n",
+                        ndata,
+                        chan->Link,
+                        chan->LinkAddress);
+        return 0;
+}
+
+#define recv_channel(ch,a,n)    1
+#define send_channel(ch,a,n)    Psend_channel(ch,a,n)
+
+int linkcomms (char *where, int doBoot, int timeOut)
 {
         struct nn_pollfd pfd[8];
         int npfd;
         uint32_t linkWdesc, linkWPtr, altState, linkPtr;
         Channel *channels[8];
-        unsigned char data[512];
+        unsigned char data[MAX_DATA];
         int ndata;
         int i, j, ret;
+        int poll;
+        char chnames[128], tmp[16];
+
+        if (nodeid < 0)
+                return 0;
 
         if (msgdebug || emudebug)
-                printf ("-I-EMUDBG: Link comms %s.\n", doBoot ? "booting" : "running");
+                printf ("-I-EMUDBG: Link comms %s.\n", where);
         npfd = 0;
+        poll = TRUE;
+        chnames[0] = '\0';
         for (i = 0; i < 4; i++)
         {
                 if ((0 == i) && serve) /* skip Host link */
@@ -636,7 +774,11 @@ int linkcomm (int doBoot)
                         pfd[npfd].revents = 0;
                         channels[npfd++] = &Link[i].In;
                         if (msgdebug || emudebug)
-                                printf ("-I-EMUDBG: Polling Link%dIn.\n", i);
+                        {
+                                sprintf (tmp, " Link%dIn", i);
+                                strcat (chnames, tmp);
+                        }
+                        poll = poll && (0 == Link[i].In.Length);
                 }
                 if (doBoot)
                         continue;
@@ -649,14 +791,27 @@ int linkcomm (int doBoot)
                         pfd[npfd].revents = 0;
                         channels[npfd++] = &Link[i].Out;
                         if (msgdebug || emudebug)
-                                printf ("-I-EMUDBG: Polling Link%dOut.\n", i);
+                        {
+                                sprintf (tmp, " Link%dOut", i);
+                                strcat (chnames, tmp);
+                        }
+                        poll = FALSE;
                 }
         }
-        if (msgdebug || emudebug)
-                printf ("-I-EMUDBG: Number of channels polled %d.\n", npfd);
         if (0 == npfd)
+        {
+                if (msgdebug || emudebug)
+                        printf ("-I-EMUDBG: No active channels.\n");
                 return 0;
-        ret = nn_poll (pfd, npfd, doBoot ? 1000 : 0);
+        }
+        if (msgdebug || emudebug)
+        {       printf ("-I-EMUDBG: Channels:%s\n", chnames);
+                printf ("-I-EMUDBG: Checking %d channels, timeout = %dms%s.\n",
+                        npfd,
+                        timeOut,
+                        poll ? " (poll)" : "");
+        }
+        ret = nn_poll (pfd, npfd, timeOut);
         if (0 == ret) /* timeout */
         {
                 if (msgdebug || emudebug)
@@ -675,15 +830,7 @@ int linkcomm (int doBoot)
                 revents = 0;
                 ndata = 0;
                 if (0 == pfd[i].revents)
-                {
-                        /* Just polled, because of ALT */
-                        if ((pfd[i].events & NN_POLLIN) && (0 == channels[i]->Length))
-                        {
-                                /* clear channel control word */
-                                writeword_int (channels[i]->LinkAddress, NotProcess_p);
-                        }
                         continue;
-                }
 
                 if (pfd[i].revents & NN_POLLIN)
                 {
@@ -728,8 +875,8 @@ int linkcomm (int doBoot)
                 else if (pfd[i].revents & NN_POLLOUT)
                 {
                         revents = NN_POLLOUT;
-                        ndata = 512;
-                        if (channels[i]->Length < 512)
+                        ndata = MAX_DATA;
+                        if (channels[i]->Length < MAX_DATA)
                                 ndata = channels[i]->Length;
                         for (j = 0; j < ndata; j++)
                         {
@@ -787,6 +934,14 @@ int linkcomm (int doBoot)
                                                         linkWdesc,
                                                         word (index (linkWPtr, Iptr_s)));
                                         }
+                                        if (Wdesc == linkWdesc)
+                                        {
+                                                printf ("-E-EMU414: schedule Wdesc=#%08X is running.\n", Wdesc);
+                                                handler (-1);
+                                        }
+                                        /* Mark channel control word */
+                                        writeword_int (channels[i]->LinkAddress, IdleProcess_p);
+
 					writeword (index (linkWPtr, State_s), Ready_p);
                                         schedule (linkWdesc);
 			        }
@@ -801,6 +956,11 @@ int linkcomm (int doBoot)
                 else
                 {
                         reset_channel (channels[i]->LinkAddress);
+                        if (Wdesc == linkWdesc)
+                        {
+                                printf ("-E-EMU414: schedule Wdesc=#%08X is running.\n", Wdesc);
+                                handler (-1);
+                        }
                         schedule (linkWdesc);
                 }
         }
@@ -832,19 +992,17 @@ void close_channels (void)
 Channel *reset_channel (uint32_t addr)
 {
         Channel *chan;
-        int chanIn, theLink;
+        int theLink;
 
 
         /* Reset channel control word. */
         writeword (addr, NotProcess_p);
 
         chan = (Channel *)0;
-        chanIn = 0;
         theLink = TheLink(addr);
         if (IsLinkIn(addr))
         {
                 chan = &Link[theLink].In;
-                chanIn = 1;
         }
         else if (IsLinkOut(addr))
                 chan = &Link[theLink].Out;
@@ -1078,15 +1236,16 @@ char *mnemonic(unsigned char icode, uint32_t oreg, uint32_t fpuentry, int onlymn
 
 void init_memory (void)
 {
+#ifndef NDEBUG
         unsigned int i;
 
-#ifndef NDEBUG
         for (i = 0; i < CoreSize; i += 4)
                 writeword_int (MostNeg + i, InvalidInstr_p);
 
         for (i = 0; i < MemSize; i += 4)
                 writeword_int (ExtMemStart + i, InvalidInstr_p);
 #endif
+        return;
 }
 
 void init_processor (void)
@@ -1218,11 +1377,18 @@ void mainloop (void)
         /* Disable interrupts on PFIX or NFIX. */
         IntEnabled = IntEnabled && ((Icode != 0x20) && (Icode != 0x60));
 
+        if (Idle)
+        {
+                printf ("-E-EMU414: Processor is in IDLE state.\n");
+                handler (-1);
+        }
+
         if (emudebug)
         {
 	        /* General debugging messages. */
                 if (printIPtr)
                 {
+                        char statusCode = ' ';
                         if (0 == asmLines++ % 25)
                         {
                                 if (IsT414)
@@ -1230,7 +1396,11 @@ void mainloop (void)
                                 else
                                         printf ("-IPtr------Code-----------------------Mnemonic------------HEFR---AReg-----BReg-----CReg-------WPtr-----WPtr[0]-\n");
                         }
-                        printf ("%c%08X: ", HiPriority == ProcPriority ? 'H' : ' ', IPtr);
+                        if (HiPriority == ProcPriority)
+                                statusCode = 'H';
+                        if (Idle)
+                                statusCode = 'I';
+                        printf ("%c%08X: ", statusCode, IPtr);
                         printIPtr = FALSE;
                         instrBytes = 0;
                 }
@@ -1461,19 +1631,19 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
                                 goto OprOut;
                            }
                            if (msgdebug || emudebug)
-			        printf ("-I-EMUDBG: In(1): Channel=#%08X, to memory at #%08X, length #%X.\n", BReg, CReg, AReg);
+			        printf ("-I-EMUDBG: in(1): Channel=#%08X, to memory at #%08X, length #%X.\n", BReg, CReg, AReg);
 			   IPtr++;
 			   if (!IsLinkIn(BReg))
 			   {
 				/* Internal communication. */
 				otherWdesc = word (BReg);
                                 if (msgdebug || emudebug)
-                                        printf ("-I-EMUDBG: In(2): Internal communication. Channel word=#%08X.\n", otherWdesc);
+                                        printf ("-I-EMUDBG: in(2): Internal communication. Channel word=#%08X.\n", otherWdesc);
 				if (otherWdesc == NotProcess_p)
 				{
 					/* Not ready. */
                                         if (msgdebug || emudebug)
-                                                printf ("-I-EMUDBG: In(3): Not ready.\n");
+                                                printf ("-I-EMUDBG: in(3): Not ready.\n");
 					writeword (BReg, Wdesc);
 					writeword (index (WPtr, Pointer_s), CReg);
                                         deschedule ();
@@ -1485,7 +1655,7 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
                                         checkWPtr ("IN", otherWPtr);
 					otherPtr = word (index (otherWPtr, Pointer_s));
                                         if (msgdebug || emudebug)
-					        printf ("-I-EMUDBG: In(3): Transferring message from #%08X.\n", otherPtr);
+					        printf ("-I-EMUDBG: in(3): Transferring message from #%08X.\n", otherPtr);
 					for (loop=0;loop<AReg;loop++)
 					{
 					        writebyte ((CReg + loop), byte_int (otherPtr + loop));
@@ -1499,11 +1669,18 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 			   {
 				/* Link communication. */
                                 if (msgdebug || emudebug)
-                                        printf ("-I-EMUDBG: In(2): Link%d communication. Old channel word=#%08X.\n", TheLink(BReg), word (BReg));
-				writeword (BReg, Wdesc);
-                                Link[TheLink(BReg)].In.Address = CReg;
-                                Link[TheLink(BReg)].In.Length  = AReg;
-                                deschedule ();
+                                        printf ("-I-EMUDBG: in(2): Link%d communication. Old channel word=#%08X.\n", TheLink(BReg), word (BReg));
+                                if (serve && (Link0In == BReg))
+                                        goto DescheduleIn;
+
+                                if (recv_channel (&Link[TheLink(BReg)].In, CReg, AReg))
+                                {
+DescheduleIn:
+				        writeword (BReg, Wdesc);
+                                        Link[TheLink(BReg)].In.Address = CReg;
+                                        Link[TheLink(BReg)].In.Length  = AReg;
+                                        deschedule ();
+                                }
 			   }
 			   break;
 		case 0x08: /* prod        */
@@ -1604,10 +1781,18 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				/* Link communication. */
                                 if (msgdebug || emudebug)
                                         printf ("-I-EMUDBG: out(2): Link%d communication. Old channel word=#%08X.\n", TheLink(BReg), word (BReg));
-				writeword (BReg, Wdesc);
-                                Link[TheLink(BReg)].Out.Address = CReg;
-                                Link[TheLink(BReg)].Out.Length  = AReg;
-                                deschedule ();
+
+                                if (serve && (Link0Out == BReg))
+                                        goto DescheduleOut;
+
+                                if (send_channel (&Link[TheLink(BReg)].Out, CReg, AReg))
+                                {
+DescheduleOut:
+				        writeword (BReg, Wdesc);
+                                        Link[TheLink(BReg)].Out.Address = CReg;
+                                        Link[TheLink(BReg)].Out.Length  = AReg;
+                                        deschedule ();
+                                }
 			   }
 			   break;
 		case 0x0c: /* sub         */
@@ -1688,11 +1873,14 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   else
 			   {
 				/* Link communication. */
-				writeword (BReg, Wdesc);
 				writeword (WPtr, AReg);
-                                Link[TheLink(BReg)].Out.Address = WPtr;
-                                Link[TheLink(BReg)].Out.Length  = 1;
-                                deschedule ();
+                                if (send_channel (&Link[TheLink(BReg)].Out, WPtr, 1))
+                                {
+				        writeword (BReg, Wdesc);
+                                        Link[TheLink(BReg)].Out.Address = WPtr;
+                                        Link[TheLink(BReg)].Out.Length  = 1;
+                                        deschedule ();
+                                }
 			   }
 			   break;
 		case 0x0f: /* outword     */
@@ -1775,11 +1963,14 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				/* Link communication. */
                                 if (msgdebug || emudebug)
                                         printf ("-I-EMUDBG: out(2): Link%d communication. Old channel word=#%08X.\n", TheLink(BReg), word (BReg));
-				writeword (BReg, Wdesc);
 				writeword (WPtr, AReg);
-                                Link[TheLink(BReg)].Out.Address = WPtr;
-                                Link[TheLink(BReg)].Out.Length  = 4;
-                                deschedule ();
+                                if (send_channel (&Link[TheLink(BReg)].Out, WPtr, 4))
+                                {
+				        writeword (BReg, Wdesc);
+                                        Link[TheLink(BReg)].Out.Address = WPtr;
+                                        Link[TheLink(BReg)].Out.Length  = 4;
+                                        deschedule ();
+                                }
 			   }
 			   break;
 		case 0x10: /* seterr      */
@@ -2084,22 +2275,11 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 				}
 				else if (otherWdesc == Wdesc)
 				{
-                                        if (IsLinkIn(CReg))
-                                        {
-                                                if (emudebug)
-                                                        printf ("-I-EMUDBG: disc(3): Link ready.\n");
+                                        if (emudebug)
+                                                printf ("-I-EMUDBG: disc(3): Channel not ready, but this process enabled it.\n");
 
-					        /* Channel ready. */
-                                                temp = TRUE;
-                                        }
-                                        else
-                                        {
-                                                if (emudebug)
-                                                        printf ("-I-EMUDBG: disc(3): Channel not ready, but this process enabled it.\n");
-
-					        /* Channel not ready, but was inited by this process's enbc. */
-                                                temp = FALSE;
-                                        }
+					/* Channel not ready, but was inited by this process's enbc. */
+                                        temp = FALSE;
 
 					/* Reset channel word to NotProcess_p to avoid confusion. */
 					writeword (CReg, NotProcess_p);
@@ -2345,15 +2525,17 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 		case 0x48: /* XXX: support ALT construct on Link0  enbc        */
                            if (emudebug)
 			        printf ("-I-EMUDBG: enbc(1): Channel=#%08X.\n", BReg);
-			   if ((AReg == true_t) && (word (BReg) == NotProcess_p))
+                           otherWdesc = word (BReg);
+			   if ((AReg == true_t) && (otherWdesc == NotProcess_p))
 			   {
                                 if (emudebug)
 				        printf ("-I-EMUDBG: enbc(2): Link or non-waiting channel.\n");
 				/* Link or unwaiting channel. */
+                                int link = TheLink(BReg);
 				if (serve && (BReg == Link0In))
 				{
                                         if (emudebug)
-					        printf ("-I-EMUDBG: enbc(3): Link.\n");
+					        printf ("-I-EMUDBG: enbc(3): Link0In.\n");
 					/* Link. */
 					if (FromServerLen > 0)
 					{
@@ -2368,10 +2550,38 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 						writeword (BReg, Wdesc);
 					}
 				}
-				else
-					writeword (BReg, Wdesc);
+				else if (IsLinkIn(BReg))
+                                {
+
+                                        if (emudebug)
+					        printf ("-I-EMUDBG: enbc(3): Link%dIn.\n", link);
+                                        if (0 == channel_ready (&Link[link].In))
+                                        {
+                                                if (emudebug)
+						        printf ("-I-EMUDBG: enbc(4): Ready link: (W-3)=Ready_p\n");
+						writeword (index (WPtr, State_s), Ready_p);
+                                                /* Mark channel control word */
+					        writeword (BReg, IdleProcess_p);
+                                        }
+                                        else
+                                        {
+                                                if (emudebug)
+						        printf ("-I-EMUDBG: enbc(4): Empty link: Initialise link.\n");
+					        writeword (BReg, Wdesc);
+                                        }
+                                }
+                                else if (IsLinkOut(BReg))
+                                {
+                                        printf ("-E-EMU414: enbc on Link%dOut.\n", link);
+                                        handler (-1);
+                                }
+                                else
+                                {
+                                        /* Initialise with Wdesc. */
+				        writeword (BReg, Wdesc);
+                                }
 			   }
-			   else if ((AReg == true_t) && (word (BReg) == Wdesc))
+			   else if ((AReg == true_t) && (otherWdesc == Wdesc))
 			   {
                                 if (emudebug) 
 				        printf ("-I-EMUDBG: enbc(2): This process enabled the channel.\n");
@@ -2382,8 +2592,12 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 			   {
                                 if (IsLinkIn(BReg))
                                 {
-                                        printf ("-E-EMU414: enbc(2): Waiting Wdesc=#%08X on external Link%dIn.\n", word (BReg), TheLink(BReg));
-                                        handler (-1);
+                                        /* XXX Link hardware already marked it ??? */
+                                        if (IdleProcess_p != otherWdesc)
+                                        {
+                                                printf ("-E-EMU414: enbc(2): Waiting Wdesc=#%08X on external Link%dIn.\n", otherWdesc, TheLink(BReg));
+                                                handler (-1);
+                                        }
                                 }
                                 if (emudebug)
 				        printf ("-I-EMUDBG: enbc(2): Waiting internal channel: (W-3)=Ready_p\n");
@@ -3514,6 +3728,8 @@ void schedule (uint32_t wdesc)
                 checkWPtr ("Schedule", WPtr);
 		IPtr = word (index (WPtr, Iptr_s));
 
+                set_idle (FALSE);
+
 	}
 	else
 	{
@@ -3705,6 +3921,7 @@ int run_process (void)
 		}
 	}
 
+        set_idle (FALSE);
 	return (0);
 }
 
@@ -3732,7 +3949,7 @@ void start_process (void)
                 /* Update host comms. */
 		active = 0 != server ();
 
-                links_active = (0 != linkcomm (FALSE));
+                links_active = (0 != linkcomms ("running", FALSE, LTO_COMM));
                 active = active || links_active;
 
 		/* Update timers, check timer queues. */
@@ -3756,6 +3973,22 @@ void start_process (void)
 		profile[3]++;
 }
 
+void set_idle (int flag)
+{
+        if (flag)
+        {
+                if (emudebug)
+                        printf ("-I-EMU414: Processor IDLE.\n");
+                Idle = TRUE; ProcPriority = NotProcess_p;
+        }
+        else
+        {
+                if (emudebug)
+                        printf ("-I-EMU414: Processor RUNNING.\n");
+                Idle = FALSE;
+        }
+}
+
 /* Save the current process and start a new process. */
 void deschedule (void)
 {
@@ -3766,6 +3999,8 @@ void deschedule (void)
 
         /* Set StartNewProcess flag. */
         SetGotoSNP;
+
+        set_idle (TRUE);
 }
 
 /* Save the current process and place it on the relevant priority process queue. */
@@ -3776,6 +4011,8 @@ void reschedule (void)
 
 	/* Put on process list. */
 	schedule (WPtr | ProcPriority);
+
+        set_idle (TRUE);
 }
 
 /* Check whether the current process needs rescheduling,  */
@@ -3788,7 +4025,7 @@ void D_check (void)
         if ((ProcPriority == HiPriority) || IntEnabled)
         {
 	        server ();
-                linkcomm (FALSE);
+                linkcomms ("pri", FALSE, LTO_HI);
         }
 
         /* High priority processes never timesliced. */

@@ -536,10 +536,12 @@ int main (int argc, char **argv)
         if (nodeid >= 0)
         {
                 FILE *NetIn;
+                char *spyNet;
 
                 if (verbose)
                         printf ("-I-EMU414: Node ID = %d.\n", nodeid);
-                strcpy (NetConfigName, "spy.net");
+                spyNet = getenv ("SPYNET");
+                strcpy (NetConfigName, spyNet ? spyNet : "spy.net");
                 if ((NetIn = fopen (NetConfigName, "r")) == NULL)
                 {
                         char *p = strchr (CopyFileName, '.');
@@ -561,7 +563,7 @@ int main (int argc, char **argv)
                         }
                 }
                 if (verbose)
-                        printf ("-I-EMU414: Reading network configration from %s...\n", NetConfigName);
+                        printf ("-I-EMU414: Reading network configuration from %s...\n", NetConfigName);
                 if (readNetConfig (NetIn) < 0)
                 {
                         handler (-1);
@@ -581,7 +583,7 @@ int main (int argc, char **argv)
                 {
                         if (verbose)
                                 printf ("-I-EMU414: Waiting for bootstrap code... (%d)\n", temp);
-                } while ((temp++ < 60) && (0 == linkcomm (TRUE)));
+                } while ((temp++ < 60) && (0 == linkcomms ("boot", TRUE, LTO_BOOT)));
                 if (temp > 60)
                 {
                         printf ("-E-EMU414: Failed to get bootstrap code!\n");

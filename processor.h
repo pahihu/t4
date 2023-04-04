@@ -71,6 +71,12 @@ extern uint32_t CoreSize;
 
 #define INT32(x)        ((int32_t)(x))
 
+
+#define LTO_BOOT       1000
+#define LTO_COMM       0
+#define LTO_HI         0
+#define LTO_POLL       0
+
 /* Processor definitions. */
 #define Link0Out 0x80000000 /****/
 #define Link1Out 0x80000004 /****/
@@ -115,6 +121,7 @@ void mainloop      (void);
 void execute       (void);
 void operate       (void);
 void schedule      (uint32_t);
+void set_idle      (int flag);
 int  run_process   (void);
 void start_process (void);
 void deschedule    (void);
@@ -138,10 +145,11 @@ unsigned char byte_int (uint32_t);
 void writebyte_int (uint32_t, unsigned char);
 void add_profile   (uint32_t);
 void print_profile (void);
-void open_channel (uint32_t);
-Channel *reset_channel (uint32_t);
+void open_channel  (uint32_t);
+Channel *reset_channel(uint32_t);
+int channel_ready  (Channel *chan);
+void close_channels(void);
+int  linkcomms     (char *where, int doBoot, int timeOut);
 void init_memory   (void);
 void init_processor(void);
-int  linkcomm(int doBoot);
-void close_channels(void);
 

@@ -86,12 +86,13 @@ pahihu,  04 / 04 / 2023
 
 Performance
 ===========
-Mike Bruestle's [INMOS occam raytracer](https://bitbucket.org/transputer/raytracer/src/master) performance on a 6 processor Linux virtual machine.
+Mike Bruestle's [INMOS occam raytracer](https://bitbucket.org/transputer/raytracer/src/master) performance on a 16 processor Linux virtual machine.
 
 Values are in seconds.
 
 |Workers|Type|Mod1|Mod2|Mod3|Mod4|Notes|
 |--|--|--|--|--|--|--|
+|16 |T800/2MB|13.2|15.2|5.6|4.5|16x T4 emulator with IPC net
 |6  |T800/2MB|30.5|36.2|11.1|8.2|6x T4 emulator with IPC net
 |4  |T800/2MB|43.9|51.1|14.7|10.0|4x T4 emulator with IPC net
 |1  |T800/2MB|125.6|140.6|35.6|27.2|1x T4 emulator

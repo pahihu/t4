@@ -21,7 +21,7 @@ ARC Hostlink:
 NETWORK
   DO
     DO i = 0 FOR processors
-      SET System[i] (type, memsize := "T805", 16*M)
+      SET System[i] (type, memsize := "T800", 16*M)
     CONNECT System[0][link][0] TO HOST WITH Hostlink
     DO i = 0 FOR processors - 1
       CONNECT System[i][link][1] TO System[i+1][link][0]

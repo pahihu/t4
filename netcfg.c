@@ -337,12 +337,12 @@ int readNetConfig (FILE *fin)
                                         return (-1);
                                 }
                         }
+                        tmpstr[0] = '\0';
                         ptr = skip (ptr);
                         if (0 == *ptr)
-                                goto NextLine;
+                                goto ProcessNode;
                         if (0 == strncmp (ptr, "--", 2))
                         {
-                                tmpstr[0] = '\0';
                                 goto ProcessNode;
                         }
                         ptr = read_string (ptr, tmpstr);

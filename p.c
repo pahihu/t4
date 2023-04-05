@@ -38,6 +38,7 @@
  */
 #ifdef _MSC_VER
 #include "gettimeofday.h"
+#define sleep(n)        Sleep(1000*(n))
 #endif
 
 #include <stdio.h>

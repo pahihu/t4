@@ -1,0 +1,28 @@
+# Choose a C compiler. (Must be ANSI C capable).
+CC = cl
+LINK = link
+CFLAGS = /O2 /DCURTERM=1 /fp:strict /GL /favor:INTEL64 /DNDEBUG=1 /DSPYNET=1 /I. /DNN_STATIC_LIB=ON /MD
+RM = del/q
+
+# Put any additional libraries here.
+LFLAGS	= /subsystem:console /machine:x64 /LTCG /libpath:. nanomsg.lib ws2_32.lib wsock32.lib
+
+#
+# https://github.com/JuliaMath/openlibm
+#
+FDMSRC  = k_standard.c s_scalbn.c s_scalbnf.c s_ldexp.c s_ldexpf.c \
+	  e_fmod.c e_remainder.c e_sqrt.c w_remainder.c w_sqrt.c
+FDMOBJ	= k_standard.obj s_scalbn.obj s_scalbnf.obj s_ldexp.obj s_ldexpf.obj \
+	  e_fmod.obj e_remainder.obj e_sqrt.obj w_remainder.obj w_sqrt.obj
+
+SRC	= $(FDMSRC) gettimeofday.c \
+	  curterm.c arithmetic.c fparithmetic.c netcfg.c server.c p.c main.c
+OBJ	= $(FDMOBJ) gettimeofday.obj \
+	  curterm.obj arithmetic.obj fparithmetic.obj netcfg.obj server.obj p.obj main.obj
+
+t4.exe : $(OBJ)
+	$(LINK) $(OBJ) $(LFLAGS) /out:t4.exe
+
+clean	:
+	$(RM) *.obj
+	$(RM) t4.exe

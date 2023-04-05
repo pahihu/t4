@@ -24,15 +24,18 @@ echo "Workers = ${nworkers}"
 
 export SPYNET=${MAPFILE}
 
-for i in `seq 1 ${nworkers}`
-do
-  echo "Starting worker${i}"
-  t4 -s8 -sn ${i} -si &
-  sleep 1
-done
+if [ 1 -le ${nworkers} ];
+then
+  for i in `seq 1 ${nworkers}`
+  do
+    echo "Starting worker${i}"
+    t4 -s8 -sn ${i} -si &
+    sleep 1
+  done
+fi
 
 echo "Starting HOST"
 t4 -s8 -sn 0 -sb ${BTLFILE}
 
 # kill processors
-pkill -9 t4
+pkill -9 t4 2>&1 >/dev/null

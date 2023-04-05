@@ -1876,8 +1876,13 @@ DescheduleOut:
 			   {
 				/* Link communication. */
 				writeword (WPtr, AReg);
+
+                                if (serve && (Link0Out == BReg))
+                                        goto DescheduleOutByte;
+
                                 if (send_channel (&Link[TheLink(BReg)].Out, WPtr, 1))
                                 {
+DescheduleOutByte:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].Out.Address = WPtr;
                                         Link[TheLink(BReg)].Out.Length  = 1;
@@ -1966,8 +1971,11 @@ DescheduleOut:
                                 if (msgdebug || emudebug)
                                         printf ("-I-EMUDBG: out(2): Link%d communication. Old channel word=#%08X.\n", TheLink(BReg), word (BReg));
 				writeword (WPtr, AReg);
+                                if (serve && (Link0Out == BReg))
+                                        goto DescheduleOutWord;
                                 if (send_channel (&Link[TheLink(BReg)].Out, WPtr, 4))
                                 {
+DescheduleOutWord:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].Out.Address = WPtr;
                                         Link[TheLink(BReg)].Out.Length  = 4;
@@ -3949,7 +3957,9 @@ void start_process (void)
 		        printf ("-I-EMUDBG: StartProcess: Empty process list. Update comms.\n");
 
                 /* Update host comms. */
-		active = 0 != server ();
+                active = FALSE;
+                if (serve)
+		        active = 0 != server ();
 
                 links_active = (0 != linkcomms ("running", FALSE, LTO_COMM));
                 active = active || links_active;
@@ -4026,7 +4036,7 @@ void D_check (void)
 	/* First, handle any host link communication. */
         if ((ProcPriority == HiPriority) || IntEnabled)
         {
-	        server ();
+	        if (serve) server ();
                 linkcomms ("pri", FALSE, LTO_HI);
         }
 

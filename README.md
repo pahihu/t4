@@ -43,6 +43,7 @@ The compiled binaries are in the `bin/` directory.
 Changes
 =======
 
+* added networking enabled bin/t4netmac64, bin/t4netlnx64 for macOS, Linux
 * see `spy.net` for network configuration examples
 * if you define -DSPYNET=1 and link the executable with the nanonmsg library
   you can run multiple transputers (experimental)

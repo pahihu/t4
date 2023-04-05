@@ -43,6 +43,7 @@ The compiled binaries are in the `bin/` directory.
 Changes
 =======
 
+* added more raytracer binaries and Windows batch file to run them (multi.bat)
 * see examples/transputer-raytracer/bin/README how to run multiple emulators
 * added networking enabled bin/t4netwin64.exe, Makefile.netwin32, bin/nanomsg115.zip static library
 * added networking enabled bin/t4netmac64, bin/t4netlnx64 for macOS, Linux

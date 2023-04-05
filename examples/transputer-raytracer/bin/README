@@ -14,4 +14,4 @@ To run the examples, eg. for 3 processors:
         t4 -s8 -sn 0 -sb raytrace3.btl
         pkill -9 t4
 
-The shell script run.sh can be used to run the examples.
+The shell script multi.sh/multi.bat can be used to run the examples.

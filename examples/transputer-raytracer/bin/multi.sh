@@ -1,7 +1,7 @@
 #!/bin/sh
 if [ $# -ne 1 ];
 then
-  echo "usage: run.sh <#processors>"
+  echo "usage: multi.sh <#processors>"
   exit 1
 fi
 

@@ -167,6 +167,9 @@ uint32_t BPtrReg0;
 uint32_t FPtrReg1;
 uint32_t BPtrReg1;
 
+#define ProcessQEmpty           ((NotProcess_p == FPtrReg0) && (NotProcess_p == FPtrReg1))
+#define TimerQEmpty             ((NotProcess_p == TPtrLoc0) && (NotProcess_p == TPtrLoc1))
+
 uint32_t STATUSReg;             /* Processor flags: GotoSNPBit, HaltOnError, Error */
 
 uint32_t IntEnabled;            /* Interrupt enabled */
@@ -3961,7 +3964,10 @@ void start_process (void)
                 if (serve)
 		        active = 0 != server ();
 
-                links_active = (0 != linkcomms ("running", FALSE, LTO_COMM));
+                if (ProcessQEmpty && TimerQEmpty)
+                        links_active = (0 != linkcomms ("idle", FALSE, LTO_BOOT));
+                else
+                        links_active = (0 != linkcomms ("running", FALSE, LTO_COMM));
                 active = active || links_active;
 
 		/* Update timers, check timer queues. */

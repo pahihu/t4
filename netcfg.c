@@ -28,6 +28,50 @@ NETLINK NetLinks[MAX_NETLINK];
 int nNetLink;
 
 
+static int network, address, port, scale;
+
+static char* ip2str (int a, char *tmp)
+{
+        int cls[4];
+
+        cls[3] = a & 255; a >>= 8;
+        cls[2] = a & 255; a >>= 8;
+        cls[1] = a & 255; a >>= 8;
+        cls[0] = a & 255;
+        sprintf (tmp, "%d.%d.%d.%d", cls[0], cls[1], cls[2], cls[3]);
+        return tmp;
+}
+
+static void dump_netparams (void)
+{
+        char tmpstr[32];
+        int a;
+
+        if (!verbose)
+                return;
+
+        a = network ? network : address;
+        printf ("-I-EMU414: %s = %s Port = %d Scale = %d\n",
+                network ? "Network" : "Address",
+                ip2str (a, tmpstr),
+                port,
+                scale);
+}
+
+static char* tcpLinkURL (int node, int link)
+{
+        static char buf[128];
+        char tmpstr[32];
+        int a, p;
+
+        a = network ? network + node : address;
+        p = address ? port + node * scale : port;
+        p += link;
+
+        sprintf (buf, "tcp://%s:%d", ip2str (a, tmpstr), p);
+        return &buf[0];
+}
+
 static char* skip (char *ptr)
 {
         while (*ptr && isspace (*ptr))
@@ -37,7 +81,7 @@ static char* skip (char *ptr)
 
 static char* read_number (char *ptr, int *node)
 {
-        int n;
+        int n, m, ch, hasdot;
 
         *node = NODE_INVALID;
         ptr = skip (ptr);
@@ -45,12 +89,20 @@ static char* read_number (char *ptr, int *node)
                 return ptr;
 
         /* fprintf (stderr, "read_number = [%s]\n", ptr); */
-        n = 0;
-        while (isdigit(*ptr))
+        n = 0; m = 0; hasdot = 0;
+        while (isdigit(*ptr) || '.' == *ptr)
         {
-                n = 10*n + (*ptr) - '0';
+                ch = *ptr;
+                if ('.' == ch)
+                {
+                        n = (n << 8) + m; m = 0;
+                        hasdot = 1;
+                }
+                else
+                        m = 10*m + ch - '0';
                 ptr++;
         }
+        n = hasdot ? (n << 8) + m : m;
         *node = n;
         return ptr;
 }
@@ -117,11 +169,24 @@ static char* read_link (char *ptr, int *node, int *link)
         if (NODE_INVALID == *node)
                 return ptr;
         if (strncmp (ptr, "-", 1))
+        {
+                /* fprintf (stderr, "XXX [%s]\n", ptr); */
                 return ptr + 1;
+        }
         ptr = read_number (ptr + 1, link);
         if (NODE_INVALID == *link)
                 *node = NODE_INVALID;
         return ptr;
+}
+
+
+void add_url (int node, int link, char *url)
+{
+        if (verbose)
+                printf ("-I-EMU414: Node %d Link%dIn at %s\n", node, link, url);
+        NetURLs[nNetURL].node = node;
+        NetURLs[nNetURL].link = link;
+        NetURLs[nNetURL++].url = strdup (url);
 }
 
 int readNetConfig (FILE *fin)
@@ -131,6 +196,11 @@ int readNetConfig (FILE *fin)
         char *ptr;
         int node, link, thenode, thelink;
         char url[128];
+
+        network = 0xC0A80000; /* 192.168.0.0 */
+        address = 0;
+        port = 1984;
+        scale = 4;
 
         nline = 1;
         ptr = fgets (buf, sizeof(buf), fin);
@@ -181,6 +251,52 @@ int readNetConfig (FILE *fin)
                                 NetLinks[nNetLink++].otherlink = thelink;
                         }
                 }
+                else if (0 == strncmp (ptr, "network", 7))
+                {
+                        /* network <number> */
+                        ptr = read_number (ptr + 7, &network);
+                        if (-1 == network)
+                        {
+                                printf ("-E-EMU414: Invalid network address at line %d.\n", nline);
+                                return (-1);
+                        }
+                        address = 0;
+                        dump_netparams ();
+                }
+                else if (0 == strncmp (ptr, "address", 7))
+                {
+                        /* address <number> */
+                        ptr = read_number (ptr + 7, &address);
+                        if (-1 == address)
+                        {
+                                printf ("-E-EMU414: Invalid address at line %d.\n", nline);
+                                return (-1);
+                        }
+                        network = 0;
+                        dump_netparams ();
+                }
+                else if (0 == strncmp (ptr, "port", 4))
+                {
+                        /* port <number> */
+                        ptr = read_number (ptr + 4, &port);
+                        if (-1 == port)
+                        {
+                                printf ("-E-EMU414: Invalid port at line %d.\n", nline);
+                                return (-1);
+                        }
+                        dump_netparams ();
+                }
+                else if (0 == strncmp (ptr, "scale", 5))
+                {
+                        /* scale <number> */
+                        ptr = read_number (ptr + 5, &scale);
+                        if (-1 == scale)
+                        {
+                                printf ("-E-EMU414: Invalid scale at line %d.\n", nline);
+                                return (-1);
+                        }
+                        dump_netparams ();
+                }
                 else if (0 == strncmp (ptr, "link", 4))
                 {
                         /* "link" <link> string */
@@ -196,11 +312,75 @@ int readNetConfig (FILE *fin)
                                 printf ("-E-EMU414: Missing URL at line %d.\n", nline);
                                 return (-1);
                         }
-                        if (verbose)
-                                printf ("-I-EMU414: Node %d Link%dIn at %s\n", node, link, url);
-                        NetURLs[nNetURL].node = node;
-                        NetURLs[nNetURL].link = link;
-                        NetURLs[nNetURL++].url = strdup (url);
+                        add_url (node, link, url);
+                }
+                else if (0 == strncmp (ptr, "node", 4))
+                {
+                        int j, p;
+                        char tmpstr[128];
+                        char *colon1, *colon2;
+
+                        /* "node" from[-to] [proto://address[:port]] */
+                        ptr = read_number (ptr + 4, &thenode);
+                        if (-1 == thenode)
+                        {
+                                printf ("-E-EMU414: Invalid node at line %d.\n", nline);
+                                return (-1);
+                        }
+                        node = thenode;
+                        if (0 == strncmp (ptr, "-", 1))
+                        {
+                                ptr = read_number (ptr + 1, &node);
+                                if (-1 == node)
+                                {
+                                        printf ("-E-EMU414: Invalid node at line %d.\n", nline);
+                                        return (-1);
+                                }
+                        }
+                        ptr = skip (ptr);
+                        if (0 == *ptr)
+                                goto NextLine;
+                        if (0 == strncmp (ptr, "--", 2))
+                        {
+                                tmpstr[0] = '\0';
+                                goto ProcessNode;
+                        }
+                        ptr = read_string (ptr, tmpstr);
+                        if (*tmpstr)
+                        {
+                                /* proto://address[:port] */
+                                colon1 = strchr (tmpstr, ':');
+                                colon2 = strrchr (tmpstr, ':');
+                                if (NULL == colon1)
+                                {
+                                        printf ("-E-EMU414: Invalid URL at line %d.\n", nline);
+                                        return (-1);
+                                }
+                                if (colon1 == colon2) /* proto://address */
+                                        p = port;
+                                else
+                                {
+                                        /* parse port, make proto://address */
+                                        p = atoi (colon2 + 1);
+                                        *colon2 = '\0';
+                                }
+                        }
+ProcessNode:
+                        /* define links */
+                        for (i = thenode; i <= node; i++)
+                                for (j = 0; j < 4; j++)
+                                {
+                                        if (*tmpstr)
+                                        {
+                                                int temp = p + scale * (i - thenode) + j; /* relative */
+                                                if (p == port)
+                                                        temp = p + scale * i + j; /* absolute */
+                                                sprintf (url, "%s:%d", tmpstr, temp);
+                                        }
+                                        else
+                                                strcpy (url, tcpLinkURL (i, j));
+                                        add_url (i, j, url);
+                                }
                 }
                 else if (isdigit(*ptr))
                 {

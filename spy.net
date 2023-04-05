@@ -1,7 +1,34 @@
-
 -- network config example
-link 2-1 tcp://192.168.223.2:2001
 
--- ID  Link0  Link1  Link2  Link3
-0      host   1-1    1-2    1-3
-1      -      0-1    0-2    0-3
+-- all nodes below will be on host network + node
+network 192.168.1.0
+port 2000
+scale 10
+
+node 21                         -- host 192.168.1.21, ports 2000-2003
+node 22 tcp://1.2.3.4           -- host 1.2.3.4, ports 2220-2223
+node 23 tcp://1.2.3.4:1000      -- host 1.2.3.4, ports 1000-1003
+node 24-25                      -- hosts 192.168.1.24/25, ports 2000-2003
+node 26-27 tcp://1.2.3.4        -- host 1.2.3.4, ports 2260-2263/2270-2273
+node 28-29 tcp://1.2.3.4:1000   -- host 1.2.3.4, ports 1000-1003/1010-1013
+
+address 192.168.1.1             -- all nodes below, will be on host 192.168.1.1
+
+node 31                         -- host 192.168.1.1, ports 2310-2313
+node 32 tcp://1.2.3.4           -- host 1.2.3.4, ports 2320-2323
+node 33 tcp://1.2.3.4:1000      -- host 1.2.3.4, ports 1000-1003
+node 34-35                      -- host 192.168.1.1, ports 2340-2343/2350-1353
+node 36-37 tcp://1.2.3.4        -- host 1.2.3.4, ports 2360-2363/2370-2373
+node 38-39 tcp://1.2.3.4:1000   -- host 1.2.3.4, ports 1000-1003/1010-1013
+link 2-1 tcp://192.168.223.2:2001 -- place Node 2 Link 1 at the given URL
+
+-- all undefined nodes will use local IPC protocol
+-- the URL is: "ipc:///tmp/node<nodeid>-<link>.lnk"
+
+-- "host" connected to host iserver
+--   "-" not connected
+-- <node>-<link> connected to Node <node> Link <link>
+
+-- NodeID  Link0  Link1  Link2  Link3
+0          host   1-1    1-2    1-3
+1          -      0-1    0-2    0-3

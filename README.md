@@ -43,6 +43,7 @@ The compiled binaries are in the `bin/` directory.
 Changes
 =======
 
+* see `spy.net` for network configuration examples
 * if you define -DSPYNET=1 and link the executable with the nanonmsg library
   you can run multiple transputers (experimental)
 * updated macOS, Linux, Windows binaries

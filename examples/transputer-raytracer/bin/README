@@ -1,0 +1,17 @@
+HOWTO
+=====
+
+Files:
+
+        raytraceN.map   map file for N processors
+        raytraceN.btl   boot file for N processors
+
+To run the examples, eg. for 3 processors:
+
+        export SPYNET=raytrace3.map
+        t4 -s8 -sn 1 -si &
+        t4 -s8 -sn 2 -si &
+        t4 -s8 -sn 0 -sb raytrace3.btl
+        pkill -9 t4
+
+The shell script run.sh can be used to run the examples.

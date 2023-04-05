@@ -43,6 +43,7 @@ The compiled binaries are in the `bin/` directory.
 Changes
 =======
 
+* see examples/transputer-raytracer/bin/README how to run multiple emulators
 * added networking enabled bin/t4netwin64.exe, Makefile.netwin32, bin/nanomsg115.zip static library
 * added networking enabled bin/t4netmac64, bin/t4netlnx64 for macOS, Linux
 * see `spy.net` for network configuration examples
@@ -84,7 +85,7 @@ Changes
 **NOTE**: There is the excellent [Transputer Emulator](https://sites.google.com/site/transputeremulator/Home) from Gavin Crate. Otherwise here is the code. Good luck!
 
 
-pahihu,  04 / 04 / 2023
+pahihu,  05 / 04 / 2023
 
 
 Performance

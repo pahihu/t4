@@ -48,7 +48,7 @@ Changes
 * added networking enabled bin/t4netwin64.exe, Makefile.netwin32, bin/nanomsg115.zip static library
 * added networking enabled bin/t4netmac64, bin/t4netlnx64 for macOS, Linux
 * see `spy.net` for network configuration examples
-* if you define -DSPYNET=1 and link the executable with the nanonmsg library
+* if you define -DSPYNET=1 and link the executable with the [nanomsg](https://nanomsg.org) library
   you can run multiple transputers (experimental)
 * updated macOS, Linux, Windows binaries
 * accept either '-' or '/' as switch options (G.Crate)
@@ -98,7 +98,7 @@ Values are in seconds.
 |Workers|Type|Mod1|Mod2|Mod3|Mod4|Notes|
 |--|--|--|--|--|--|--|
 |16|T800/2MB|13.5|14.4|4.3|3.2|16x T4 emulator with IPC net
-|8|T800/2MB|22.1|25.4|7.4|5.2|6x T4 emulator with IPC net
+|8|T800/2MB|22.1|25.4|7.4|5.2|8x T4 emulator with IPC net
 |4|T800/2MB|44.1|51.1|14.9|10.3|4x T4 emulator with IPC net
 |2|T800/2MB|83.9|101.6|28.7|20.0|2x T4 emulator with IPC net
 |1|T800/2MB|126.4|131.6|34.9|25.6|1x T4 emulator

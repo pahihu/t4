@@ -38,4 +38,4 @@ echo "Starting HOST"
 t4 -s8 -sn 0 -sb ${BTLFILE}
 
 # kill processors
-pkill -9 t4 2>&1 >/dev/null
+pkill -9 -x t4 2>&1 >/dev/null

@@ -97,10 +97,11 @@ Values are in seconds.
 
 |Workers|Type|Mod1|Mod2|Mod3|Mod4|Notes|
 |--|--|--|--|--|--|--|
-|16 |T800/2MB|13.2|15.2|5.6|4.5|16x T4 emulator with IPC net
-|6  |T800/2MB|30.5|36.2|11.1|8.2|6x T4 emulator with IPC net
-|4  |T800/2MB|43.9|51.1|14.7|10.0|4x T4 emulator with IPC net
-|1  |T800/2MB|125.6|140.6|35.6|27.2|1x T4 emulator
+|16|T800/2MB|13.5|14.4|4.3|3.2|16x T4 emulator with IPC net
+|8|T800/2MB|22.1|25.4|7.4|5.2|6x T4 emulator with IPC net
+|4|T800/2MB|44.1|51.1|14.9|10.3|4x T4 emulator with IPC net
+|2|T800/2MB|83.9|101.6|28.7|20.0|2x T4 emulator with IPC net
+|1|T800/2MB|126.4|131.6|34.9|25.6|1x T4 emulator
 
 
 Command line arguments

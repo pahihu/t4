@@ -95,6 +95,7 @@ extern int32_t quitstatus;
 
 char CommandLineAll[256]  = "\0";
 char CommandLineMost[256] = "\0";
+char NetConfigName[256] = "\0";
 
 FILE *CopyIn;
 FILE *InpFile, *OutFile;
@@ -152,7 +153,6 @@ int main (int argc, char **argv)
 {
 	static char CopyFileName[256];
         static char InpFileName[256], OutFileName[256];
-        static char NetConfigName[256];
         char IBoardSize[32];
 	int reset       = FALSE;
 	int arg;

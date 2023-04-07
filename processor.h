@@ -93,6 +93,10 @@ extern uint32_t CoreSize;
 
 #define MAX_CHANNEL_URL 128
 
+#define SCH_LEN         0
+#define SCH_DATA        1
+#define SCH_SIZE        256
+
 typedef struct _Channel_ {
         uint32_t LinkAddress; /* the address of the Channel */
         uint32_t Address;
@@ -100,6 +104,7 @@ typedef struct _Channel_ {
         int  Link;
         int  sock;
         char url[MAX_CHANNEL_URL];
+        unsigned char *schbuf;
 } Channel;
 
 typedef struct _LinkIface_ {

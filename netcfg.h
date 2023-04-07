@@ -4,5 +4,7 @@
 int readNetConfig (FILE *fin);
 int connectedNetLink (int node, int link, int *othernode, int *otherlink);
 char *netLinkURL (int node, int link);
+int sharedLinks (void);
+int maxNodeID (void);
 
 #endif

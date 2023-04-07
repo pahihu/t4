@@ -80,6 +80,7 @@ struct nn_pollfd {
 int nn_poll(struct nn_pollfd *fds, int nfds, int opt) { return EINVAL; }
 #endif
 #include "netcfg.h"
+#include "shlink.h"
 
 #include "processor.h"
 #include "arithmetic.h"
@@ -233,6 +234,8 @@ int32_t quit = FALSE;
 int32_t quitstatus;
 int Idle;
 
+unsigned char *SharedLinks;
+
 // #define Wdesc   (WPtr | ProcPriority)
 
 #define IdleProcess_p   (MostNeg | 1)
@@ -258,6 +261,7 @@ extern int emudebug;
 extern int memdebug;
 extern int memnotinit;
 extern int msgdebug;
+extern char NetConfigName[256];
 
 LinkIface Link[4];
 
@@ -627,6 +631,12 @@ int channel_ready (Channel *chan)
         if (emudebug)
                 printf ("-I-EMUDBG: ChannelReady. Link%dIn ready ?\n", chan->Link);
 
+        if (chan->schbuf)
+        {
+                ret = 0 == chan->schbuf[SCH_LEN];
+                goto Exit;
+        }
+
         pfd[0].fd = chan->sock;
         pfd[0].events = NN_POLLIN;
         pfd[0].revents = 0;
@@ -640,6 +650,7 @@ int channel_ready (Channel *chan)
                 printf ("-E-EMU414: Failed polling Link%dIn (%s)\n", chan->Link, nn_strerror (nn_errno ()));
                 handler (-1);
         }
+Exit:
         if (0 == ret) /* timeout */
         {
                 if (msgdebug || emudebug)
@@ -650,95 +661,152 @@ int channel_ready (Channel *chan)
         return 0;
 }
 
-#define MAX_DATA        1024
+#define MAX_DATA        255
 
-int Precv_channel(Channel *chan, uint32_t address, uint32_t len)
+int channel_recvP (Channel *chan, unsigned char *data, int doWait)
 {
-        int i, ret;
-        unsigned char data[MAX_DATA];
-        int ndata;
+        int ret;
 
-        if (len > MAX_DATA)
-                return 1;
-
-RecvAgain:
-        ret = nn_recv (chan->sock, data, sizeof (data), NN_DONTWAIT);
+        if (chan->schbuf)
+        {
+                if (0 == chan->schbuf[SCH_LEN])
+                {
+                        errno = EAGAIN;
+                        return -1;
+                }
+                ret = chan->schbuf[SCH_LEN];
+                memcpy (data, &chan->schbuf[SCH_DATA], ret);
+                chan->schbuf[SCH_LEN] = 0;
+        }
+        else
+                ret = nn_recv (chan->sock, data, MAX_DATA, doWait ? 0 :NN_DONTWAIT);
         if (-1 == ret)
         {
                 if (EAGAIN == errno)
-                        return 1;
+                        return -1;
 
-                printf ("-E-EMU414: recv_channel: Receive failed on Link%dIn (%s)\n",
+                printf ("-E-EMU414: channel_recvP: Receive failed on Link%dIn (%s)\n",
                         chan->Link,
                         nn_strerror (nn_errno ()));
                 handler (-1);
         }
         if (msgdebug || emudebug)
-                printf ("-I-EMUDBG: recv_channel: Received %d bytes on Link%dIn (#%08X).\n",
+                printf ("-I-EMUDBG: channel_recvP: Received %d bytes on Link%dIn (#%08X).\n",
                                 ret,
                                 chan->Link,
                                 chan->LinkAddress);
+        return ret;
+}
 
-        ndata = ret;
-        for (i = 0; i < ndata; i++)
+int channel_recvmemP (Channel *chan, unsigned char *data, int doMemWrite, int doWait)
+{
+        int i, ret;
+
+        ret = channel_recvP (chan, data, doWait);
+        if (ret < 0)
+                return ret;
+
+        if (doMemWrite)
         {
-                writebyte_int (address++, data[i]);
-                if (0 == --len)
-                        break;
+                for (i = 0; i < ret; i++)
+                {
+                        writebyte_int (chan->Address++, data[i]);
+                        chan->Length--;
+                }
         }
-
-        if (len)
-                goto RecvAgain;
-
-        return 0;
+        return ret;
 }
 
 
-int Psend_channel (Channel *chan, uint32_t address, uint32_t len)
+int channel_sendP (Channel *chan, unsigned char *data, int ndata, int doWait)
 {
-        int i, ret;
-        unsigned char data[MAX_DATA];
-        int ndata;
+        int ret;
 
-        if (len > MAX_DATA)
-                return 1;
-
-        for (i = 0; i < len; i++)
+        ret = 0;
+        if (chan->schbuf)
         {
-                data[i] = byte_int (address++);
+                if (chan->schbuf[SCH_LEN])
+                {
+                        errno = EAGAIN;
+                        return -1;
+                }
+                memcpy (&chan->schbuf[SCH_DATA], data, ndata);
+                chan->schbuf[SCH_LEN] = ndata;
+                ret = ndata;
         }
-
-        ndata = len;
-        ret = nn_send (chan->sock, data, ndata, NN_DONTWAIT);
+        else
+                ret = nn_send (chan->sock, data, ndata, doWait ? 0 : NN_DONTWAIT);
 
         if (-1 == ret)
         {
                 if (EAGAIN == errno)
-                        return 1;
+                        return -1;
 
-                printf ("-E-EMU414: send_channel: Send failed on Link%dOut (%s).\n",
+                printf ("-E-EMU414: channel_sendP: Send failed on Link%dOut (%s).\n",
                         chan->Link,
                         nn_strerror (nn_errno ()));
                 handler (-1);
         }
         if (ret != ndata)
         {
-                printf ("-E-EMU414: send_channel: Failed to send %d bytes on Link%dOut (%s).\n",
+                printf ("-E-EMU414: channel_sendP: Failed to send %d bytes on Link%dOut (%s).\n",
                         ndata,
                         chan->Link,
                         nn_strerror (nn_errno ()));
                 handler (-1);
         }
         if (msgdebug || emudebug)
-                printf ("-I-EMUDBG: send_channel: Sent %d bytes on Link%dOut (#%08X).\n",
+                printf ("-I-EMUDBG: channel_sendP: Sent %d bytes on Link%dOut (#%08X).\n",
                         ndata,
                         chan->Link,
                         chan->LinkAddress);
-        return 0;
+        return ndata;
 }
 
-#define recv_channel(ch,a,n)    1
-#define send_channel(ch,a,n)    Psend_channel(ch,a,n)
+int channel_sendmemP (Channel *chan, int doWait)
+{
+        int i;
+        unsigned char data[MAX_DATA];
+        int ndata;
+
+        ndata = MAX_DATA;
+        if (chan->Length < MAX_DATA)
+                ndata = chan->Length;
+
+        for (i = 0; i < ndata; i++)
+        {
+                data[i] = byte_int (chan->Address++);
+                chan->Length--;
+        }
+        return channel_sendP (chan, data, ndata, doWait);
+}
+
+/* Receive at most MAX_DATA bytes without waiting. */
+int Precv_channel (Channel *chan, uint32_t address, uint32_t len)
+{
+        unsigned char data[MAX_DATA];
+
+        if (len > MAX_DATA)
+                return 1;
+
+        chan->Address = address;
+        chan->Length  = len;
+        return channel_recvmemP (chan, data, TRUE, FALSE) < 0;
+}
+
+/* Send at most MAX_DATA bytes without waiting. */
+int Psend_channel (Channel *chan, uint32_t address, uint32_t len)
+{
+        if (len > MAX_DATA)
+                return 1;
+
+        chan->Address = address;
+        chan->Length  = len;
+        return channel_sendmemP (chan, FALSE) < 0;
+}
+
+#define recv_channel(c,a,n)     1
+#define send_channel(c,a,n)     Psend_channel(c,a,n)
 
 int linkcomms (char *where, int doBoot, int timeOut)
 {
@@ -748,7 +816,7 @@ int linkcomms (char *where, int doBoot, int timeOut)
         Channel *channels[8];
         unsigned char data[MAX_DATA];
         int ndata;
-        int i, j, ret;
+        int i, ret;
         int poll;
         char chnames[128], tmp[16];
 
@@ -816,7 +884,34 @@ int linkcomms (char *where, int doBoot, int timeOut)
                         timeOut,
                         poll ? " (poll)" : "");
         }
-        ret = nn_poll (pfd, npfd, timeOut);
+        if (channels[0]->schbuf) /* shared channels? */
+        {
+                do
+                {
+                        ret = 0;
+                        for (i = 0; i < npfd; i++)
+                        {
+                                int doadd = FALSE;
+                                if (pfd[i].events & NN_POLLIN)
+                                        doadd = 0 != channels[i]->schbuf[SCH_LEN];
+                                else
+                                        doadd = 0 == channels[i]->schbuf[SCH_LEN];
+                                if (doadd)
+                                {
+                                        pfd[i].revents = pfd[i].events;
+                                        ret++;
+                                }
+                        }
+                        if (timeOut)
+                        {
+                                usleep (1000); timeOut--;
+                        }
+                } while (timeOut);
+        }
+        else
+        {
+                ret = nn_poll (pfd, npfd, timeOut);
+        }
         if (0 == ret) /* timeout */
         {
                 if (msgdebug || emudebug)
@@ -842,19 +937,7 @@ int linkcomms (char *where, int doBoot, int timeOut)
                         revents = NN_POLLIN;
                         if (doBoot || channels[i]->Length)
                         {
-                                ret = nn_recv (pfd[i].fd, data, sizeof (data), 0);
-                                if (-1 == ret)
-                                {
-                                        printf ("-E-EMU414: Receive failed on Link%dIn (%s)\n",
-                                                channels[i]->Link,
-                                                nn_strerror (nn_errno ()));
-                                        handler (-1);
-                                }
-                                if (msgdebug || emudebug)
-                                        printf ("-I-EMUDBG: Received %d bytes on Link%dIn (#%08X).\n",
-                                                ret,
-                                                channels[i]->Link,
-                                                channels[i]->LinkAddress);
+                                ndata = ret = channel_recvmemP (channels[i], data, !doBoot, TRUE);
                                 if (doBoot)
                                 {
                                         if (0 == handleboot (channels[i], data, ret))
@@ -864,15 +947,6 @@ int linkcomms (char *where, int doBoot, int timeOut)
                                         }
                                         return 0;
                                 }
-                                else
-                                {
-                                        ndata = ret;
-                                        for (j = 0; j < ret; j++)
-                                        {
-                                                writebyte_int (channels[i]->Address++, data[j]);
-                                                channels[i]->Length--;
-                                        }
-                                }
                         }
                         else if (msgdebug || emudebug)
                                 printf ("-I-EMUDBG: Polled on Link%dIn (#%08X).\n", channels[i]->Link, channels[i]->LinkAddress);
@@ -880,35 +954,7 @@ int linkcomms (char *where, int doBoot, int timeOut)
                 else if (pfd[i].revents & NN_POLLOUT)
                 {
                         revents = NN_POLLOUT;
-                        ndata = MAX_DATA;
-                        if (channels[i]->Length < MAX_DATA)
-                                ndata = channels[i]->Length;
-                        for (j = 0; j < ndata; j++)
-                        {
-                                data[j] = byte_int (channels[i]->Address++);
-                                channels[i]->Length--;
-                        }
-                        ret = nn_send (pfd[i].fd, data, ndata, 0);
-                        if (-1 == ret)
-                        {
-                                printf ("-E-EMU414: Send failed on Link%dOut (%s).\n",
-                                        channels[i]->Link,
-                                        nn_strerror (nn_errno ()));
-                                handler (-1);
-                        }
-                        if (ret != ndata)
-                        {
-                                printf ("-E-EMU414: Failed to send %d bytes on Link%dOut (%s).\n",
-                                        ndata,
-                                        channels[i]->Link,
-                                        nn_strerror (nn_errno ()));
-                                handler (-1);
-                        }
-                        if (msgdebug || emudebug)
-                                printf ("-I-EMUDBG: Sent %d bytes on Link%dOut (#%08X).\n",
-                                        ndata,
-                                        channels[i]->Link,
-                                        channels[i]->LinkAddress);
+                        ndata = channel_sendmemP (channels[i], TRUE);
                 }
                 /* Still processing message? */
                 if (channels[i]->Length)
@@ -983,6 +1029,13 @@ void close_channels (void)
          */
         sleep (1);
 
+        if (SharedLinks)
+        {
+                shlink_detach (SharedLinks);
+                if (0 == nodeid)
+                        shlink_free ();
+        }
+
         for (i = 0; i < 4; i++)
                 if (-1 != Link[i].Out.sock)
                         nn_close (Link[i].Out.sock);
@@ -1030,6 +1083,7 @@ void open_channel (uint32_t addr)
         int chanIn, theLink;
         int othernode, otherlink;
         int ret;
+        unsigned char *nodeBase;
 
         chan = reset_channel (addr);
         chanIn = IsLinkIn(addr);
@@ -1039,11 +1093,30 @@ void open_channel (uint32_t addr)
         chan->Link = theLink;
         chan->url[0] = '\0';
         chan->sock = -1;
+        chan->schbuf = NULL;
 
         if (serve && 0 == theLink) /* host link */
                 return;
         if (nodeid < 0) /* no Node ID */
                 return;
+
+        if (sharedLinks ())
+        {
+                if (NULL == SharedLinks)
+                {
+                        if (1 == nodeid)
+                                SharedLinks = shlink_alloc (NetConfigName, 4 * SCH_SIZE * (1 + maxNodeID ()));
+                        else
+                                SharedLinks = shlink_attach (NetConfigName);
+                        if (NULL == SharedLinks)
+                                handler (-1);
+                }
+                nodeBase = SharedLinks + (nodeid * 4 * SCH_SIZE);
+                chan->schbuf = nodeBase + theLink * SCH_SIZE;
+                if (chanIn)
+                        chan->schbuf[SCH_LEN] = 0;
+                return;
+        }
 
         if (chanIn)
                 strcpy (&chan->url[0], netLinkURL (nodeid, theLink));
@@ -1256,6 +1329,8 @@ void init_memory (void)
 void init_processor (void)
 {
         int i;
+
+        SharedLinks = NULL;
 
         /* M.Bruestle 15.2.2012 */
         open_channel (Link0In);

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "netcfg.h"
 
 extern int verbose;
 
@@ -29,6 +30,7 @@ int nNetLink;
 
 
 static int network, address, port, scale;
+static int shlinks, max_nodeid;
 
 static char* ip2str (int a, char *tmp)
 {
@@ -202,6 +204,8 @@ int readNetConfig (FILE *fin)
         port = 1984;
         scale = 4;
 
+        shlinks = 0; max_nodeid = -1;
+
         nline = 1;
         ptr = fgets (buf, sizeof(buf), fin);
         while (ptr && !feof (fin))
@@ -250,6 +254,10 @@ int readNetConfig (FILE *fin)
                                 NetLinks[nNetLink].othernode = thenode;
                                 NetLinks[nNetLink++].otherlink = thelink;
                         }
+                }
+                else if (0 == strncmp (ptr, "shlinks", 7))
+                {
+                        shlinks = 1;
                 }
                 else if (0 == strncmp (ptr, "network", 7))
                 {
@@ -452,6 +460,31 @@ char* netLinkURL (int node, int link)
         }
         sprintf (buf, "ipc:///tmp/node%d-%d.lnk", node, link);
         return buf;
+}
+
+int sharedLinks (void)
+{
+        return shlinks;
+}
+
+int maxNodeID (void)
+{
+        int i, ret;
+
+        if (max_nodeid > 0)
+                return max_nodeid;
+
+        ret = -1;
+        for (i = 0; i < nNetLink; i++)
+        {
+                if (NetLinks[i].node > ret)
+                        ret = NetLinks[i].node;
+                if (NetLinks[i].othernode > ret)
+                        ret = NetLinks[i].othernode;
+        }
+
+        max_nodeid = ret;
+        return max_nodeid;
 }
 
 #if defined(NETCFG_TEST)

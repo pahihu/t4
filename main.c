@@ -89,6 +89,7 @@ int memnotinit  = FALSE;
 int msgdebug    = FALSE;
 char *dbgtrigger = NULL;
 int usetvs      = FALSE;
+int shlinks     = FALSE;
 
 extern int32_t quit;
 extern int32_t quitstatus;
@@ -193,6 +194,7 @@ int main (int argc, char **argv)
                 printf("    -s4                  Select T414 mode. (default)\n");
                 printf("    -s8                  Select T800 mode.\n");
                 printf("    -sg                  Halt on uninitialized memory read.\n");
+                printf("    -sl                  Links in shared memory.\n");
                 printf("    -sm #bits            Memory size in address bits (default 21, 2Mbyte).\n");
                 printf("    -sn id               Node ID.\n");
                 printf("    -su                  Instruction profiling.\n");
@@ -312,6 +314,13 @@ int main (int argc, char **argv)
 						strcat (CommandLineMost, " ");
 					  }
 					  else verbose=TRUE;
+					  break;
+				case 'l': if (argv[arg][3]!='\0')
+					  {
+						strcat (CommandLineMost, argv[arg]);
+						strcat (CommandLineMost, " ");
+					  }
+					  else shlinks=TRUE;
 					  break;
 				case 'm': if (argv[arg][3]!='\0')
 					  {

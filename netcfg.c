@@ -5,6 +5,7 @@
 #include "netcfg.h"
 
 extern int verbose;
+extern int shlinks;
 
 #define NODE_HOST          -1
 #define NODE_NOTCONNECTED  -2
@@ -30,7 +31,7 @@ int nNetLink;
 
 
 static int network, address, port, scale;
-static int shlinks, max_nodeid;
+static int max_nodeid;
 
 static char* ip2str (int a, char *tmp)
 {
@@ -204,7 +205,7 @@ int readNetConfig (FILE *fin)
         port = 1984;
         scale = 4;
 
-        shlinks = 0; max_nodeid = -1;
+        max_nodeid = -1;
 
         nline = 1;
         ptr = fgets (buf, sizeof(buf), fin);

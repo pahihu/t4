@@ -1,12 +1,26 @@
 #!/bin/sh
-if [ $# -ne 1 ];
+if [ $# -ne 1 -a $# -ne 2 ];
 then
-  echo "usage: multi.sh <#processors>"
+  echo "usage: multi.sh [-sl] <#processors>"
   exit 1
 fi
 
-MAPFILE="raytrace${1}.map"
-BTLFILE="raytrace${1}.btl"
+while :
+do
+  case "$1" in
+    -sl)
+      SHLINK="-sl"
+      shift 1
+      ;;
+    *)
+      N=${1}
+      break
+      ;;
+  esac
+done
+
+MAPFILE="raytrace${N}.map"
+BTLFILE="raytrace${N}.btl"
 
 if [ ! -f ${MAPFILE} ];
 then
@@ -19,7 +33,7 @@ then
   exit 1
 fi
 
-nworkers=`expr ${1} - 1`
+nworkers=`expr ${N} - 1`
 echo "Workers = ${nworkers}"
 
 export SPYNET=${MAPFILE}
@@ -29,13 +43,13 @@ then
   for i in `seq 1 ${nworkers}`
   do
     echo "Starting worker${i}"
-    t4 -s8 -sn ${i} -si &
+    t4 -s8 ${SHLINK} -sn ${i} -si &
     sleep 1
   done
 fi
 
 echo "Starting HOST"
-t4 -s8 -sn 0 -sb ${BTLFILE}
+t4 -s8 ${SHLINK} -sn 0 -sb ${BTLFILE}
 
 # kill processors
 pkill -9 -x t4 2>&1 >/dev/null

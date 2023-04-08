@@ -83,6 +83,8 @@ void* shlink_alloc (const char *fnm, int size)
                 return NULL;
         }
 
+        memset (addr, 0, size);
+
         if (verbose)
                 printf ("-I-EMU414: Allocated SharedChannels at #%p.\n", addr);
         return addr;

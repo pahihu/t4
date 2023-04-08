@@ -80,7 +80,14 @@ struct nn_pollfd {
 int nn_poll(struct nn_pollfd *fds, int nfds, int opt) { return EINVAL; }
 #endif
 #include "netcfg.h"
+#ifdef SHLINKS
 #include "shlink.h"
+#else
+void* shlink_attach (const char *fnm){return NULL;}
+int shlink_detach (void *addr){return EINVAL;}
+void* shlink_alloc (const char *fnm, int size){return NULL;}
+int shlink_free (void){return EINVAL;}
+#endif
 
 #include "processor.h"
 #include "arithmetic.h"
@@ -553,7 +560,6 @@ static int CtrlByte = C_UNKNOWN;
 int handleboot (Channel *chan, unsigned char *data, int ndata)
 {
         uint32_t address, value;
-        int i;
         Channel *outchan;
 
         if (emudebug)
@@ -578,11 +584,13 @@ int handleboot (Channel *chan, unsigned char *data, int ndata)
                 data++; ndata--;
         }
         if (chan->Length)
-                for (i = 0; chan->Length && (i < ndata); i++)
-                {
-                        writebyte_int (chan->Address++, data[i]);
-                        chan->Length--;
-                }
+        {
+                int len = ndata;
+                if (chan->Length < len)
+                        len = chan->Length;
+                writebytes_int (chan->Address, data, len);
+                chan->Address += len; chan->Length -= len;
+        }
         if (0 == chan->Length)
         {
                 switch (CtrlByte)
@@ -633,7 +641,7 @@ int channel_ready (Channel *chan)
 
         if (chan->schbuf)
         {
-                ret = 0 == chan->schbuf[SCH_LEN];
+                ret = 0 != chan->schbuf[SCH_LEN];
                 goto Exit;
         }
 
@@ -672,17 +680,20 @@ int channel_recvP (Channel *chan, unsigned char *data, int doWait)
                 if (0 == chan->schbuf[SCH_LEN])
                 {
                         errno = EAGAIN;
-                        return -1;
+                        ret = -1;
                 }
-                ret = chan->schbuf[SCH_LEN];
-                memcpy (data, &chan->schbuf[SCH_DATA], ret);
-                chan->schbuf[SCH_LEN] = 0;
+                else
+                {
+                        ret = chan->schbuf[SCH_LEN];
+                        memcpy (data, &chan->schbuf[SCH_DATA], ret);
+                        chan->schbuf[SCH_LEN] = 0;
+                }
         }
         else
                 ret = nn_recv (chan->sock, data, MAX_DATA, doWait ? 0 :NN_DONTWAIT);
         if (-1 == ret)
         {
-                if (EAGAIN == errno)
+                if ((EAGAIN == errno) && !doWait)
                         return -1;
 
                 printf ("-E-EMU414: channel_recvP: Receive failed on Link%dIn (%s)\n",
@@ -700,7 +711,7 @@ int channel_recvP (Channel *chan, unsigned char *data, int doWait)
 
 int channel_recvmemP (Channel *chan, unsigned char *data, int doMemWrite, int doWait)
 {
-        int i, ret;
+        int ret;
 
         ret = channel_recvP (chan, data, doWait);
         if (ret < 0)
@@ -708,11 +719,8 @@ int channel_recvmemP (Channel *chan, unsigned char *data, int doMemWrite, int do
 
         if (doMemWrite)
         {
-                for (i = 0; i < ret; i++)
-                {
-                        writebyte_int (chan->Address++, data[i]);
-                        chan->Length--;
-                }
+                writebytes_int (chan->Address, data, ret);
+                chan->Address += ret; chan->Length -= ret;
         }
         return ret;
 }
@@ -728,18 +736,25 @@ int channel_sendP (Channel *chan, unsigned char *data, int ndata, int doWait)
                 if (chan->schbuf[SCH_LEN])
                 {
                         errno = EAGAIN;
-                        return -1;
+                        ret = -1;
                 }
-                memcpy (&chan->schbuf[SCH_DATA], data, ndata);
-                chan->schbuf[SCH_LEN] = ndata;
-                ret = ndata;
+                else
+                {
+                        if (ndata > MAX_DATA)
+                        {
+                                printf ("-E-EMU414: channel_sendP: schbuf[] overflow! (%d).\n", ndata);
+                        }
+                        memcpy (&chan->schbuf[SCH_DATA], data, ndata);
+                        chan->schbuf[SCH_LEN] = ndata;
+                        ret = ndata;
+                }
         }
         else
                 ret = nn_send (chan->sock, data, ndata, doWait ? 0 : NN_DONTWAIT);
 
         if (-1 == ret)
         {
-                if (EAGAIN == errno)
+                if ((EAGAIN == errno) && !doWait)
                         return -1;
 
                 printf ("-E-EMU414: channel_sendP: Send failed on Link%dOut (%s).\n",
@@ -765,7 +780,6 @@ int channel_sendP (Channel *chan, unsigned char *data, int ndata, int doWait)
 
 int channel_sendmemP (Channel *chan, int doWait)
 {
-        int i;
         unsigned char data[MAX_DATA];
         int ndata;
 
@@ -773,11 +787,8 @@ int channel_sendmemP (Channel *chan, int doWait)
         if (chan->Length < MAX_DATA)
                 ndata = chan->Length;
 
-        for (i = 0; i < ndata; i++)
-        {
-                data[i] = byte_int (chan->Address++);
-                chan->Length--;
-        }
+        bytes_int (chan->Address, data, ndata);
+        chan->Address += ndata; chan->Length -= ndata;
         return channel_sendP (chan, data, ndata, doWait);
 }
 
@@ -807,6 +818,8 @@ int Psend_channel (Channel *chan, uint32_t address, uint32_t len)
 
 #define recv_channel(c,a,n)     1
 #define send_channel(c,a,n)     Psend_channel(c,a,n)
+
+#define SCH_POLL        50
 
 int linkcomms (char *where, int doBoot, int timeOut)
 {
@@ -886,6 +899,7 @@ int linkcomms (char *where, int doBoot, int timeOut)
         }
         if (channels[0]->schbuf) /* shared channels? */
         {
+                timeOut *= 1000;
                 do
                 {
                         ret = 0;
@@ -904,9 +918,10 @@ int linkcomms (char *where, int doBoot, int timeOut)
                         }
                         if (timeOut)
                         {
-                                usleep (1000); timeOut--;
+                                usleep (SCH_POLL); timeOut -= SCH_POLL;
+                                if (timeOut < 0) timeOut = 0;
                         }
-                } while (timeOut);
+                } while ((0 == ret) && (timeOut));
         }
         else
         {
@@ -1105,28 +1120,37 @@ void open_channel (uint32_t addr)
                 if (NULL == SharedLinks)
                 {
                         if (1 == nodeid)
-                                SharedLinks = shlink_alloc (NetConfigName, 4 * SCH_SIZE * (1 + maxNodeID ()));
+                                SharedLinks = shlink_alloc (NetConfigName, 8 * SCH_SIZE * (1 + maxNodeID ()));
                         else
                                 SharedLinks = shlink_attach (NetConfigName);
                         if (NULL == SharedLinks)
                                 handler (-1);
                 }
-                nodeBase = SharedLinks + (nodeid * 4 * SCH_SIZE);
-                chan->schbuf = nodeBase + theLink * SCH_SIZE;
                 if (chanIn)
-                        chan->schbuf[SCH_LEN] = 0;
+                {
+                        nodeBase = SharedLinks + (nodeid * 8 * SCH_SIZE);
+                        chan->schbuf = nodeBase + (4 + theLink) * SCH_SIZE;
+                        if (verbose)
+                                printf ("-I-EMU414: Link%dIn  at #%08lX %d:%d.\n",
+                                        theLink,
+                                        chan->schbuf - SharedLinks,
+                                        nodeid, theLink);
+                }
+                else if (0 == connectedNetLink(nodeid, theLink, &othernode, &otherlink))
+                {
+                        nodeBase = SharedLinks + (othernode * 8 * SCH_SIZE);
+                        chan->schbuf = nodeBase + (4 + otherlink) * SCH_SIZE;
+                        if (verbose)
+                                printf ("-I-EMU414: Link%dIn  at #%08lX %d:%d.\n",
+                                        theLink,
+                                        chan->schbuf - SharedLinks,
+                                        othernode, otherlink);
+                }
                 return;
         }
-
         if (chanIn)
+        {
                 strcpy (&chan->url[0], netLinkURL (nodeid, theLink));
-        else
-        {
-                if (0 == connectedNetLink(nodeid, theLink, &othernode, &otherlink))
-                        strcpy (&chan->url[0], netLinkURL (othernode, otherlink));
-        }
-        if (chanIn)
-        {
                 if ((chan->sock = nn_socket (AF_SP, NN_PULL)) < 0)
                 {
                         printf ("-E-EMU414: Error - Cannot create socket for Link%dIn\n", theLink);
@@ -1140,9 +1164,11 @@ void open_channel (uint32_t addr)
                 if (verbose)
                         printf ("-I-EMU414: Link%dIn  at %s\n", theLink, chan->url);
         }
-        else if (0 != chan->url[0]) /* only if connected to other node */
+        else if (0 == connectedNetLink(nodeid, theLink, &othernode, &otherlink)) /* only if connected to other node */
         {
                 int send_timeout = 5000;
+
+                strcpy (&chan->url[0], netLinkURL (othernode, otherlink));
                 if ((chan->sock = nn_socket(AF_SP, NN_PUSH)) < 0)
                 {
                         printf ("-E-EMU414: Error - Cannot create socket for Link%dOut (%s).\n", theLink, nn_strerror (nn_errno ()));
@@ -1736,10 +1762,14 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 					otherPtr = word (index (otherWPtr, Pointer_s));
                                         if (msgdebug || emudebug)
 					        printf ("-I-EMUDBG: in(3): Transferring message from #%08X.\n", otherPtr);
+
+                                        movebytes_int (CReg, otherPtr, AReg);
+#if 0
 					for (loop=0;loop<AReg;loop++)
 					{
 					        writebyte ((CReg + loop), byte_int (otherPtr + loop));
 					}
+#endif
                                         CReg = CReg + BytesRead(CReg, AReg);
 					writeword (BReg, NotProcess_p);
 					schedule (otherWdesc);
@@ -1846,10 +1876,13 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
 						/* Ready. */
                                                 if (msgdebug || emudebug)
                                                         printf ("-I-EMUDBG: out(4): Ready, communicate.\n");
+                                                movebytes_int (otherPtr, CReg, AReg);
+#if 0
 						for (loop = 0;loop < AReg; loop++)
 						{
 							writebyte ((otherPtr + loop), byte_int (CReg + loop));
 						}
+#endif
                                                 CReg = CReg + BytesRead(CReg, AReg);
 						writeword (BReg, NotProcess_p);
 						schedule (otherWdesc);
@@ -2704,10 +2737,13 @@ DescheduleOutWord:
 		case 0x4a: /* move        */
                            if (INT32(AReg) > 0)
                            {
+                                movebytes_int (BReg, CReg, AReg);
+#if 0
 			        for (temp=0;temp<AReg;temp++)
 			        {
 				        writebyte_int ((BReg+temp), byte_int (CReg+temp));
 			        }
+#endif
                                 CReg = CReg + WordsRead(CReg, AReg) * BytesPerWord;
                            }
                            else
@@ -2876,11 +2912,14 @@ DescheduleOutWord:
                            {
                                 for (temp = 0; temp < m2dLength; temp++)
                                 {
+                                        movebytes_int (m2dDestAddress, m2dSourceAddress, m2dWidth);
+#if 0
                                         for (temp2 = 0; temp2 < m2dWidth; temp2++)
                                         {
                                                 pixel = byte_int (m2dSourceAddress + temp2);
                                                 writebyte_int (m2dDestAddress + temp2, pixel);
                                         }
+#endif
                                         m2dSourceAddress += m2dSourceStride;
                                         m2dDestAddress   += m2dDestStride;
                                 }
@@ -4367,6 +4406,11 @@ INLINE void update_time (void)
 
 }
 
+#define CoreAddr(a)     (INT32(a) < INT32(ExtMemStart))
+#define ExtMemAddr(a)   (INT32(ExtMemStart) <= INT32(a))
+#define CoreRange(a,n)  (CoreAddr(a) && CoreAddr((a)+(n)))
+#define ExtMemRange(a,n)(ExtMemAddr(a) && ExtMemAddr((a)+(n)))
+
 /* Read a word from memory. */
 uint32_t word_int (uint32_t ptr)
 {
@@ -4377,7 +4421,7 @@ uint32_t word_int (uint32_t ptr)
 #endif
         uint32_t *wptr;
 
-        if (INT32(ptr) < INT32(ExtMemStart))
+        if (CoreAddr(ptr))
                 wptr = (uint32_t *)(core + (MemWordMask & ptr));
         else
         {
@@ -4389,7 +4433,7 @@ uint32_t word_int (uint32_t ptr)
 	unsigned char val[4];
 
 	/* Get bytes, ensuring memory references are in range. */
-        if (INT32(ptr) < INT32(ExtMemStart))
+        if (CoreAddr(ptr))
         {
 	        val[0] = core[(ptr & MemWordMask)];
 	        val[1] = core[(ptr & MemWordMask)+1];
@@ -4444,7 +4488,7 @@ void writeword_int (uint32_t ptr, uint32_t value)
 #endif
         uint32_t *wptr;
 
-        if (INT32(ptr) < INT32(ExtMemStart))
+        if (CoreAddr(ptr))
                 wptr = (uint32_t *) (core + (MemWordMask & ptr));
         else
         {
@@ -4461,7 +4505,7 @@ void writeword_int (uint32_t ptr, uint32_t value)
 	val[3] = ((value & 0xff000000)>>24);
 
 	/* Write bytes, ensuring memory references are in range. */
-        if (INT32(ptr) < INT32(ExtMemStart))
+        if (CoreAddr(ptr))
         {
 	        core[(ptr & MemWordMask)]   = val[0];
 	        core[(ptr & MemWordMask)+1] = val[1];
@@ -4496,7 +4540,7 @@ unsigned char byte_int (uint32_t ptr)
 	unsigned char result;
 
 	/* Get byte, ensuring memory reference is in range. */
-        if (INT32(ptr) < INT32(ExtMemStart))
+        if (CoreAddr(ptr))
 	        result = core[(ptr & MemByteMask)];
         else
         {
@@ -4522,12 +4566,87 @@ unsigned char byte (uint32_t ptr)
 INLINE void writebyte_int (uint32_t ptr, unsigned char value)
 {
 	/* Write byte, ensuring memory reference is in range. */
-        if (INT32(ptr) < INT32(ExtMemStart))
+        if (CoreAddr(ptr))
                 core[(ptr & MemByteMask)] = value;
         else
         {
                 ptr -= CoreSize;
 	        mem[(ptr & MemByteMask)] = value;
+        }
+}
+
+/* Write bytes to memory. */
+INLINE void writebytes_int (uint32_t ptr, unsigned char *data, uint32_t len)
+{
+        unsigned char *dst;
+	/* Write byte, ensuring memory reference is in range. */
+        if (CoreRange(ptr,len))
+        {
+                dst = core + (ptr & MemByteMask);
+                memcpy (dst, data, len);
+        }
+        else if (ExtMemAddr(ptr))
+        {
+                ptr -= CoreSize;
+                dst = mem + (ptr & MemByteMask);
+                memcpy (dst, data, len);
+        }
+        else
+        {
+                int i;
+                for (i = 0; i < len; i++)
+                        writebyte_int (ptr++, data[i]);
+        }
+}
+
+/* Move bytes to memory. */
+INLINE void movebytes_int (uint32_t dst, uint32_t src, uint32_t len)
+{
+        unsigned char *p, *q;
+
+	/* Write byte, ensuring memory reference is in range. */
+        if (CoreRange(src,len) && CoreRange(dst,len))
+        {
+                p = core + (dst & MemByteMask);
+                q = core + (src & MemByteMask);
+                memmove (p, q, len);
+        }
+        else if (ExtMemAddr(src) && ExtMemAddr(dst))
+        {
+                dst -= CoreSize; src -= CoreSize;
+                p = mem + (dst & MemByteMask);
+                q = mem + (src & MemByteMask);
+                memmove (p, q, len);
+        }
+        else
+        {
+                int i;
+                for (i = 0; i < len; i++)
+                        writebyte_int (dst++, byte_int (src++));
+        }
+}
+
+/* Read bytes from memory. */
+INLINE void bytes_int (uint32_t ptr, unsigned char *data, uint32_t len)
+{
+        unsigned char *dst;
+	/* Write byte, ensuring memory reference is in range. */
+        if (CoreRange(ptr,len))
+        {
+                dst = core + (ptr & MemByteMask);
+                memcpy (data, dst, len);
+        }
+        else if (ExtMemAddr(ptr))
+        {
+                ptr -= CoreSize;
+                dst = mem + (ptr & MemByteMask);
+                memcpy (data, dst, len);
+        }
+        else
+        {
+                int i;
+                for (i = 0; i < len; i++)
+                        data[i] = byte_int (ptr++);
         }
 }
 

@@ -9,8 +9,8 @@ VAL LOW IS 1:
 --}}}
 
 --{{{  problem size
-VAL processors IS 40 :
-VAL tracers    IS 40 :
+VAL processors IS 4 :
+VAL tracers    IS 4 :
 --}}}
 
 --{{{  hardware description of the four node kria

@@ -43,6 +43,7 @@ The compiled binaries are in the `bin/` directory.
 Changes
 =======
 
+* updated Windows and Linux binaries, they support both nework and shared-memory links
 * if you define -DSHLINKS=1 the communication links are placed in shared memory, added `-sl` flag
 * added neworking binary for Raspberry Pi, fixed kill in multi.sh
 * added more raytracer binaries and Windows batch file to run them (multi.bat)

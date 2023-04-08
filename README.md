@@ -101,10 +101,9 @@ Values are in seconds.
 |--|--|--|--|--|--|--|
 |16|T800/2MB|7.9|9.0|2.4|1.6|16x T4 emulator with SHM links
 |8|T800/2MB|15.0|16.5|4.5|3.2|8x T4 emulator with SHM links
-|4|T800/2MB|31.9|32.8|9.1|6.8|4x T4 emulator with SHM links
-|2|T800/2MB|57.9|62.7|17.0|13.0|2x T4 emulator with SHM links
-|1|T800/2MB|111.4|121.9|31.9|23.4|1x T4 emulator
-
+|4|T800/2MB|29.9|32.0|8.4|6.3|4x T4 emulator with SHM links
+|2|T800/2MB|55.7|61.0|16.2|11.9|2x T4 emulator with SHM links
+|1|T800/2MB|109.4|119.5|31.8|23.3|1x T4 emulator
 
 
 Command line arguments

@@ -4081,9 +4081,10 @@ void start_process (void)
                 if (serve)
 		        active = 0 != server ();
 
+                /* XXX causes no activity
                 if (ProcessQEmpty && TimerQEmpty)
                         links_active = (0 != linkcomms ("idle", FALSE, LTO_BOOT));
-                else
+                else */
                         links_active = (0 != linkcomms ("running", FALSE, LTO_COMM));
                 active = active || links_active;
 

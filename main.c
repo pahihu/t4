@@ -591,7 +591,7 @@ int main (int argc, char **argv)
                 do
                 {
                         if (verbose)
-                                printf ("-I-EMU414: Waiting for bootstrap code... (%d)\n", temp);
+                                printf ("-I-EMU414: Node%d waiting for bootstrap code... (%d)\n", nodeid < 0 ? 0 : nodeid, temp);
                 } while ((temp++ < 60) && (0 == linkcomms ("boot", TRUE, LTO_BOOT)));
                 if (temp > 60)
                 {

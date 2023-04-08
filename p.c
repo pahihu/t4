@@ -4097,7 +4097,7 @@ void start_process (void)
 
         if (!active)
         {
-                printf ("-W-EMU414: Error - stopped no Link/Process/Timer activity!\n");
+                printf ("-W-EMU414: Node%d Error - stopped no Link/Process/Timer activity!\n", nodeid < 0 ? 0 : nodeid);
                 processor_state ();
                 handler (-1);
         }

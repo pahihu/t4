@@ -112,9 +112,9 @@ Command line arguments
 
         Usage : t4 [options] [program arguments]
 
-        t4 V1.6a  04/04/2023
+        t4 V1.6a    04/04/2023
 
-        Options:
+        Options: use either -sX or /sX
             -sa                  Analyse transputer.
             -sb filename         Boot program "filename".
             -sc filename         Copy file "filename" to transputer.
@@ -127,16 +127,14 @@ Command line arguments
             -s4                  Select T414 mode. (default)
             -s8                  Select T800 mode.
             -sg                  Halt on uninitialized memory read.
+            -sl                  Links in shared memory.
             -sm #bits            Memory size in address bits (default 21, 2Mbyte).
-            -sn <number>         Set node ID. Read connectivity from "spy.net",
-                                 or filename in SPYNET env var, 
-                                 or from the boot program's map file
+            -sn id               Node ID.
             -su                  Instruction profiling.
             -sv inp.tbo inp.bin out.bin
                                  Select Mike's TVS: T800 + T414 FP support.
             -sw "string"         Trigger execution trace on SP_WRITE (string).
             -sx [number]         Execution trace (4 - mem ld/st, 2 - iserver, 1 - instructions).
-
 
 
 Running the Minix demo

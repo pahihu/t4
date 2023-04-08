@@ -29,8 +29,8 @@ FDMSRC  = k_standard.c s_scalbn.c s_scalbnf.c s_ldexp.c s_ldexpf.c \
 FDMOBJ	= k_standard.o s_scalbn.o s_scalbnf.o s_ldexp.o s_ldexpf.o \
 	  e_fmod.o e_remainder.o e_sqrt.o w_remainder.o w_sqrt.o
 
-SRC	= $(FDMSRC) curterm.c arithmetic.c fparithmetic.c netcfg.c server.c p.c main.c
-OBJ	= $(FDMOBJ) curterm.o arithmetic.o fparithmetic.o netcfg.o server.o p.o main.o
+SRC	= $(FDMSRC) curterm.c arithmetic.c fparithmetic.c shlink.c netcfg.c server.c p.c main.c
+OBJ	= $(FDMOBJ) curterm.o arithmetic.o fparithmetic.o shlink.o netcfg.o server.o p.o main.o
 
 t4 : $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) $(LFLAGS) -o t4

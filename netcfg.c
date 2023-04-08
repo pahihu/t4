@@ -329,6 +329,8 @@ int readNetConfig (FILE *fin)
                         char tmpstr[128];
                         char *colon1, *colon2;
 
+                        p = port;
+
                         /* "node" from[-to] [proto://address[:port]] */
                         ptr = read_number (ptr + 4, &thenode);
                         if (-1 == thenode)

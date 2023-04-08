@@ -83,7 +83,7 @@ int nn_poll(struct nn_pollfd *fds, int nfds, int opt) { return EINVAL; }
 #ifdef SHLINKS
 #include "shlink.h"
 #else
-void* shlink_attach (const char *fnm){return NULL;}
+void* shlink_attach (const char *fnm, int size){return NULL;}
 int shlink_detach (void *addr){return EINVAL;}
 void* shlink_alloc (const char *fnm, int size){return NULL;}
 int shlink_free (void){return EINVAL;}
@@ -1117,12 +1117,15 @@ void open_channel (uint32_t addr)
 
         if (sharedLinks ())
         {
+                int sharedSize;
+
+                sharedSize = 8 * SCH_SIZE * (1 + maxNodeID ());
                 if (NULL == SharedLinks)
                 {
                         if (1 == nodeid)
-                                SharedLinks = shlink_alloc (NetConfigName, 8 * SCH_SIZE * (1 + maxNodeID ()));
+                                SharedLinks = shlink_alloc (NetConfigName, sharedSize);
                         else
-                                SharedLinks = shlink_attach (NetConfigName);
+                                SharedLinks = shlink_attach (NetConfigName, sharedSize);
                         if (NULL == SharedLinks)
                                 handler (-1);
                 }

@@ -47,3 +47,33 @@ int gettimeofday(struct timeval *tv, struct timezone *tz)
 
   return 0;
 }
+
+void sleep(int seconds)
+{
+  Sleep (1000 * seconds);
+}
+
+
+static double Freq;
+
+void usleep(int useconds)
+{
+  static int init = 1;
+  LARGE_INTEGER start, now;
+  int counter = 0;
+
+  if (init)
+  {
+    LARGE_INTEGER perfFreq;
+    QueryPerformanceFrequency(&perfFreq);
+    Freq = perfFreq.QuadPart;
+    init = 0;
+  }
+
+  QueryPerformanceCounter(&start);
+  do
+  {
+    if (0 == (++counter & 31)) _mm_pause ();
+    QueryPerformanceCounter((LARGE_INTEGER*) &now);
+  } while ((now.QuadPart - start.QuadPart) * 1000.0 * 1000.0 / Freq < useconds);
+}

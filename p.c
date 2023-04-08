@@ -38,7 +38,6 @@
  */
 #ifdef _MSC_VER
 #include "gettimeofday.h"
-#define sleep(n)        Sleep(1000*(n))
 #endif
 
 #include <stdio.h>
@@ -49,7 +48,6 @@
 #include <unistd.h>
 #endif
 #include <math.h>
-
 #ifdef SPYNET
 #include <nanomsg/nn.h>
 #include <nanomsg/pipeline.h>
@@ -1118,11 +1116,13 @@ void open_channel (uint32_t addr)
         if (sharedLinks ())
         {
                 int sharedSize;
+                int maxnode;
 
-                sharedSize = 8 * SCH_SIZE * (1 + maxNodeID ());
+                maxnode = maxNodeID ();
+                sharedSize = 8 * SCH_SIZE * (1 + maxnode);
                 if (NULL == SharedLinks)
                 {
-                        if (1 == nodeid)
+                        if ((1 == nodeid) || (0 == maxnode))
                                 SharedLinks = shlink_alloc (NetConfigName, sharedSize);
                         else
                                 SharedLinks = shlink_attach (NetConfigName, sharedSize);

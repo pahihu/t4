@@ -1,7 +1,7 @@
 # Choose a C compiler. (Must be ANSI C capable).
 CC = cl
 LINK = link
-CFLAGS = /O2 /DCURTERM=1 /fp:strict /GL /favor:INTEL64 /DNDEBUG=1 /DSPYNET=1 /I. /DNN_STATIC_LIB=ON /MD
+CFLAGS = /O2 /DCURTERM=1 /fp:strict /GL /favor:INTEL64 /DNDEBUG=1 /DSPYNET=1 /DSHLINKS=1 /I. /DNN_STATIC_LIB=ON /MD
 RM = del/q
 
 # Put any additional libraries here.
@@ -16,9 +16,9 @@ FDMOBJ	= k_standard.obj s_scalbn.obj s_scalbnf.obj s_ldexp.obj s_ldexpf.obj \
 	  e_fmod.obj e_remainder.obj e_sqrt.obj w_remainder.obj w_sqrt.obj
 
 SRC	= $(FDMSRC) gettimeofday.c \
-	  curterm.c arithmetic.c fparithmetic.c netcfg.c server.c p.c main.c
+	  curterm.c arithmetic.c fparithmetic.c netcfg.c shlink.c server.c p.c main.c
 OBJ	= $(FDMOBJ) gettimeofday.obj \
-	  curterm.obj arithmetic.obj fparithmetic.obj netcfg.obj server.obj p.obj main.obj
+	  curterm.obj arithmetic.obj fparithmetic.obj netcfg.obj shlink.obj server.obj p.obj main.obj
 
 t4.exe : $(OBJ)
 	$(LINK) $(OBJ) $(LFLAGS) /out:t4.exe

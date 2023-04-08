@@ -474,7 +474,7 @@ int maxNodeID (void)
 {
         int i, ret;
 
-        if (max_nodeid > 0)
+        if (max_nodeid >= 0)
                 return max_nodeid;
 
         ret = -1;
@@ -486,6 +486,7 @@ int maxNodeID (void)
                         ret = NetLinks[i].othernode;
         }
 
+        if (-1 == ret) ret = 0;
         max_nodeid = ret;
         return max_nodeid;
 }

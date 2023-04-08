@@ -10,15 +10,14 @@ extern int verbose;
 #include <stdlib.h>
 #include "shlink.h"
 
+static HANDLE hMapFile;
 
-void *shlink_attach (char *fnm, int size)
+void *shlink_attach (const char *fnm, int size)
 {
-        HANDLE hMapFile;
         char szName[256];
         void *addr = NULL;
 
-        strcpy (szName, "Local\\");
-        strcat (szName, fnm);
+        strcpy (szName, "T4SharedLinks");
 
         hMapFile = OpenFileMapping (
                         FILE_MAP_ALL_ACCESS,   // read/write access
@@ -41,12 +40,11 @@ void *shlink_attach (char *fnm, int size)
 
         if (addr == NULL)
         {
-                printf ("-E-EMU414: Could not map view of file (%d).\n"), GetLastError());
+                printf ("-E-EMU414: Could not map view of file (%d).\n", GetLastError());
                 CloseHandle(hMapFile);
                 return NULL;
         }
 
-        CloseHandle(hMapFile);
         if (verbose)
                 printf ("-I-EMU414: Attached SharedChannels at #%p.\n", addr);
 
@@ -56,20 +54,20 @@ void *shlink_attach (char *fnm, int size)
 int shlink_detach (void *addr)
 {
         UnmapViewOfFile (addr);
+        CloseHandle(hMapFile);
         return 0;
 }
 
-void *shlink_alloc (char *fnm, int size)
+void *shlink_alloc (const char *fnm, int size)
 {
-        HANDLE hMapFile;
         char szName[256];
+        void *addr = NULL;
 
-        strcpy (szName, "Local\\");
-        strcat (szName, fnm);
+        strcpy (szName, "T4SharedLinks");
 
         hMapFile = CreateFileMapping (
                         INVALID_HANDLE_VALUE,    // use paging file
-                        NULL,                    // default security
+                        0,     			 // default security
                         PAGE_READWRITE,          // read/write access
                         0,                       // maximum object size (high-order DWORD)
                         size,                    // maximum object size (low-order DWORD)
@@ -97,16 +95,14 @@ void *shlink_alloc (char *fnm, int size)
                 return NULL;
         }
 
-        CloseHandle (hMapFile);
-
         if (verbose)
                 printf ("-I-EMU414: Allocated SharedChannels at #%p.\n", addr);
         return addr;
 }
 
-void shlink_free (void)
+int shlink_free (void)
 {
-        return;
+        return 0;
 }
 
 #else

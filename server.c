@@ -269,20 +269,20 @@ int server (void)
                 activity++;
 	}
 
+        LinkWdesc = word (Link0Out);
         if (msgdebug || emudebug)
         {
                 if (ToServerLen + FromServerLen)
 	                printf ("-I-EMUSRV: To server buffer %d; From server buffer %d.\n", ToServerLen, FromServerLen);
+                printf ("-I-EMUSRV: linkWdesc = #%08X Link0OutLength = #%x.\n", LinkWdesc, Link0OutLength);
         }
-
-	if ((!usetvs && (FromServerLen == 0)) ||
+	if ((!usetvs && ((LinkWdesc != NotProcess_p) && Link0OutLength)) ||
             ( usetvs && (Link0InLength == 0)))
 	{
 		/* No messages leaving server, so server can handle the next incoming message. */
                 /* Check Link0Out for a valid process to see if there is a message.       */
                 /* Check the length register, because the channel control word may be written. */
                 /* Example: memory sizing in Minix demo. */
-                LinkWdesc = word (Link0Out);
 		if ((LinkWdesc != NotProcess_p) && Link0OutLength)
 		{
                         activity++;
@@ -361,7 +361,13 @@ int server (void)
 			}
 		}
 	}
-	else
+
+        LinkWdesc = word (Link0In);
+        if (msgdebug || emudebug)
+        {
+                printf ("-I-EMUSRV: linkWdesc = #%08X Link0InLength = #%x.\n", LinkWdesc, Link0InLength);
+        }
+	if ((LinkWdesc != NotProcess_p) && Link0InLength)
 	{
 		/* Can the next byte of outgoing message be transferred? */
                 /* Check the length register too. See notes at Link0Out. */

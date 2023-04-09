@@ -987,7 +987,7 @@ int linkcomms (char *where, int doBoot, int timeOut)
                                 if (msgdebug || emudebug)
                                         printf ("-I-EMUDBG: Link(2): ALT guard test - not ready to communicate.\n");
 
-			        /* The alt is waiting. Rechedule it? */
+			        /* The alt is waiting. Reschedule it? */
 				if (altState != Ready_p)
 				{
 				        /* The alt has not already been rescheduled. */

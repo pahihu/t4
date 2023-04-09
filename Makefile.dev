@@ -1,7 +1,7 @@
 # Choose a C compiler. (Must be ANSI C capable).
 # CC = cc -g
 # CC = cc -flto -march=native
-CC = gcc-mp-12 -ffloat-store -frounding-math -march=native
+CC = gcc-mp-12 -flto -ffloat-store -frounding-math -march=native
 #
 # 64bit emulator on Linux-x64, 32bit emulator on  Linux-armhf
 # CC = gcc -ffloat-store -frounding-math

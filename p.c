@@ -998,16 +998,20 @@ int linkcomms (char *where, int doBoot, int timeOut)
                                                         linkWdesc,
                                                         word (index (linkWPtr, Iptr_s)));
                                         }
-                                        if (Wdesc == linkWdesc)
-                                        {
-                                                printf ("-E-EMU414: schedule Wdesc=#%08X is running.\n", Wdesc);
-                                                handler (-1);
-                                        }
+                                        /* NB. HiPrio process executes J between ENBC and ALTWT.
+                                         *     D_check() calls linkcomms().
+                                         * if (Wdesc == linkWdesc)
+                                         * {
+                                         *        printf ("-E-EMU414: schedule Wdesc=#%08X is running.\n", Wdesc);
+                                         *         handler (-1);
+                                         * }
+                                         */
                                         /* Mark channel control word */
                                         writeword_int (channels[i]->LinkAddress, IdleProcess_p);
 
 					writeword (index (linkWPtr, State_s), Ready_p);
-                                        schedule (linkWdesc);
+                                        if (Waiting_p == altState)
+                                                schedule (linkWdesc);
 			        }
                         }
                         else
@@ -4081,10 +4085,10 @@ void start_process (void)
                 if (serve)
 		        active = 0 != server ();
 
-                /* XXX causes no activity
+                /* XXX causes no activity */
                 if (ProcessQEmpty && TimerQEmpty)
                         links_active = (0 != linkcomms ("idle", FALSE, LTO_BOOT));
-                else */
+                else
                         links_active = (0 != linkcomms ("running", FALSE, LTO_COMM));
                 active = active || links_active;
 

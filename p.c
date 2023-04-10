@@ -817,13 +817,64 @@ int Psend_channel (Channel *chan, uint32_t address, uint32_t len)
 #define recv_channel(c,a,n)     1
 #define send_channel(c,a,n)     Psend_channel(c,a,n)
 
+
+void alt_channel(Channel *chan)
+{
+        uint32_t linkWdesc, linkWPtr, linkPtr, altState;
+        linkWdesc = word (chan->LinkAddress);
+	/* Ready. */
+        linkWPtr  = GetDescWPtr(linkWdesc);
+	altState = linkPtr = word (index (linkWPtr, State_s));
+        if (msgdebug || emudebug)
+                printf ("-I-EMUDBG: Link(1): Memory address/ALT state=#%08X.\n", altState);
+	if ((altState & 0xfffffffc) == MostNeg)
+	{
+	        /* ALT guard test - not ready to communicate. */
+                if (msgdebug || emudebug)
+                        printf ("-I-EMUDBG: Link(2): ALT guard test - not ready to communicate.\n");
+
+	        /* The alt is waiting. Reschedule it? */
+		if (altState != Ready_p)
+		{
+		        /* The alt has not already been rescheduled. */
+                        if (msgdebug || emudebug)
+                        {
+                                printf ("-I-EMUDBG: Link(3): ALT state=Ready_p.\n");
+                                printf ("-I-EMUDBG: Link(4): Reschedule ALT process (Wdesc=#%08X, IPtr=#%08X).\n",
+                                        linkWdesc,
+                                        word (index (linkWPtr, Iptr_s)));
+                        }
+                        /* NB. HiPrio process executes J between ENBC and ALTWT.
+                         *     D_check() calls linkcomms().
+                         * if (Wdesc == linkWdesc)
+                         * {
+                         *        printf ("-E-EMU414: schedule Wdesc=#%08X is running.\n", Wdesc);
+                         *         handler (-1);
+                         * }
+                         */
+                        /* Mark channel control word */
+                        writeword_int (chan->LinkAddress, IdleProcess_p);
+
+			writeword (index (linkWPtr, State_s), Ready_p);
+                        if (Waiting_p == altState)
+                                schedule (linkWdesc);
+                }
+        }
+        else
+        {
+	        /* Ready. */
+                if (msgdebug || emudebug)
+                        printf ("-I-EMUDBG: Link(5): Ready, communicate.\n");
+        }
+}
+
 #define SCH_POLL        50
 
 int linkcomms (char *where, int doBoot, int timeOut)
 {
         struct nn_pollfd pfd[8];
         int npfd;
-        uint32_t linkWdesc, linkWPtr, altState, linkPtr;
+        uint32_t linkWdesc;
         Channel *channels[8];
         unsigned char data[MAX_DATA];
         int ndata;
@@ -976,50 +1027,7 @@ int linkcomms (char *where, int doBoot, int timeOut)
                 linkWdesc = word (channels[i]->LinkAddress);
                 if ((0 == ndata) && (NN_POLLIN == revents))
                 {
-		        /* Ready. */
-                        linkWPtr  = GetDescWPtr(linkWdesc);
-			altState = linkPtr = word (index (linkWPtr, State_s));
-                        if (msgdebug || emudebug)
-                                printf ("-I-EMUDBG: Link(1): Memory address/ALT state=#%08X.\n", altState);
-			if ((altState & 0xfffffffc) == MostNeg)
-			{
-			        /* ALT guard test - not ready to communicate. */
-                                if (msgdebug || emudebug)
-                                        printf ("-I-EMUDBG: Link(2): ALT guard test - not ready to communicate.\n");
-
-			        /* The alt is waiting. Reschedule it? */
-				if (altState != Ready_p)
-				{
-				        /* The alt has not already been rescheduled. */
-                                        if (msgdebug || emudebug)
-                                        {
-                                                printf ("-I-EMUDBG: Link(3): ALT state=Ready_p.\n");
-                                                printf ("-I-EMUDBG: Link(4): Reschedule ALT process (Wdesc=#%08X, IPtr=#%08X).\n",
-                                                        linkWdesc,
-                                                        word (index (linkWPtr, Iptr_s)));
-                                        }
-                                        /* NB. HiPrio process executes J between ENBC and ALTWT.
-                                         *     D_check() calls linkcomms().
-                                         * if (Wdesc == linkWdesc)
-                                         * {
-                                         *        printf ("-E-EMU414: schedule Wdesc=#%08X is running.\n", Wdesc);
-                                         *         handler (-1);
-                                         * }
-                                         */
-                                        /* Mark channel control word */
-                                        writeword_int (channels[i]->LinkAddress, IdleProcess_p);
-
-					writeword (index (linkWPtr, State_s), Ready_p);
-                                        if (Waiting_p == altState)
-                                                schedule (linkWdesc);
-			        }
-                        }
-                        else
-                        {
-			        /* Ready. */
-                                if (msgdebug || emudebug)
-                                        printf ("-I-EMUDBG: Link(5): Ready, communicate.\n");
-                        }
+                        alt_channel (channels[i]);
                 }
                 else
                 {

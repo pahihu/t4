@@ -155,6 +155,7 @@ void add_profile   (uint32_t);
 void print_profile (void);
 void open_channel  (uint32_t);
 Channel *reset_channel(uint32_t);
+void alt_channel   (Channel*);
 int channel_ready  (Channel *chan);
 void close_channels(void);
 int  linkcomms     (char *where, int doBoot, int timeOut);

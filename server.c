@@ -367,12 +367,11 @@ int server (void)
         {
                 printf ("-I-EMUSRV: linkWdesc = #%08X Link0InLength = #%x.\n", LinkWdesc, Link0InLength);
         }
-	if ((LinkWdesc != NotProcess_p) && Link0InLength)
+	if (LinkWdesc != NotProcess_p)
 	{
 		/* Can the next byte of outgoing message be transferred? */
                 /* Check the length register too. See notes at Link0Out. */
-                LinkWdesc = word (Link0In);
-		if ((LinkWdesc != NotProcess_p) && Link0InLength)
+		if (Link0InLength)
 		{
                         activity++;
 			/* Move the requested amount of message. */
@@ -453,6 +452,12 @@ int server (void)
 
 			}
 		}
+                else
+                {
+                        if (msgdebug || emudebug)
+			        printf ("-I-EMUSRV: Link0In ALT test. LinkWdesc=#%8X.\n", LinkWdesc);
+                        alt_channel (&Link[0].In);
+                }
 	}
         return activity;
 }

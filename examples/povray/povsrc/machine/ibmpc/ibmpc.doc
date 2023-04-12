@@ -1,0 +1,135 @@
+                  Persistence of Vision Raytracer
+                          Version 1.0 
+                    IBM-PC Specific Intructions
+                  -------------------------------
+
+This file contains the documentation specific to the IBM-PC version of
+POV-Ray. See POVRAY.DOC for general program info and installation
+instructions.
+
+  The executable POVRAY.EXE was compiled using the Intel Code Builder   
+32 bit protected mode compiler. A 386 or 486 and at least 2 meg of RAM
+are required to run this program. A math co-processor and VGA display
+are recommended.
+
+See IBMPCEXE.DOC for more info.
+
+-----------------------------------------------------------------------------
+
+Running POV-Ray:
+----------------   
+   POV-Ray is run from the command line by typing the program name,
+   povray.exe followed by command line options. 
+   For example,
+     
+     C:\POVRAY>povray +isimple.pov +osimple.tga +w160 +h120 +d -v +x
+   
+   Options may also be specified in a separate file, the name of which
+   is placed on the command line. Or they may be specified in the
+   environment variable, POVRAYOPT, as in:
+   
+   set POVRAYOPT=+w160 +h120 +x +d0 -v
+   
+   The environment variable is good for setting global default options
+   that will be in effect no matter what directory you're working in.
+   Options on the command line override the environment variable.
+   It is recommended to set the environment variable in your AUTOEXEC.BAT
+   file and to add the directory containing POVRAY.EXE to your path
+   statement in your AUTOEXEC.BAT file.
+   
+   There is also at least one third-party utility available
+   that runs POV-Ray from within Micorsoft Windows and provides an 
+   easy interface for picking files and setting options. 
+   
+   POV-Ray outputs Targa (.TGA) files which need to be converted before
+   they can be viewed on a standard VGA. See file section below for more
+   info.
+
+----------------------------------------------------------------------------
+   
+Command Line Display Options:
+-----------------------------
+POV-Ray can display a rough version of the scene file while it creates
+the image by using the options listed below. To learn how to see the file 
+in its final form, see the files section below.
+
++d   = Alone, will autodetect the display type and display the image 
+       to the screen as it's being worked on. Try specifying the display
+       type explicitly if autodetect doesn't work. +d? will invoke a
+       message to report what display POV-Ray is detecting.
+
+-v   =  Usually, you should use -v in conjunction with +d. This 
+        will turn off the line number text display. It will work
+        with some display options. You can experiment to see which.
+
++d#p = The first character after d is the display type, resolution is 
+       automatically selected. The second character is the palette type
+       or color selection method.
+
+Some Examples
+--------------
++d0h = Autodetect the VGA display type
+       and display the image to the screen
+       as it's being worked on.
+       Use the Sierra HiColor chip and
+       dithering to display more than 32,000
+       colors on screen. Looks great!
++d1  = Display to standard VGA screen 320x200.
+       Try this if your SVGA display is not supported.
++dG0 = Display to a VESA VGA adapter and
+       use the HSV palette option.
++dG3 = Display to a VESA VGA adapter and use 
+       the 332 palette option.
++d4  = Display to a TSENG 400 chipset VGA using
+       the 332 palette option.
+
+If your card isn't autodetected correctly try all the options. 
+If no option works, just use +d1 for standard VGA.
+
+DISPLAY OPTIONS:
+    +d0     Autodetect (S)VGA type (Default)
+    +d1     Standard VGA 320x200
+    +d2     Standard VGA 360 x 480
+    +d3     Tseng Labs 3000 SVGA 640x480
+    +d4     Tseng Labs 4000 SVGA 640x480
+    +d5     AT&T VDC600 SVGA 640x400
+    +d6     Oak Technologies SVGA 640x480
+    +d7     Video 7 SVGA 640x480
+    +d8     Video 7 Vega (Cirrus) VGA 360x480
+    +d9     Paradise SVGA 640x480
+    +dA     Ahead Systems Ver. A SVGA 640x480
+    +dB     Ahead Systems Ver. B SVGA 640x480
+    +dC     Chips & Technologies SVGA 640x480
+    +dD     ATI SGVA 640x480
+    +dE     Everex SVGA 640x480
+    +dF     Trident SVGA 640x480
+    +dG     VESA Standard SVGA Adapter 640x480
+    +dH     ATI XL display card
+
+PALETTE OPTIONS:
+    +d?3 Use 332 palette with dithering 
+        (Default and best for VGA systems)
+    +d?h Use Sierra HiColor option. Displays 
+         32,000+ colors with dithering. Looks great!
+    +d?0 Use HSV palette option for VGA display
+    +d?G Use Grayscale palette option for VGA display
+    +d?T For Truecolor 24 bit cards. Use 24 bit color.
+
+-----------------------------------------------------------------------
+
+File Formats:
+-------------
+   The default file format for the IBM-PC is Targa (+ft). This format 
+is a 24 bit color image allowing over 16 million colors to be created.
+Most IBM-PC systems do not have the capability to directly display
+Targa images. They must be converted to 256 color GIF images so they
+can be viewed on a VGA or SVGA display. To convert a TGA file to a GIF
+file, get a copy of  PICLAB or Image Alchemy which can be found from
+the same source as the POV-Ray files. The program documentation
+of these programs describes how to convert a TGA to a GIF.
+
+  Many SVGA cards now have a Sierra HiColor chip for 16 bit color.
+Get a copy of the program TGVIEW and you can see your rendered images
+in "almost" full color without converting them to a GIF file.
+
+   

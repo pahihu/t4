@@ -1,0 +1,40 @@
+Persistance of Vision Raytracer Version 1.0
+Files contained in level1.zip
+-----------------------------
+ALPHAFUN.POV  <- Some interesting tricks using alpha components.
+BALLBOX1.POV  <- Sphere sits inside cage.  CSG, box, octaves examples.
+BASICVUE.POV  <- A good starting point for new images.  Keep a copy around.
+BLOB.POV      <- Demonstrates use of blob primitive
+BOX.POV       <- Demonstrates use of box primitive
+BUMPMAP.ZIP   <- Fractal image bumped into a blue sphere.
+    BUMPMAP.POV   <- Data file
+    BUMPMAP_.GIF  <- Mandelbrot fractal for mapping  
+CANTELOP.POV  <- Simple, but interesting CSG and ONION example.
+CHECKER2.POV  <- Sphere with checkerboard cutouts.  More tricks w/alpha.
+CLIPTST2.POV  <- A (new) example of the clipping function.
+COLORS.POV    <- Reference image to all of the colors in COLORS.INC
+DISH.POV      <- Satellite dish by Aaron Collins.  Add-Ur-Own textures.
+DODEC2.POV    <- Various new wood textures displayed on tetrahedrons.
+FOGTST.POV    <- A demonstration of atmospheric fog.
+GLASS.POV     <- Example of refraction, ior.  Simple.
+GLASSDISH.POV <- Swedish-style crystal dish.  Uses Glass3 texture.
+IMAGETST.POV  <- Example of spherical and planar imagemapping.
+INTEE1.POV    <- Intersected Tee of cylinders.  Nice stone texture!
+LASER.POV     <- Tricks with spotlights and alpha color values.
+LEVEL1.CAT    <- This description file
+MAPPER.POV    <- Another example of spherical and planar imagemapping.
+MAPPR2.POV    <- Example of imagemaps on cylinder, hyperboloid & paraboloid.
+MATMAP.POV    <- Sample of material mapping.
+PVINTERP.POV  <- Compares bilinear and norm dist interpolation on split sphere.
+SHAPES.POV    <- Uses one of every shape in SHAPES.INC
+SHAPES2.POV   <- Uses one of every shape in SHAPES2.INC
+SPOTLITE.POV  <- Demonstration of spotlight useage.
+STONE1.POV    <- Shows textures from STONES.INC
+STONE2.POV    <- Shows textures from STONES.INC
+STONE3.POV    <- Shows textures from STONES.INC
+STONE4.POV    <- Shows textures from STONES.INC
+SUNSET.POV    <- A classic David Buck original.
+SUNSET1.POV   <- A variation of SUNSET.POV, ??
+TEXTURE1.POV  <- Illustrates the first 27 textures from TEXTURE.INC
+TEXTURE2.POV  <- Illustrates the remaining textures from TEXTURE.INC
+WINDOW.POV    <- Environment shading, I guess you could call it. Aaron Collins.

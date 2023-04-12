@@ -1,0 +1,387 @@
+
+                 Persistence of Vision Raytracer
+            Standard Textures Include File Documentation
+
+Textures are the materials that shapes and objects in POV-Ray are made
+out of. It is possible to define almost infinite textures in POV-Ray
+ranging from red marble, to pink alabaster, to shiny gold, to rippling
+water.
+
+The files TEXTURES.INC and STONES.INC contain many pre-defined textures
+created by POV-Ray users. You can easily use these high-quality textures
+in your own scene files by adding the lines,
+   
+   #include "colors.inc"
+   #include "textures.inc"
+or
+   #include "colors.inc"
+   #include "stones.inc"
+or
+   #include "colors.inc"
+   #include "textures.inc"
+   #include "stones.inc"
+
+to the top of your scene file. Then, use the texture names described
+below wherever you would normally place an entire texture definition.
+For example,
+
+   sphere { <0 0 0> 1 texture { Texture_Name } }
+
+or
+
+   object {
+       intersection { Logo }
+       texture {
+         Texture_Name
+       }
+   }
+
+These pre-defined textures may be scaled, translated, and rotated 
+like any other texture. For example,
+   
+   object {
+       intersection { Logo }
+       texture {
+         Texture_Name
+         rotate <-90 0 0> // rotate texture only
+       }
+      scale <5 3 2>  // scale shape and texture
+   }
+
+
+You may also modify them by placing texture parameters after the 
+Texture_Name. For example,
+   
+   object {
+       intersection { Logo }
+       texture {
+         Texture_Name
+         agate         // Use the agate color pattern instead.
+         phong 1       // Make the texture shiny
+         reflection .5 // and reflective.
+       }
+   }
+
+You can easily create great looking scenes by invoking these pre-defined
+textures with the shapes you create. Note that each texture definition
+takes a bit of memory. If you are running out of memory, try copying the
+individual textures out of these two files that you want to use instead
+of including the entire file.
+
+-------------------------------------------------------------------------
+
+-What this document is, and what it is not:
+
+This file is intended to be used as a quick reference to the textures
+in the textures.inc file.  This won't tell you all you need to know about
+any of these surfaces, but it should help you in picking what you want or
+to look up the correct spelling of a name.  You will also find it valuable
+to browse through the textures file from time to time.  There are a few
+comments that aren't duplicated in this file.
+
+This document is at times biased by my own preferences, but also by
+considerable experimention and experience.  Nevertheless, don't take
+anything I say in this text as pure, absolute fact.  Try things out
+yourself and see what the result is.
+
+After the quick reference, you'll find some handy tips on textures.
+
+-R&D Dept:
+
+You are strongly encouraged to develop your own custom version of these
+textures, and to develop your own new surfaces.  Please share the nice ones
+with the folks that are sharing this with you.  Who knows... it might be
+in the next release.  Oh... if you share a file with someone, please make
+sure that any custom textures, colors, or shapes are included.  Saves lots
+of frustration on the recipient.
+
+There are a number of textures in here that could be improved on.  Please
+don't take anything in the textures files for "gospel".  Everything can
+be improved upon.  Manipulate turbulence, octaves.  Try Jade using granite
+instead of marble.
+
+
+-About the textures file:
+These textures have generally been scaled to fit best onto a "unit" object,
+for example, on a sphere with radius of 1.  Rescale accordingly.  Remember,
+scaling larger puts less of the texture *features*  into a given area.
+
+Note: You MUST include colors.inc BEFORE textures.inc.  Many of these
+textures use declared color names and POV-Ray won't like it if they haven't 
+been defined when it's parsing the textures!
+
+    - Dan Farmer
+
+
+
+-Textures file #1, contents, with comments.
+
+Stone Textures      My personal opinions, for what it's worth.  -dmf
+--------------
+Jade           Swirled jade.  Try with agate, too!
+Red_Marble     A bit overworked and unrealistic, but a classic.
+White_Marble   Nice for an underlying texture with another marble, too.
+Blood_Marble   Does this one really need a description? You'll try it, anyway!
+Blue_Agate     Another classic.  Kind of blue-gray or purplish.
+Sapphire_Agate Very nice, velvety dark blue stone.
+Brown_Agate    Pretty tawny brown on white.
+Pink_Granite   Black, white, and orange granite.
+Pink_Alabaster Soft gray/rose alabaster. Subtle and beautiful!
+
+Sky Textures  - Manipulate the scale and the turbulence for best results.
+-----------
+Blue_Sky         Your basic blue sky, with clouds.
+Blue_Sky2        Variation on basic blue sky, with clouds.
+Blue_Sky3        Variation on basic blue sky, with small puffy clouds.
+Bright_Blue_Sky  Bright blue sky with whiter-than-white clouds.
+Blood_Sky        Drastic red sky with stormy yellow clouds.  Surrealistic.
+Apocolypse       Black sky with red and purple clouds.  Another CdW dreamscape.
+Clouds           Clouds with a clear sky.  Generally has a blue sphere behind.
+
+Wooden Textures - Again, try manipulating scale, translation, and turbulence.
+---------------
+
+Cherry_Wood      A light reddish wood.
+Pine_Wood        Light tan wood with greenish growth rings.
+Dark_Wood        Dark wood with a greenish hue to it.
+Tan_Wood         Light tan background with brown rings.
+White_Wood       A very pale wood with tan rings -- kind of balsa-ish.
+Tom_Wood         Brown wood - looks stained.
+
+Dan Farmer woods
+DMFWood1         Kind of like cedar, maybe?
+DMFWood2         Light colored wood.
+DMFWood3         Rosewood, very pretty red/black.
+DMFWood4         Another light, piney wood.
+DMFWood5         Grayish-tan.
+DMFLightOak      A very realistic looking fresh white oak surface.
+DMFDarkOak       Similar to DMFLightOak, but with a typical oak stain.
+Cork             A very realistic looking cork texture
+
+Doug Otwell woods
+Yellow_Pine       A beautiful yellow pine.
+Rosewood          Deep red/black woodgrain.
+Sandalwood        Highly turbulated creamy-gray.  Great burled maple, too!
+
+Surface Textures
+----------------
+Dull             We all know somebody like this guy, don't we? Uses specular.
+Shiny            Small, tight highlights.  No reflection.      Uses specular.
+Phong_Dull       Like a soft rubber ball or flat paint.
+Phong_Shiny      Some say that phong is less worthy than specular. I use this.
+Glossy           Shinier than shiny.  Has some reflection included.
+Phong_Glossy     Similar to Glossy, but uses phong.  Very tight highlight.
+Luminous         Good for sky-spheres, no shadows will be cast on it.
+Mirror           A perfect mirror.  The raytraced sphere classic.
+Glass            Clear glass.  May want to add Gloss.
+Glass2           Probably more like acrylic plastic. Softer gloss that glass.
+Glass3           An excellent grayish lead crystal. New with POV-Ray 1.0.
+Green_Glass      Glass3 with a pale green tint to it.
+
+Metal Textures
+--------------
+Metal           Add your own color before using this one.
+
+                The following textures are referred to by two names,
+                one (hopefully) for historic purposes only.  I wanted to
+                use simple "Brass" and "Silver" but it interferes with the
+                colors of the same names.
+
+Chrome_Metal     (preferred name)      Chrome_Texture  (historical name)
+Brass_Metal      (preferred name)      Brass_Texture   (historical name)
+Gold_Metal       (preferred name)      Gold_Texture    (historical name)
+Bronze_Metal     (preferred name)      Bronze_Texture  (historical name)
+Copper_Metal     (preferred name)      Copper_Texture  (historical name)
+Silver_Metal     (preferred name)      Silver_Texture  (historical name)
+
+Brass_Valley    Hmmmm... something like "Black Hills Gold".
+Rusty_Iron      Just like my car.
+Rust            Just like my car's finish.
+
+Special Effect Dept
+-------------------
+Candy_Cane      Red and white barber pole.
+Peel            Orange and transparent spiral stripes. Use it to emulate
+                the artist M.C. Escher.
+X_Gradient      Here as an example more than as a useful texture
+Y_Gradient      Here as an example more than as a useful texture
+Z_Gradient      Here as an example more than as a useful texture
+Water           Requires a sub-surface.  Has transparency and ripples.
+
+Texture from stones.inc:
+
+           This file contains #Declared texture statements defining a variety
+           of Granite & Marble Textures. Most use the Granite Texture.
+           Turbulence has no effect on Granite, but turbulence is stated 
+           before the Color Map for convenience of switching to Marble, which 
+           does need a turbulence to swirl the color. I tried to avoid using 
+           a random Dither, but I find it helps create a subtle grain & can 
+           spark lost colors in the map. On multi-layered texture, try a float
+           of about 0.05 on the first texture. -- Mike Miller
+            
+        INDEX:
+        GRNT0  - GRNT20   color maps containing no alpha values
+            grnt0  - Gray with Rose
+            grnt1  - Creamy Whites with yellow & light gray
+            grnt2  - Deep Cream with light rose orchid & tan
+            grnt3  - Warm tans olive & light rose with cream
+            grnt4  - Orchid sand & mauve
+            grnt5  - Medium Mauve Med.Rose & deep cream
+            grnt6  - Med. Orchid Olive & Dark Tan "mud pie"
+            grnt7  - Dark Orchid Olive & Dark Putty
+            grnt8  - Rose & Light cream Yellows
+            grnt9  - Light Steely Grays
+            grnt10 - Gray Creams & lavender tans
+            grnt11 - Creams & Grays
+            grnt12 - Tan Cream & Red Rose
+            grnt13 - Cream Rose orange
+            grnt14 - Cream Rose & light moss
+            grnt15 - Black with subtle chroma
+            grnt16 - White Cream & Peach
+            grnt17 - Bug Juice & Green
+            grnt18 - ??
+            grnt19 - ??   (This one does have some transparency-dmf)
+            grnt20 - Gray Marble with White feather Viens
+
+        GRNT0A - GRNT20A  color maps containing alpha
+            grnt0a -grnt7a- ???
+            grnt8a  - Aqua Tints
+            grnt9a  - Alpha Creams With Cracks
+            grnt10a - Alpha Cream Rose & light yellow
+            grnt11a - Alpha Light Grays
+            grnt12a - Alpha Creams & Tans
+            grnt13a - Alpha Creams & Grays
+            grnt14a - Cream Rose & light moss
+            grnt15a - Alpha Sand & light Orange
+            grnt16a - Cream Rose & light moss (again?)
+            grnt17a - ???
+            grnt18a - ???
+            grnt19a - Gray Marble with White feather Viens with Alpha
+            grnt20a - Black/Gray Marble
+
+        CRACK1 & CRACK2   clear with an thin opaque band for cracks
+            crack1 - Crack & Red Overtint
+            crack2 - Translucent Dark Cracks
+
+        OTHERS
+            marb3 - Warm tans & light rose with cream (opaque)
+            marb9 - Light Grays (opaque)
+
+        STONE1 - STONE16  complete texture statements - edit to your
+                          scene & lighting situations.
+
+            stone1 - LightCream
+            stone2 - Cream & sand
+            stone3 - Cream Stone with warm swirls
+            stone4 - Cream Stone with larger warm swirls
+            stone5 - Cream Stone with warm swirls
+            stone6 - Cream Stone with warm swirls
+            stone7 - Cream Stone with warm swirls
+            stone8 - Cream Stone with warm swirls
+            stone9 - Cream Stone with warm swirls
+            stone10- Cream Stone with warm swirls
+            stone11- Cream Stone with warm swirls
+            stone12- Light Cream
+            stone13- Light Cream
+            stone14- Light Cream
+            stone15- Light Cream
+            stone16- Light Cream
+
+           Final Note: I would not "INCLUDE" this whole data file into a scene
+                       file if only one or two of these textures were being 
+                       used...There are too many declares being used.
+                      - Mike Miller
+
+
+------------------------- OTHER STUFF -------------------------------------
+
+                     STONE TEXTURES
+
+I think you will find that in most cases, to put a marble or to a
+lesser degree, agate, texture onto an x/z plane, you will get the best
+results by rotating the final texture by <0 0 90>.  This will give a
+less directional noise to the marbling.
+
+Don't overlook the granite texture.  You can do a lot more than granite
+with it by changing colors, scale, and turbulence.
+
+The onion texture makes a superb marblized surface if you give it enough
+turbulence, and it lacks the  directional quality of the built-in
+marble.  This is essentially the same texture as the "spherical" texture in
+the Vivid raytracer and can be used in much the same ways.
+
+The file "stones.inc" contains a number of other stone textures, these by
+POV-Ray artist Mike Miller.  Be sure to check these out... they'll "blow your
+socks off"!
+
+
+                          WOODEN TEXTURES
+
+Note:  Wood is designed like a "log", with growth rings aligned along
+the z axis.  Generally these will look best when scaled down by about
+a tenth (to a unit-sized object).  You may want to try using a smaller
+value for the turbulence with these textures, too (try around 0.05
+for starters).
+
+The scaling in these definitions is relative to a unit-sized object
+(radius 1).  Note that woods are functionally equivilent to a log lying
+along the z axis.  For best results, think like a woodcutter trying to
+extract the nicest board out of a log.  A little tilt along the x axis
+will give elliptical rings of grain like you'd expect to find on most boards.
+Experiment.
+
+
+                     SURFACE TEXTURES
+
+Glass and mirrors are tough things to render, although at the same time,
+they are the forte of raytracing.  The reason I say that they are tough is
+that the effect is stronly dependant upon the environment.  Look closely at
+a glass or bottle or a piece of silverware and you'll see what I mean.  The
+color of the object comes primarily from the surroundings, and very little
+from the object itself.
+
+The mirror defined in the textures file is a "perfect" mirror.  You won't even
+find that in Sandia Labs laser lab.  But, hey... raytracing isn't reality, is
+it?  Still, if you're trying to model glass or mirror with the intent of
+modelling "reality",  you will probably want to add a touch of diffuse
+color to the texture and manipulate some of the other values until you get
+what you're looking for.  Discovery is half the fun!
+Oh... sometimes a touch of "brilliance" will look good on mirror and glass,
+too.
+
+
+                          OTHER THOUGHTS
+
+As you use these textures,  remember that you can "borrow" one of these
+textures and modify it by either adding other qualities, or by changing
+qualities that are declared in the definition.  For example,
+
+    texture {
+        Jade                   // Use Jade coloring
+        onion                  // Use onion pattern instead of marble
+        turbulence 0.7         // "Over-write" Jade's high turbulence
+    }
+
+The best way to learn about any given texture is simply to take some time
+and play with it.  The first thing I would recommend is to map it onto
+a unit object.  Set turbulence to 0.  Use default scaling.
+
+For the following textures, I'd recommend these shapes:
+
+    wood      intersection { Z_Disk }.
+    marble    box { UnitBox }.
+    agate     box { UnitBox }.
+    onion     cut a sphere in half with CSG.  Flat side facing camera.
+    leopard   sphere.
+    granite   just about anything.
+    checker   box { UnitBox }.
+    bozo      just about anything.
+
+
+
+You can achieve some spectacular results by layering textures, but it can
+also get frustrating sometimes.  The method is generally to use a color map
+on the top surfaces that has some sort of a blend between a color and clear
+white.  As the color and the clear blend together, you will get varying
+degrees of "semi-clear" white that will modify the underlying color in ways
+that you may not have planned on.  Once again, experiment.

@@ -1,0 +1,13 @@
+system dos4g
+option map=povray
+option stub=wstubq.exe
+option verbose
+option stack=12032
+name povray
+file povray,bezier,colour,csg,dump,hfield,lighting
+file matrices,objects,planes,poly,prioq
+file quadrics,raw,ray,render,spheres,point,boxes
+file targa,texture,triangle,txtbump,txtcolor,blob
+file txtmap,txttest,vect,viewpnt,ibm
+file iff,gif,gifdecod,tokenize,parse
+library ai.lib

@@ -1,0 +1,69 @@
+This file contains the documentation specific to the VAX/VMS version of
+POV-Ray.
+
+Differences from original distribution:
+   The original distribution of POV-Ray is in ZIP format.  For VMS,
+   this has been converted to a backup save set.  In addition, the VMS
+   distribution of POV-Ray has CR-LF pairs converted to only CR's for text
+   files.  Otherwise, the VAX/VMS distribution is identical to the ZIP
+   distribution.
+
+Note: PLEASE SEE POVLEGAL.DOC.  The VMS version in backup format is an
+   officially supported format and can be distributed as is.  You MAY NOT
+   re-package the archive file or distribute any changes to it.  If you
+   do post it on a BBS or network, you must provide at least the data
+   files and documentation files with the executables.  See POVLEGAL.DOC
+   for complete details.
+
+Executables:
+
+   Both object and executable files are provided.  They have been compiled
+   and linked under VMS 5.3-1.  The executable is called POVRAY.EXE.
+   
+Running POV-Ray:
+   Assign a foreign symbol to the executable.  The syntax is:
+      povray :== $<your_disk>:[<directory>]povray
+   An example symbol might look like:
+      povray :== $dua100:[povray.build]povray
+
+   When running POV-Ray, be sure that you have a large working set.
+
+File Formats:
+   The default file format for the Amiga is "dump" format (+fd).  Targa or
+   raw may be specified on the command line or in the povray.def file.
+
+Building the source:
+   POV-Ray was compiled using VAX C version 3.1.  I'm sure that later
+   versions will also work fine.  If you're compiling with another compiler,
+   you may have to edit the build procedure to set the proper compiler
+   options.  As far as that goes, you're on your own.
+
+   To compile POV-Ray from the original source, follow the following
+   instructions:
+
+      1) copy the files in the "source" directory into a "build" directory
+      2) copy the files in [.source.machine.vms] to the build directory
+      3) rename vaxconf.h to config.h
+      4) execute "@vaxbuild"
+
+Post-processing Images:
+   POV-Ray images can be post-processed using the PBMPLUS utilities.
+
+Diplaying Images:
+   There are many utilities available for displaying POV-Ray files.  For 
+   myself, I usually convert them to PBMPLUS format and use the xloadimage
+   utility.  I have heard that the xv utility may be able to display 
+   QRT/DKBtrace files (which is what these are) directly.  Both xv and 
+   xloadimage are available via FTP from Black.Cerritos.Edu and 
+   White.Cerritos.Edu.  There is also a mail server available via 
+   MAILSERV@Cerritos.edu.  Place the one line command 'help' in the body of
+   the message for more information.
+
+   For those with a Postscipt printer, you can use PBMPLUS to convert POV-Ray
+   files to Postscript and then print them.
+
+Questions and problems in the VAX/VMS version can be directed to the Usenet 
+group COMP.GRAPHICS.
+
+Dean Nedelman
+Internet:   sysmgt007@spacm1.spac.spc.com

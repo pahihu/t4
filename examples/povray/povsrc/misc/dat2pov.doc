@@ -1,0 +1,156 @@
+                  Persistence of Vision Raytracer
+                            Version 1.0 
+                        DAT2POV Intructions
+                  -------------------------------
+
+DAT2POV is a simple DKBTrace and POV-Ray V0.5 BETA to POV-Ray V1.0 
+scene file converter. If you've never used POV-Ray or DKBTrace before
+and you don't have any old style scene files you don't need to use this
+program.
+
+-------------------------------------------------------------------------
+
+ Usage is...
+    
+    DAT2POV < filename.dat > filename.pov
+    
+ For example,
+ 
+    C:\POVRAY\SCENE>DAT2POV < panther.dat > panther.pov
+  
+   will read the POV-Ray V0.5 scene file panther.dat in and convert it to a
+new file, panther.pov in POV-Ray V1.0 format. Light sources have to be
+converted by hand, but the rest is done automatically. Converting light 
+sources is described below.
+
+-------------------------------------------------------------------------
+ Conversions made by DAT2POV
+-------------------------------------------------------------------------
+
+Comments in the form of { ... } are changed to /* ... */
+
+The resulting scene file will have the all uppercase keywords converted 
+to lower case. For instance, MARBLE will be marble.
+
+Instead of 
+  
+  KEYWORD 
+    ... 
+  END_KEYWORD 
+
+the new format is 
+  
+  keyword { 
+    ... 
+  } 
+  For instance,
+  
+  OBJECT 
+    ... 
+  END_OBJECT 
+  
+  becomes
+  
+  object { 
+    ... 
+  } 
+ 
+
+Several keywords that were one are divided by an underscore.
+  BUMPSIZE   = bump_size
+  PHONGSIZE  = phong_size
+  IMAGEMAP   = image_map {
+  BUMPMAP    = bump_map {
+  
+  
+These conversions are also made.
+  VIEW_POINT = camera {  
+  CRed       = Red
+  CGreen     = Green
+  CBlue      = Blue  
+  QSphere    = Ellipsoid
+  Sphere     = Ellipsoid
+  Cone_X     = QCone_X
+  Cone_Y     = QCone_Y
+  Cone_Z     = QCone_Z
+  X_Disk     = Disk_X
+  Y_Disk     = Disk_Y
+  Z_Disk     = Disk_Z
+
+  colors.dat   = colors.inc
+  shapes.dat   = shapes.inc
+  shapesq.dat  = shapes.inc
+  textures.dat = textures.inc
+  
+  INCLUDE = #include
+  DECLARE = #declare
+  
+  CHECKER_TEXTURE = tiles {
+    
+---------------------------------------------------------------------------
+Light Sources
+---------------------------------------------------------------------------
+  
+NOTE: Light sources are not converted by this program and must be 
+      converted manually. 
+
+Old light source format was:
+
+  OBJECT
+     SPHERE <0 0 0> 1 END_SPHERE
+     TEXTURE COLOR White AMBIENT 1 DIFFUSE 0 END_TEXTURE
+     TRANSLATE <1 2 3>
+     LIGHT_SOURCE
+     COLOR White
+  END_OBJECT
+
+Here's how this translates to POV-Ray Beta and DKBTrace internally,
+
+ A bright white sphere is created at 0,0,0 and translated to the point
+ 1,2,3. Then the program is told to put an invisible point light source
+ at the center of the white sphere and make the sphere transparent to this
+ light. If the sphere were not transparent, the light from the point
+ light source couldn't get out of the sphere. 
+ COMMON MISUNDERSTANDING:
+   Many users thought that the sphere was a light source and that the
+   texture and size of the sphere had some effect on the light source.
+   This wasn't the case. The sphere was just a visible shell for the
+   light_source. The actual light source was an invisible point.
+   In most scenes, the sphere shell wasn't even visible and it just 
+   added an extra object to calculate.
+   Also, light sources could be added to a composite object, but not
+   a CSG object.
+   Version 1.0 changes the format for the better.
+   
+  To duplicate the light source above, you would type:
+
+  object { 
+     union {
+       sphere { 
+         <1 2 3> 1 
+         texture { color White ambient 1 diffuse 0 }
+       }
+       light_source { <1 2 3> color White }
+     }
+    no_shadow
+   }
+ 
+   Light_source is now a shape type of its own and can be used anyplace
+a regular shape type can. Keep in mind that it is not visible and textures
+do not affect it. The no_shadow keyword can be used on any object and
+makes it transparent to all light so that it doesn't cast a shadow.
+
+The only color that affects the light is the one inside the braces
+after light_source. The brightness of a light is its color. White is
+the brightest light, grey would be a dim light and so on.
+
+A better way to specify most lights is:
+  
+  object { 
+       light_source { <1 2 3> color White }
+   }
+
+That's no nonsense and cuts to the heart of the matter. 
+
+The syntax for a light_source is:
+       light_source { <location> color (color) }

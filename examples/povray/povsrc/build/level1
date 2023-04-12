@@ -1,0 +1,68 @@
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/alphafun.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/ballbox1.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/basicvue.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/blob.pov     -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/box.pov      -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/cantelop.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/checker2.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/cliptst2.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/colors.pov   -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/dish.pov     -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/dodec2.pov   -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/fogtst.pov   -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/glasdish.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/glass.pov    -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/imagetst.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/intee1.pov   -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/laser.pov    -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/mapper.pov   -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/mappr2.pov   -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/matmap.pov   -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/pvinterp.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/shapes.pov   -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/shapes2.pov  -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/spotlite.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/stone1.pov   -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/stone2.pov   -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/stone3.pov   -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/stone4.pov   -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/sunset.pov   -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/sunset1.pov  -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/texture1.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/texture2.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/texture3.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/window.pov   -w640 -h480 -v -f +d > povray.def
+pov

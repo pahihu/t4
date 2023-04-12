@@ -1,0 +1,21 @@
+
+  Persistence of Vision Raytracer Version 1.0
+  -------------------------------------------
+
+  These are the standard include files for POV-Ray. They are bundled 
+  with the example scene description files.
+  
+  To use the POV-Ray ray tracer, you also need POVDOC.ZIP for documentation, 
+  and an executable for your computer. See the file POVINFO.TXT for
+  more information.
+
+  These files should be available from the same source from where 
+  you received this file.
+  ------------------------------------------------------------------------
+  The standard include files contain pre-defined scene elements to 
+  ease the task of creating scene descriptions. The use of these files
+  is explained in POVRAY.DOC and TEXTURES.DOC. The example scene files
+  also show many different uses of these files. 
+  
+   Good luck and have fun ray tracing!
+

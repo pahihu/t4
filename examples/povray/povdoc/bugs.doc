@@ -1,0 +1,86 @@
+                  Persistence of Vision Raytracer
+                          Version 1.0 
+                          Bug Reports
+                  -------------------------------
+                 
+This document describes the best method for reporting problems and
+then list some known problems with POV-Ray. 
+
+-------------------------------------------------------------------
+Reporting Problems
+-------------------------------------------------------------------
+
+The best method for reporting problems is to create the smallest 
+possible scene file that duplicates your problem and post it as
+a message in CompuServe's COMART forum section 16 along with a 
+description of the problem. All of the POV-Team regularly checks
+in there, as well as many other intelligent, talented people who
+love to help out. Most problems are solved very quickly this way.
+Alternately, you may send mail to any of the primary authors
+listed in POVRAY.DOC, "Contacting the Authors".
+
+We receive many great letters with compliments, suggestions, and 
+problem reports. The problem reports are often very vague and 
+difficult to pin down. POV-Ray is a very complex program and it runs
+on many different computers. To find the cause of a problem, we
+need as much specific information as possible and hopefully, a 
+small scene file that demonstrates the problem. Here's a list
+of info that would be helpful to send to us when reporting a problem:
+
+  1: What is your computer setup?
+    1a: What is the software and hardware configuration of your computer
+    1b: Have you tried using the simplest configuration of your computer
+        to test the problem? (ie. no memory resident software, no tricky
+        utilities loaded.)
+    1c: What version of the software are you using? (ie. 1.0ibc 1.0tc5)
+  
+  2: Have you experienced this problem on another computer?
+  
+  3: Have you heard other reports of this problem?
+  
+  4: Has this always been a problem or did it ever work correctly before?
+  
+  5: Can you pinpoint the problem to a certain line or block of 
+     lines in a scene file?
+     
+  6: Can you reliably duplicate the problem and describe the steps to 
+     duplicate it?
+
+  7: Have you experienced the problem in more than one scene file?
+  
+  8: Are you experiencing the problem with one of the executables released
+     by the POV-Team, or is this your own compiled executable?
+     
+  9: If you have modified your personal copy of the source, can you
+     duplicate the problem with an unmodified copy of the source? 
+
+--------------------------------------------------------------------------
+Known Problems
+--------------------------------------------------------------------------
+
+ :: Height fields used as clipping shapes may cause the program to 
+    abort with an error. Height fields are not meant to be used as
+    clipping shapes currently, so this problem is low priority.
+    
+ :: Roughness 0 will cause the program to abort with a math error.
+ 
+ :: Very low values of roughness ( <.001 ) will cause math errors
+    on some computers, notably the Amiga. 
+ 
+ :: Scaling any component by zero (scale <2 0 3>) will cause the program
+    to abort with a math error.
+
+ :: The IBM-PC display code autodetect is not perfect. Try using 
+    different display modes described if IBMPC.DOC if +d0 doesn't
+    work correctly for you.
+    
+ :: Error messages are often cryptic. See POVERR.DOC for help with this.
+ 
+ :: Blobs and quartics will not always render correctly. Noise appears on
+    the screen or holes in the shape. This is caused by numberical 
+    inaccuracies in your computer. Try adding the sturm keyword to the
+    shape's definition to use a more accurate, but slower method of
+    computing the shape. This won't always work, either, and you
+    may just have to use a different shape.
+ 
+ :: Layered textures don't work correctly with tiles or material_maps

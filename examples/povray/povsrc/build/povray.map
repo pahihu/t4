@@ -1,0 +1,626 @@
+icollect : INMOS toolset collector
+Toolset Version 2.0.30 
+
+
+Memory map for 'Root' processor 0 T800
+Load Start is 80000154,  STOP ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #8038F970  #8038FB90       544
+      Entry address                          #8038F972 
+    Workspace                                #8038F8DC  #8038F94C       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #8038FBBC  #8038FC18        92
+      Entry address                          #8038FBBD 
+    Workspace                                #8038FB90  #8038FBA8        24
+
+  HIGH priority process 'FRead[2]' 
+    Code from 'fread.c8x', file offset 2
+                                             #80020384  #800217C4      5184
+      Entry address                          #800205A1 
+    Workspace                                #80000154  #80008198     32836
+    Static                                   #80029F64  #8002A168       516
+    Heap                                     #8002C538  #8004D538    135168
+
+  HIGH priority process 'FRead[1]' 
+    Code from 'fread.c8x', file offset 2
+                                             #80020384  #800217C4      5184
+      Entry address                          #800205A1 
+    Workspace                                #800081AC  #800101F0     32836
+    Static                                   #8002A168  #8002A36C       516
+    Heap                                     #8004D538  #8006E538    135168
+
+  HIGH priority process 'FRead[0]' 
+    Code from 'fread.c8x', file offset 2
+                                             #80020384  #800217C4      5184
+      Entry address                          #800205A1 
+    Workspace                                #80010204  #80018248     32836
+    Static                                   #8002A36C  #8002A570       516
+    Heap                                     #8006E538  #8008F538    135168
+
+  HIGH priority process 'Cache' 
+    Code from 'muxdemux.c8x', file offset 2
+                                             #800217C4  #80029F64     34720
+      Entry address                          #80023A81 
+    Workspace                                #8001825C  #80020370     33044
+    Static                                   #8002A570  #8002C538      8136
+    Heap                                     #8008F538  #8038F538   3145728
+
+  Parameter data                             #8038F538  #8038F8DC       932
+
+
+Memory map for 'WorkerPipe0[0]' processor 1 T800
+Load Start is 80000154,  STOP ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #803FAE60  #803FB080       544
+      Entry address                          #803FAE62 
+    Workspace                                #803FADCC  #803FAE3C       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #803FB0AC  #803FB108        92
+      Entry address                          #803FB0AD 
+    Workspace                                #803FB080  #803FB098        24
+
+  HIGH priority process 'SpMuxPipe0[0]' 
+    Code from 'spmux.c8x', file offset 2
+                                             #80007ED4  #8000953C      5736
+      Entry address                          #80008249 
+    Workspace                                #80000154  #80001998      6212
+    Static                                   #80036960  #80036B6C       524
+    Heap                                     #8003D360  #80047360     40960
+
+  LOW priority process 'Pov100Pipe0[0]' 
+    Code from 'povray.c8x', file offset 2
+                                             #8000953C  #80036960    185380
+      Entry address                          #8002D121 
+    Workspace                                #800019AC  #80007EC0     25876
+    Static                                   #80036B6C  #8003D360     26612
+    Heap                                     #80047360  #803FAB60   3880960
+
+  Parameter data                             #803FAB60  #803FADCC       620
+
+
+Memory map for 'WorkerPipe0[1]' processor 2 T800
+Load Start is 80000154,  STOP ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #803FAE60  #803FB080       544
+      Entry address                          #803FAE62 
+    Workspace                                #803FADCC  #803FAE3C       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #803FB0AC  #803FB108        92
+      Entry address                          #803FB0AD 
+    Workspace                                #803FB080  #803FB098        24
+
+  HIGH priority process 'SpMuxPipe0[1]' 
+    Code from 'spmux.c8x', file offset 2
+                                             #80007ED4  #8000953C      5736
+      Entry address                          #80008249 
+    Workspace                                #80000154  #80001998      6212
+    Static                                   #80036960  #80036B6C       524
+    Heap                                     #8003D360  #80047360     40960
+
+  LOW priority process 'Pov100Pipe0[1]' 
+    Code from 'povray.c8x', file offset 2
+                                             #8000953C  #80036960    185380
+      Entry address                          #8002D121 
+    Workspace                                #800019AC  #80007EC0     25876
+    Static                                   #80036B6C  #8003D360     26612
+    Heap                                     #80047360  #803FAB60   3880960
+
+  Parameter data                             #803FAB60  #803FADCC       620
+
+
+Memory map for 'WorkerPipe0[2]' processor 3 T800
+Load Start is 80000154,  STOP ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #803FAE60  #803FB080       544
+      Entry address                          #803FAE62 
+    Workspace                                #803FADCC  #803FAE3C       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #803FB0AC  #803FB108        92
+      Entry address                          #803FB0AD 
+    Workspace                                #803FB080  #803FB098        24
+
+  HIGH priority process 'SpMuxPipe0[2]' 
+    Code from 'spmux.c8x', file offset 2
+                                             #80007ED4  #8000953C      5736
+      Entry address                          #80008249 
+    Workspace                                #80000154  #80001998      6212
+    Static                                   #80036960  #80036B6C       524
+    Heap                                     #8003D360  #80047360     40960
+
+  LOW priority process 'Pov100Pipe0[2]' 
+    Code from 'povray.c8x', file offset 2
+                                             #8000953C  #80036960    185380
+      Entry address                          #8002D121 
+    Workspace                                #800019AC  #80007EC0     25876
+    Static                                   #80036B6C  #8003D360     26612
+    Heap                                     #80047360  #803FAB60   3880960
+
+  Parameter data                             #803FAB60  #803FADCC       620
+
+
+Memory map for 'WorkerPipe0[3]' processor 4 T800
+Load Start is 80000154,  STOP ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #803FAE60  #803FB080       544
+      Entry address                          #803FAE62 
+    Workspace                                #803FADCC  #803FAE3C       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #803FB0AC  #803FB108        92
+      Entry address                          #803FB0AD 
+    Workspace                                #803FB080  #803FB098        24
+
+  HIGH priority process 'SpMuxPipe0[3]' 
+    Code from 'spmux.c8x', file offset 2
+                                             #80007ED4  #8000953C      5736
+      Entry address                          #80008249 
+    Workspace                                #80000154  #80001998      6212
+    Static                                   #80036960  #80036B6C       524
+    Heap                                     #8003D360  #80047360     40960
+
+  LOW priority process 'Pov100Pipe0[3]' 
+    Code from 'povray.c8x', file offset 2
+                                             #8000953C  #80036960    185380
+      Entry address                          #8002D121 
+    Workspace                                #800019AC  #80007EC0     25876
+    Static                                   #80036B6C  #8003D360     26612
+    Heap                                     #80047360  #803FAB60   3880960
+
+  Parameter data                             #803FAB60  #803FADCC       620
+
+
+Memory map for 'WorkerPipe0[4]' processor 5 T800
+Load Start is 80000154,  STOP ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #803FF3E0  #803FF600       544
+      Entry address                          #803FF3E2 
+    Workspace                                #803FF34C  #803FF3BC       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #803FF62C  #803FF688        92
+      Entry address                          #803FF62D 
+    Workspace                                #803FF600  #803FF618        24
+
+  HIGH priority process 'SpMuxPipe0[4]' 
+    Code from 'spmux.c8x', file offset 2
+                                             #80008F2C  #8000A594      5736
+      Entry address                          #800092A1 
+    Workspace                                #80000154  #80001998      6212
+    Static                                   #80038C58  #80038E64       524
+    Heap                                     #8003F850  #80049850     40960
+
+  LOW priority process 'Pov100Pipe0[4]' 
+    Code from 'povray.c8x', file offset 2
+                                             #8000A594  #800379B8    185380
+      Entry address                          #8002E179 
+    Workspace                                #800019AC  #80007EC0     25876
+    Static                                   #80038E64  #8003F658     26612
+    Heap                                     #80049850  #803FD050   3880960
+
+  LOW priority process 'Dummy[0]' 
+    Code from 'dummy.c8x', file offset 2
+                                             #800379B8  #80038C58      4768
+      Entry address                          #80037A41 
+    Workspace                                #80007ED4  #80008F18      4164
+    Static                                   #8003F658  #8003F850       504
+    Heap                                     #803FD050  #803FF050      8192
+
+  Parameter data                             #803FF050  #803FF34C       764
+
+
+Memory map for 'WorkerPipe1[0]' processor 6 T800
+Load Start is 80000154,  STOP ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #803FAE60  #803FB080       544
+      Entry address                          #803FAE62 
+    Workspace                                #803FADCC  #803FAE3C       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #803FB0AC  #803FB108        92
+      Entry address                          #803FB0AD 
+    Workspace                                #803FB080  #803FB098        24
+
+  HIGH priority process 'SpMuxPipe1[0]' 
+    Code from 'spmux.c8x', file offset 2
+                                             #80007ED4  #8000953C      5736
+      Entry address                          #80008249 
+    Workspace                                #80000154  #80001998      6212
+    Static                                   #80036960  #80036B6C       524
+    Heap                                     #8003D360  #80047360     40960
+
+  LOW priority process 'Pov100Pipe1[0]' 
+    Code from 'povray.c8x', file offset 2
+                                             #8000953C  #80036960    185380
+      Entry address                          #8002D121 
+    Workspace                                #800019AC  #80007EC0     25876
+    Static                                   #80036B6C  #8003D360     26612
+    Heap                                     #80047360  #803FAB60   3880960
+
+  Parameter data                             #803FAB60  #803FADCC       620
+
+
+Memory map for 'WorkerPipe1[1]' processor 7 T800
+Load Start is 80000154,  STOP ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #803FAE60  #803FB080       544
+      Entry address                          #803FAE62 
+    Workspace                                #803FADCC  #803FAE3C       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #803FB0AC  #803FB108        92
+      Entry address                          #803FB0AD 
+    Workspace                                #803FB080  #803FB098        24
+
+  HIGH priority process 'SpMuxPipe1[1]' 
+    Code from 'spmux.c8x', file offset 2
+                                             #80007ED4  #8000953C      5736
+      Entry address                          #80008249 
+    Workspace                                #80000154  #80001998      6212
+    Static                                   #80036960  #80036B6C       524
+    Heap                                     #8003D360  #80047360     40960
+
+  LOW priority process 'Pov100Pipe1[1]' 
+    Code from 'povray.c8x', file offset 2
+                                             #8000953C  #80036960    185380
+      Entry address                          #8002D121 
+    Workspace                                #800019AC  #80007EC0     25876
+    Static                                   #80036B6C  #8003D360     26612
+    Heap                                     #80047360  #803FAB60   3880960
+
+  Parameter data                             #803FAB60  #803FADCC       620
+
+
+Memory map for 'WorkerPipe1[2]' processor 8 T800
+Load Start is 80000154,  STOP ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #803FAE60  #803FB080       544
+      Entry address                          #803FAE62 
+    Workspace                                #803FADCC  #803FAE3C       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #803FB0AC  #803FB108        92
+      Entry address                          #803FB0AD 
+    Workspace                                #803FB080  #803FB098        24
+
+  HIGH priority process 'SpMuxPipe1[2]' 
+    Code from 'spmux.c8x', file offset 2
+                                             #80007ED4  #8000953C      5736
+      Entry address                          #80008249 
+    Workspace                                #80000154  #80001998      6212
+    Static                                   #80036960  #80036B6C       524
+    Heap                                     #8003D360  #80047360     40960
+
+  LOW priority process 'Pov100Pipe1[2]' 
+    Code from 'povray.c8x', file offset 2
+                                             #8000953C  #80036960    185380
+      Entry address                          #8002D121 
+    Workspace                                #800019AC  #80007EC0     25876
+    Static                                   #80036B6C  #8003D360     26612
+    Heap                                     #80047360  #803FAB60   3880960
+
+  Parameter data                             #803FAB60  #803FADCC       620
+
+
+Memory map for 'WorkerPipe1[3]' processor 9 T800
+Load Start is 80000154,  STOP ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #803FAE60  #803FB080       544
+      Entry address                          #803FAE62 
+    Workspace                                #803FADCC  #803FAE3C       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #803FB0AC  #803FB108        92
+      Entry address                          #803FB0AD 
+    Workspace                                #803FB080  #803FB098        24
+
+  HIGH priority process 'SpMuxPipe1[3]' 
+    Code from 'spmux.c8x', file offset 2
+                                             #80007ED4  #8000953C      5736
+      Entry address                          #80008249 
+    Workspace                                #80000154  #80001998      6212
+    Static                                   #80036960  #80036B6C       524
+    Heap                                     #8003D360  #80047360     40960
+
+  LOW priority process 'Pov100Pipe1[3]' 
+    Code from 'povray.c8x', file offset 2
+                                             #8000953C  #80036960    185380
+      Entry address                          #8002D121 
+    Workspace                                #800019AC  #80007EC0     25876
+    Static                                   #80036B6C  #8003D360     26612
+    Heap                                     #80047360  #803FAB60   3880960
+
+  Parameter data                             #803FAB60  #803FADCC       620
+
+
+Memory map for 'WorkerPipe1[4]' processor 10 T800
+Load Start is 80000154,  STOP ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #803FF3E0  #803FF600       544
+      Entry address                          #803FF3E2 
+    Workspace                                #803FF34C  #803FF3BC       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #803FF62C  #803FF688        92
+      Entry address                          #803FF62D 
+    Workspace                                #803FF600  #803FF618        24
+
+  HIGH priority process 'SpMuxPipe1[4]' 
+    Code from 'spmux.c8x', file offset 2
+                                             #80008F2C  #8000A594      5736
+      Entry address                          #800092A1 
+    Workspace                                #80000154  #80001998      6212
+    Static                                   #80038C58  #80038E64       524
+    Heap                                     #8003F850  #80049850     40960
+
+  LOW priority process 'Pov100Pipe1[4]' 
+    Code from 'povray.c8x', file offset 2
+                                             #8000A594  #800379B8    185380
+      Entry address                          #8002E179 
+    Workspace                                #800019AC  #80007EC0     25876
+    Static                                   #80038E64  #8003F658     26612
+    Heap                                     #80049850  #803FD050   3880960
+
+  LOW priority process 'Dummy[1]' 
+    Code from 'dummy.c8x', file offset 2
+                                             #800379B8  #80038C58      4768
+      Entry address                          #80037A41 
+    Workspace                                #80007ED4  #80008F18      4164
+    Static                                   #8003F658  #8003F850       504
+    Heap                                     #803FD050  #803FF050      8192
+
+  Parameter data                             #803FF050  #803FF34C       764
+
+
+Memory map for 'WorkerPipe2[0]' processor 11 T800
+Load Start is 80000154,  STOP ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #803FAE60  #803FB080       544
+      Entry address                          #803FAE62 
+    Workspace                                #803FADCC  #803FAE3C       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #803FB0AC  #803FB108        92
+      Entry address                          #803FB0AD 
+    Workspace                                #803FB080  #803FB098        24
+
+  HIGH priority process 'SpMuxPipe2[0]' 
+    Code from 'spmux.c8x', file offset 2
+                                             #80007ED4  #8000953C      5736
+      Entry address                          #80008249 
+    Workspace                                #80000154  #80001998      6212
+    Static                                   #80036960  #80036B6C       524
+    Heap                                     #8003D360  #80047360     40960
+
+  LOW priority process 'Pov100Pipe2[0]' 
+    Code from 'povray.c8x', file offset 2
+                                             #8000953C  #80036960    185380
+      Entry address                          #8002D121 
+    Workspace                                #800019AC  #80007EC0     25876
+    Static                                   #80036B6C  #8003D360     26612
+    Heap                                     #80047360  #803FAB60   3880960
+
+  Parameter data                             #803FAB60  #803FADCC       620
+
+
+Memory map for 'WorkerPipe2[1]' processor 12 T800
+Load Start is 80000154,  STOP ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #803FAE60  #803FB080       544
+      Entry address                          #803FAE62 
+    Workspace                                #803FADCC  #803FAE3C       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #803FB0AC  #803FB108        92
+      Entry address                          #803FB0AD 
+    Workspace                                #803FB080  #803FB098        24
+
+  HIGH priority process 'SpMuxPipe2[1]' 
+    Code from 'spmux.c8x', file offset 2
+                                             #80007ED4  #8000953C      5736
+      Entry address                          #80008249 
+    Workspace                                #80000154  #80001998      6212
+    Static                                   #80036960  #80036B6C       524
+    Heap                                     #8003D360  #80047360     40960
+
+  LOW priority process 'Pov100Pipe2[1]' 
+    Code from 'povray.c8x', file offset 2
+                                             #8000953C  #80036960    185380
+      Entry address                          #8002D121 
+    Workspace                                #800019AC  #80007EC0     25876
+    Static                                   #80036B6C  #8003D360     26612
+    Heap                                     #80047360  #803FAB60   3880960
+
+  Parameter data                             #803FAB60  #803FADCC       620
+
+
+Memory map for 'WorkerPipe2[2]' processor 13 T800
+Load Start is 80000154,  STOP ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #803FAE60  #803FB080       544
+      Entry address                          #803FAE62 
+    Workspace                                #803FADCC  #803FAE3C       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #803FB0AC  #803FB108        92
+      Entry address                          #803FB0AD 
+    Workspace                                #803FB080  #803FB098        24
+
+  HIGH priority process 'SpMuxPipe2[2]' 
+    Code from 'spmux.c8x', file offset 2
+                                             #80007ED4  #8000953C      5736
+      Entry address                          #80008249 
+    Workspace                                #80000154  #80001998      6212
+    Static                                   #80036960  #80036B6C       524
+    Heap                                     #8003D360  #80047360     40960
+
+  LOW priority process 'Pov100Pipe2[2]' 
+    Code from 'povray.c8x', file offset 2
+                                             #8000953C  #80036960    185380
+      Entry address                          #8002D121 
+    Workspace                                #800019AC  #80007EC0     25876
+    Static                                   #80036B6C  #8003D360     26612
+    Heap                                     #80047360  #803FAB60   3880960
+
+  Parameter data                             #803FAB60  #803FADCC       620
+
+
+Memory map for 'WorkerPipe2[3]' processor 14 T800
+Load Start is 80000154,  STOP ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #803FAE60  #803FB080       544
+      Entry address                          #803FAE62 
+    Workspace                                #803FADCC  #803FAE3C       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #803FB0AC  #803FB108        92
+      Entry address                          #803FB0AD 
+    Workspace                                #803FB080  #803FB098        24
+
+  HIGH priority process 'SpMuxPipe2[3]' 
+    Code from 'spmux.c8x', file offset 2
+                                             #80007ED4  #8000953C      5736
+      Entry address                          #80008249 
+    Workspace                                #80000154  #80001998      6212
+    Static                                   #80036960  #80036B6C       524
+    Heap                                     #8003D360  #80047360     40960
+
+  LOW priority process 'Pov100Pipe2[3]' 
+    Code from 'povray.c8x', file offset 2
+                                             #8000953C  #80036960    185380
+      Entry address                          #8002D121 
+    Workspace                                #800019AC  #80007EC0     25876
+    Static                                   #80036B6C  #8003D360     26612
+    Heap                                     #80047360  #803FAB60   3880960
+
+  Parameter data                             #803FAB60  #803FADCC       620
+
+
+Memory map for 'WorkerPipe2[4]' processor 15 T800
+Load Start is 80000154,  STOP ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #803FF3E0  #803FF600       544
+      Entry address                          #803FF3E2 
+    Workspace                                #803FF34C  #803FF3BC       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #803FF62C  #803FF688        92
+      Entry address                          #803FF62D 
+    Workspace                                #803FF600  #803FF618        24
+
+  HIGH priority process 'SpMuxPipe2[4]' 
+    Code from 'spmux.c8x', file offset 2
+                                             #80008F2C  #8000A594      5736
+      Entry address                          #800092A1 
+    Workspace                                #80000154  #80001998      6212
+    Static                                   #80038C58  #80038E64       524
+    Heap                                     #8003F850  #80049850     40960
+
+  LOW priority process 'Pov100Pipe2[4]' 
+    Code from 'povray.c8x', file offset 2
+                                             #8000A594  #800379B8    185380
+      Entry address                          #8002E179 
+    Workspace                                #800019AC  #80007EC0     25876
+    Static                                   #80038E64  #8003F658     26612
+    Heap                                     #80049850  #803FD050   3880960
+
+  LOW priority process 'Dummy[2]' 
+    Code from 'dummy.c8x', file offset 2
+                                             #800379B8  #80038C58      4768
+      Entry address                          #80037A41 
+    Workspace                                #80007ED4  #80008F18      4164
+    Static                                   #8003F658  #8003F850       504
+    Heap                                     #803FD050  #803FF050      8192
+
+  Parameter data                             #803FF050  #803FF34C       764
+
+
+Boot path for network
+
+  Boot processor 0 down link 0 from HOST
+  Boot processor 1 down link 0 from processor 0 link 1
+  Boot processor 2 down link 0 from processor 1 link 1
+  Boot processor 3 down link 0 from processor 2 link 1
+  Boot processor 4 down link 0 from processor 3 link 1
+  Boot processor 5 down link 0 from processor 4 link 1
+  Boot processor 6 down link 0 from processor 0 link 2
+  Boot processor 7 down link 0 from processor 6 link 1
+  Boot processor 8 down link 0 from processor 7 link 1
+  Boot processor 9 down link 0 from processor 8 link 1
+  Boot processor 10 down link 0 from processor 9 link 1
+  Boot processor 11 down link 0 from processor 0 link 3
+  Boot processor 12 down link 0 from processor 11 link 1
+  Boot processor 13 down link 0 from processor 12 link 1
+  Boot processor 14 down link 0 from processor 13 link 1
+  Boot processor 15 down link 0 from processor 14 link 1
+
+
+Connectivity for network
+
+  Connect HOST to processor 0 link 0
+  Connect processor 1 link 0 to processor 0 link 1
+  Connect processor 2 link 0 to processor 1 link 1
+  Connect processor 3 link 0 to processor 2 link 1
+  Connect processor 4 link 0 to processor 3 link 1
+  Connect processor 5 link 0 to processor 4 link 1
+  Connect processor 6 link 0 to processor 0 link 2
+  Connect processor 7 link 0 to processor 6 link 1
+  Connect processor 8 link 0 to processor 7 link 1
+  Connect processor 9 link 0 to processor 8 link 1
+  Connect processor 10 link 0 to processor 9 link 1
+  Connect processor 11 link 0 to processor 0 link 3
+  Connect processor 12 link 0 to processor 11 link 1
+  Connect processor 13 link 0 to processor 12 link 1
+  Connect processor 14 link 0 to processor 13 link 1
+  Connect processor 15 link 0 to processor 14 link 1

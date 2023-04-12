@@ -1,0 +1,8 @@
+povray.o colour.o csg.o hfield.o lighting.o
+matrices.o objects.o planes.o poly.o prioq.o
+quadrics.o ray.o render.o spheres.o point.o
+texture.o triangle.o txtbump.o txtcolor.o
+txtmap.o txttest.o vect.o viewpnt.o ibm.o
+bezier.o dump.o raw.o targa.o boxes.o blob.o
+iff.o gif.o gifdecod.o tokenize.o parse.o
+-lm -lc -lpc

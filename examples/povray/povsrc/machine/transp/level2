@@ -1,0 +1,54 @@
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/arches.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/cluster.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/crystal.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/eight.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/esp01.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/hfclip.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/illum1.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/illum2.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/iortest.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/lpops1.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/lpops2.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/magglass.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/mtmand.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/pacman.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/pawns.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/planet.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/poolball.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/romo.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/room.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/skyvase.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/smoke.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/spline.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/stonewal.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/sunsethf.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/tetra.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/waterbow.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level2 -i../../povscn/level2/wtorus.pov -w640 -h480 -v -f +d > povray.def
+pov

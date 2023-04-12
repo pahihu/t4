@@ -1,0 +1,51 @@
+This archive contains files used for compiling all versions POV-Ray.
+NOTE: You will also need a file or a set of files from MACHINE.ZIP that
+      are specific to your computer and compiler type before you can
+      compile.
+This file contains:
+
+SOURCE.ZIP:
+    POVLEGAL.DOC  - Important legal information on the use of this package
+    FRAME.H       - header containing typedefs, constants and data structures
+    POVPROTO.H    - header containing all function prototypes
+    TEXTURE.H     - header used by texture modules
+    VECTOR.H      - header for vector math macros
+    
+    BEZIER.C      - bicubic patch shape routines
+    COLOUR.C      - color manipulation routines
+    CSG.C         - constructive solid geometry shape routines
+    DUMP.C        - RGB dump file handler routines
+    GIFDECOD.C    - generic GIF LZW decoder module
+    GIF.C         - GIF file handler routines
+    HFIELD.C      - height field shape routines
+    IFF.C         - IFF file handler routines
+    LIGHTING.C    - lighting calculation routines
+    MATRICES.C    - 3d transformation matrices routines
+    OBJECTS.C     - general routines for all objects
+    PARSE.C       - DAT file parser for POV-Ray language
+    PLANES.C      - plane shape routines
+    POINT.C       - light source routines
+    POLY.C        - poly, cubic, and quartic shape routines
+    POVRAY.C      - main program, command line parsing routines
+    PRIOQ.C       - priority queue for ray/object intersection module
+    QUADRICS.C    - quadric shape routines
+    RAW.C         - RAW RGB image file handler routines
+    RAY.C         - ray manipulation routines
+    RENDER.C      - routines to implement main program loop
+    BOXES.C       - box shape routines
+    BLOB.C        - blob shape routines
+    SPHERES.C     - sphere shape routines
+    TARGA.C       - Targa file handler routines
+    TEXTURE.C     - main texture module
+    TOKENIZE.C    - DAT file tokenizer for POV-Ray language
+    TRIANGLE.C    - triangle and smooth triangle shape routines
+    TXTBUMP.C     - surface normal perturb routines for textures
+    TXTCOLOR.C    - color pattern routines for textures
+    TXTMAP.C      - image, material, bump map routines for textures
+    TXTTEST.C     - dummy routines for testing new texture types
+    VECT.C        - support routines for poly shapes
+    VIEWPNT.C     - camera routines (cameras were view_point before V1.0)
+    BOXES.C       - box shape routines
+          
+    SOURCE.CAT    - list of files in SOURCE.ZIP
+

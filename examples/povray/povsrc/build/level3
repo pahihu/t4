@@ -1,0 +1,32 @@
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/chess.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/desk.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/dfwood.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/fishbowl.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/kscope.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/lamp.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/oak2.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/palace.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/piece1.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/pool.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/roman.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/snack.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/takeoff.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/tomb.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/wealth.pov -w640 -h480 -v -f +d > povray.def
+pov
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/wg5.pov -w640 -h480 -v -f +d > povray.def
+pov

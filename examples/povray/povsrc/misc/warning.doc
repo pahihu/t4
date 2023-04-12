@@ -1,0 +1,25 @@
+Persistence of Vision Raytracer
+ Version 1.0 Caveats....
+--------------------------------
+This new version looks really good and stable. We've got a great program
+here!  Of course, in any major program there are almost certainly 
+a few little problems. Known problems and work arounds are listed below.
+
+If you experience problems leave a message to the POV-Team in the Compuserve 
+Graphics area, Raytracing forum (!GO COMART) section 16. We'll do our best 
+to help you out!
+
+Known problems:
+----------------
+-Not a problem, but a warning that syntax has changed. Be careful that
+ you are using the new syntax correctly. Light sources in particular
+ are very different.
+-Bezier patch type 2 does not work with certain flatness values.
+-Certain quartics, polys, blobs don't render correctly 
+ when rotated or translated. Try using the "sturm" keyword.
+-Often cryptic error messages. Improved a bit in this version.
+-When using some compilers, the source will generate warnings during 
+ compile.
+ This is normal. We did not try to remove every single warning for
+ every possible computer. Please report warnings only if they are
+ relevant to a possible error.

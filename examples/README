@@ -43,6 +43,10 @@ raytracer/
 
 comstime/
         Peter Welch' COMSTIME benchmark
+
+povray/
+        POV-Ray 1.0, pictures.zip contains the generated level1/2/3 pictures,
+        povsrc/build contains the povray.btl file configured for 3x5 pipeline.
         
 
 

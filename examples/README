@@ -40,6 +40,9 @@ rayshade/
 raytracer/
         "Exploiting concurrency: a ray tracing example"
         72-TCH-007 INMOS Technical Note 7
+
+comstime/
+        Peter Welch' COMSTIME benchmark
         
 
 

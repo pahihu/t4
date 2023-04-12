@@ -1,0 +1,31 @@
+-- hardware description, omitting host connection
+
+VAL k IS 1024 :
+VAL m IS k * k :
+
+NODE test.bed.p :  -- declare processor
+ARC hostlink :
+NETWORK example
+  DO
+    SET test.bed.p (type, memsize := "T414", 2 * m )
+    CONNECT test.bed.p[link][0] TO HOST WITH hostlink
+    
+:
+
+-- mapping
+NODE application:
+MAPPING
+  DO
+    MAP application ONTO test.bed.p
+:
+
+-- software description
+#INCLUDE "hostio.inc"
+#USE "comstime.cah"
+CONFIG
+  CHAN OF SP fs, ts :
+  PLACE fs, ts ON hostlink :
+  PLACED PAR
+    PROCESSOR application
+      eg ( fs, ts )
+:

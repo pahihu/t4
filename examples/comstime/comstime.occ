@@ -1,0 +1,55 @@
+-- COMMUNICATION TIMER TEST PROGRAM
+-- as suggested by Professor Peter Welch 
+-- (University of Kent at Canterbury)
+#INCLUDE "hostio.inc"
+
+PROC eg(CHAN OF SP fs,ts)
+
+  #USE "hostio.lib"
+  CHAN OF INT a, b, c, d :
+  VAL repeat IS 20000 :
+  VAL runs IS 10 :
+  SEQ
+    PAR
+      SEQ
+        a!0
+        WHILE TRUE
+          INT x:
+          SEQ
+            b ? x
+            a ! x
+      SEQ
+        WHILE TRUE
+          INT x:
+          SEQ
+            a ? x
+            c ! x
+            d ! x
+      SEQ
+        WHILE TRUE
+          INT x:
+          SEQ
+            c ? x
+            b ! x+1
+      INT start,stop,sum :
+      TIMER t :
+      SEQ
+        sum := 0
+        SEQ j = 0 FOR runs
+          SEQ
+            t ? start
+            SEQ i = 0 FOR repeat
+              INT x :
+              d ? x
+            t ? stop
+            so.write.int(fs,ts,stop MINUS start,8)
+            so.write.nl(fs,ts)
+            sum := sum PLUS (stop MINUS start)
+        so.write.string(fs,ts,"Average = ")
+        so.write.int(fs,ts,((sum * 64) / (repeat*runs)),8)
+        so.write.string.nl(fs,ts,"us / iteration")
+        so.exit(fs,ts,sps.success)
+:      
+      
+    
+        

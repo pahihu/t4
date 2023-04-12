@@ -43,6 +43,7 @@ The compiled binaries are in the `bin/` directory.
 Changes
 =======
 
+* added COMSTIME benchmark
 * updated Windows and Linux binaries, they support both nework and shared-memory links
 * if you define -DSHLINKS=1 the communication links are placed in shared memory, added `-sl` flag
 * added neworking binary for Raspberry Pi, fixed kill in multi.sh

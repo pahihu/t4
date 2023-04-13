@@ -7,8 +7,8 @@ Load Start is 80000150,  HALT ON ERROR
 
   HIGH priority process 'Init.system' 
     Code from 'sysproc.lib', file offset 4969
-                                             #80001FB4  #800021D4       544
-      Entry address                          #80001FB6 
+                                             #80002008  #80002228       544
+      Entry address                          #8000200A 
     Workspace                                #80000150  #800001C0       112
 
   HIGH priority process 'System.process.b' 
@@ -19,14 +19,14 @@ Load Start is 80000150,  HALT ON ERROR
 
   LOW priority process 'framebuf.p' 
     Code from 'framebufT8.c8h', file offset 2
-                                             #80000408  #80001F84      7036
+                                             #80000408  #80001FD8      7120
     Code from 'raytraceT8.clu', file offset 2
-                                             #80001F84  #80001FB4        48
-      Entry address                          #80001F87 
+                                             #80001FD8  #80002008        48
+      Entry address                          #80001FDB 
     Workspace                                #80000150  #800003E8       664
-    Vectorspace                              #80001FB4  #80052E0C    331352
+    Vectorspace                              #80002008  #80052E60    331352
 
-  Parameter data                             #80052E0C  #80052F44       312
+  Parameter data                             #80052E60  #80052F98       312
 
 
 Memory map for 'System[1]' processor 1 T800
@@ -47,7 +47,7 @@ Load Start is 80000150,  HALT ON ERROR
   LOW priority process 'cntlsys.p' 
     Code from 'cntlsysT8.c8h', file offset 2
                                              #800004F0  #80001434      3908
-    Code from 'raytraceT8.clu', file offset 536
+    Code from 'raytraceT8.clu', file offset 535
                                              #80001434  #8000144C        24
       Entry address                          #80001437 
     Workspace                                #80000150  #800004D0       896
@@ -74,7 +74,7 @@ Load Start is 80000150,  HALT ON ERROR
   LOW priority process 'raytrace.p' 
     Code from 'raytraceT8.c8h', file offset 2
                                              #800008B4  #80003C54     13216
-    Code from 'raytraceT8.clu', file offset 966
+    Code from 'raytraceT8.clu', file offset 965
                                              #80003C54  #80003C70        28
       Entry address                          #80003C56 
     Workspace                                #80000150  #80000894      1860
@@ -101,7 +101,7 @@ Load Start is 80000150,  HALT ON ERROR
   LOW priority process 'raytrace.p_1' 
     Code from 'raytraceT8.c8h', file offset 2
                                              #800008B4  #80003C54     13216
-    Code from 'raytraceT8.clu', file offset 1408
+    Code from 'raytraceT8.clu', file offset 1407
                                              #80003C54  #80003C70        28
       Entry address                          #80003C56 
     Workspace                                #80000150  #80000894      1860
@@ -128,7 +128,7 @@ Load Start is 80000150,  HALT ON ERROR
   LOW priority process 'raytrace.p_2' 
     Code from 'raytraceT8.c8h', file offset 2
                                              #800008B4  #80003C54     13216
-    Code from 'raytraceT8.clu', file offset 1855
+    Code from 'raytraceT8.clu', file offset 1854
                                              #80003C54  #80003C70        28
       Entry address                          #80003C56 
     Workspace                                #80000150  #80000894      1860
@@ -155,7 +155,7 @@ Load Start is 80000150,  HALT ON ERROR
   LOW priority process 'raytrace.p_3' 
     Code from 'raytraceT8.c8h', file offset 2
                                              #800008B4  #80003C54     13216
-    Code from 'raytraceT8.clu', file offset 2302
+    Code from 'raytraceT8.clu', file offset 2301
                                              #80003C54  #80003C70        28
       Entry address                          #80003C56 
     Workspace                                #80000150  #80000894      1860
@@ -182,7 +182,7 @@ Load Start is 80000150,  HALT ON ERROR
   LOW priority process 'raytrace.p_4' 
     Code from 'raytraceT8.c8h', file offset 2
                                              #800008B4  #80003C54     13216
-    Code from 'raytraceT8.clu', file offset 2749
+    Code from 'raytraceT8.clu', file offset 2748
                                              #80003C54  #80003C70        28
       Entry address                          #80003C56 
     Workspace                                #80000150  #80000894      1860
@@ -209,7 +209,7 @@ Load Start is 80000150,  HALT ON ERROR
   LOW priority process 'raytrace.p_5' 
     Code from 'raytraceT8.c8h', file offset 2
                                              #800008B4  #80003C54     13216
-    Code from 'raytraceT8.clu', file offset 3196
+    Code from 'raytraceT8.clu', file offset 3195
                                              #80003C54  #80003C70        28
       Entry address                          #80003C56 
     Workspace                                #80000150  #80000894      1860
@@ -236,7 +236,7 @@ Load Start is 80000150,  HALT ON ERROR
   LOW priority process 'raytrace.p_6' 
     Code from 'raytraceT8.c8h', file offset 2
                                              #800008B4  #80003C54     13216
-    Code from 'raytraceT8.clu', file offset 3643
+    Code from 'raytraceT8.clu', file offset 3642
                                              #80003C54  #80003C70        28
       Entry address                          #80003C56 
     Workspace                                #80000150  #80000894      1860
@@ -263,7 +263,7 @@ Load Start is 80000150,  HALT ON ERROR
   LOW priority process 'raytrace.p_7' 
     Code from 'raytraceT8.c8h', file offset 2
                                              #800008B4  #80003C54     13216
-    Code from 'raytraceT8.clu', file offset 4090
+    Code from 'raytraceT8.clu', file offset 4089
                                              #80003C54  #80003C70        28
       Entry address                          #80003C56 
     Workspace                                #80000150  #80000894      1860
@@ -290,7 +290,7 @@ Load Start is 80000150,  HALT ON ERROR
   LOW priority process 'raytrace.p_8' 
     Code from 'raytraceT8.c8h', file offset 2
                                              #800008B0  #80003C50     13216
-    Code from 'raytraceT8.clu', file offset 4537
+    Code from 'raytraceT8.clu', file offset 4536
                                              #80003C50  #80003C6C        28
       Entry address                          #80003C52 
     Workspace                                #80000150  #80000898      1864
@@ -298,166 +298,6 @@ Load Start is 80000150,  HALT ON ERROR
 
   Parameter data                             #8000EB04  #8000EC24       288
 
-
-Memory map for 'System[11]' processor 11 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[12]' processor 12 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[13]' processor 13 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[14]' processor 14 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[15]' processor 15 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[16]' processor 16 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[17]' processor 17 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[18]' processor 18 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[19]' processor 19 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[20]' processor 20 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[21]' processor 21 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[22]' processor 22 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[23]' processor 23 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[24]' processor 24 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[25]' processor 25 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[26]' processor 26 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[27]' processor 27 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[28]' processor 28 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[29]' processor 29 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[30]' processor 30 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[31]' processor 31 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[32]' processor 32 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[33]' processor 33 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[34]' processor 34 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[35]' processor 35 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[36]' processor 36 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[37]' processor 37 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[38]' processor 38 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[39]' processor 39 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[40]' processor 40 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[41]' processor 41 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
-
-Memory map for 'System[42]' processor 42 T414
-Load Start is 80000128,  STOP ON ERROR
-
-  No Parameter data on this processor
 
 Boot path for network
 
@@ -472,38 +312,6 @@ Boot path for network
   Boot processor 8 down link 1 from processor 7 link 2
   Boot processor 9 down link 1 from processor 8 link 2
   Boot processor 10 down link 1 from processor 9 link 2
-  Boot processor 11 down link 1 from processor 10 link 2
-  Boot processor 12 down link 1 from processor 11 link 2
-  Boot processor 13 down link 1 from processor 12 link 2
-  Boot processor 14 down link 1 from processor 13 link 2
-  Boot processor 15 down link 1 from processor 14 link 2
-  Boot processor 16 down link 1 from processor 15 link 2
-  Boot processor 17 down link 1 from processor 16 link 2
-  Boot processor 18 down link 1 from processor 17 link 2
-  Boot processor 19 down link 1 from processor 18 link 2
-  Boot processor 20 down link 1 from processor 19 link 2
-  Boot processor 21 down link 1 from processor 20 link 2
-  Boot processor 22 down link 1 from processor 21 link 2
-  Boot processor 23 down link 1 from processor 22 link 2
-  Boot processor 24 down link 1 from processor 23 link 2
-  Boot processor 25 down link 1 from processor 24 link 2
-  Boot processor 26 down link 1 from processor 25 link 2
-  Boot processor 27 down link 1 from processor 26 link 2
-  Boot processor 28 down link 1 from processor 27 link 2
-  Boot processor 29 down link 1 from processor 28 link 2
-  Boot processor 30 down link 1 from processor 29 link 2
-  Boot processor 31 down link 1 from processor 30 link 2
-  Boot processor 32 down link 1 from processor 31 link 2
-  Boot processor 33 down link 1 from processor 32 link 2
-  Boot processor 34 down link 1 from processor 33 link 2
-  Boot processor 35 down link 1 from processor 34 link 2
-  Boot processor 36 down link 1 from processor 35 link 2
-  Boot processor 37 down link 1 from processor 36 link 2
-  Boot processor 38 down link 1 from processor 37 link 2
-  Boot processor 39 down link 1 from processor 38 link 2
-  Boot processor 40 down link 1 from processor 39 link 2
-  Boot processor 41 down link 1 from processor 40 link 2
-  Boot processor 42 down link 1 from processor 41 link 2
 
 
 Connectivity for network
@@ -519,35 +327,3 @@ Connectivity for network
   Connect processor 8 link 1 to processor 7 link 2
   Connect processor 9 link 1 to processor 8 link 2
   Connect processor 10 link 1 to processor 9 link 2
-  Connect processor 11 link 1 to processor 10 link 2
-  Connect processor 12 link 1 to processor 11 link 2
-  Connect processor 13 link 1 to processor 12 link 2
-  Connect processor 14 link 1 to processor 13 link 2
-  Connect processor 15 link 1 to processor 14 link 2
-  Connect processor 16 link 1 to processor 15 link 2
-  Connect processor 17 link 1 to processor 16 link 2
-  Connect processor 18 link 1 to processor 17 link 2
-  Connect processor 19 link 1 to processor 18 link 2
-  Connect processor 20 link 1 to processor 19 link 2
-  Connect processor 21 link 1 to processor 20 link 2
-  Connect processor 22 link 1 to processor 21 link 2
-  Connect processor 23 link 1 to processor 22 link 2
-  Connect processor 24 link 1 to processor 23 link 2
-  Connect processor 25 link 1 to processor 24 link 2
-  Connect processor 26 link 1 to processor 25 link 2
-  Connect processor 27 link 1 to processor 26 link 2
-  Connect processor 28 link 1 to processor 27 link 2
-  Connect processor 29 link 1 to processor 28 link 2
-  Connect processor 30 link 1 to processor 29 link 2
-  Connect processor 31 link 1 to processor 30 link 2
-  Connect processor 32 link 1 to processor 31 link 2
-  Connect processor 33 link 1 to processor 32 link 2
-  Connect processor 34 link 1 to processor 33 link 2
-  Connect processor 35 link 1 to processor 34 link 2
-  Connect processor 36 link 1 to processor 35 link 2
-  Connect processor 37 link 1 to processor 36 link 2
-  Connect processor 38 link 1 to processor 37 link 2
-  Connect processor 39 link 1 to processor 38 link 2
-  Connect processor 40 link 1 to processor 39 link 2
-  Connect processor 41 link 1 to processor 40 link 2
-  Connect processor 42 link 1 to processor 41 link 2

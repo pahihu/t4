@@ -5,7 +5,7 @@ CONFIG=icconf
 OCONFIG=occonf
 COLLECT=icollect
 CC=icc
-DELETE=rm
+DELETE=rm -f
 LIBOPT=
 OCCOPT=-A -U -NWP -NWU
 LINKOPT=
@@ -45,4 +45,13 @@ cntlsysT8.t8h: cntlsysT8.occ /Users/Pahi/d7205/libs/occam8.lib
 
 raytraceT8.t8h: raytraceT8.occ /Users/Pahi/d7205/libs/occam8.lib 
 	$(OCCAM) raytraceT8 -t8 -h -o raytraceT8.t8h $(OCCOPT)
+
+clean  : delete
+delete :
+	-$(DELETE) raymainT8.c8h
+	-$(DELETE) raymainT8.t8h
+	-$(DELETE) framebufT8.t8h
+	-$(DELETE) cntlsysT8.t8h
+	-$(DELETE) raytraceT8.t8h
+	-$(DELETE) raymainT8.cfb
 

@@ -7,7 +7,7 @@ COLLECT=icollect
 CC=icc
 DELETE=rm -f
 LIBOPT=
-OCCOPT=-A -U -NWP -NWU
+OCCOPT= -A -U -NWP -NWU
 LINKOPT=
 CONFOPT=
 OCONFOPT=
@@ -59,5 +59,4 @@ delete :
 	-$(DELETE) cntlsysT8.t8h
 	-$(DELETE) raytraceT8.c8h
 	-$(DELETE) raytraceT8.t8h
-	-$(DELETE) raytraceT8.map
 

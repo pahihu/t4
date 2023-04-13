@@ -9,27 +9,21 @@ VAL LOW IS 1:
 --}}}
 
 --{{{  problem size
-VAL number.of.transputers IS 43 :
 VAL processors IS 9 :
+VAL number.of.transputers IS processors + 2 :
 --}}}
 
---{{{  hardware description - 3 T8s on the first B012, 8 T8s on the next,
---{{{				and 40 T4s on the next 4
+--{{{  hardware description - all is T8
 
 [number.of.transputers]NODE System:
 ARC Hostlink:
 
 NETWORK
   DO
-    SET System[0] (type, memsize := "T800", 4*M)
-    SET System[1] (type, memsize := "T800", 2*M)
-    SET System[2] (type, memsize := "T800", 1*M)
-    DO i = 3 FOR 8
-      SET System[i] (type, memsize := "T800", 1*M)
-    DO i = 11 FOR 32
-      SET System[i] (type, memsize := "T414", 1*M)
+    DO i = 0 FOR number.of.transputers
+      SET System[i] (type, memsize := "T800", 2*M)
     CONNECT System[0][link][0] TO HOST WITH Hostlink
-    DO i = 1 FOR 42
+    DO i = 1 FOR number.of.transputers - 1
       CONNECT System[i-1][link][2] TO System[i][link][1]
 :
 --}}}

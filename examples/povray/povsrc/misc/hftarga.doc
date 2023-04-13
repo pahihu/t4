@@ -1,0 +1,11 @@
+Height Field Targa Files By Alexander Enzmann
+----------------------------------------------
+Targa files can now be used for image maps, and for height fields.
+
+For the height fields, only the red and green channels are used with red
+giving the integer part of the height (from 0 to 255) and green giving the
+fractional part (much like the POT file).
+
+Enclosed is hfsomb.c and hftarga.c, an example of generating a Targa height
+field along with a scene file, sombrero.pov, that uses it.  
+

@@ -1,0 +1,25 @@
+This archive contains machine specific files for compiling POV on Unix.
+It contains:
+
+UNIX.ZIP:
+
+These files are fairly generic and can be used as the base for other ports.
+   unixconf.h   - UNIX configuration header -- rename to config.h
+   unix.c       - system specific routines for UNIX
+   unix.mak     - makefile for UNIX
+
+   xwindows.c   - B&W or color X Windows code for UNIX systems 
+                  (include this instead of unix.c, 
+                   use unixconf.h as config.h file)
+   xpov.ico     - the Icon for X Windows
+   xwindows.mak - makefile for X Windows
+
+These files are fairly generic for ANSI standard C compilers 
+Note that this mod of the UNIX port is user-provided and untested.
+   gcc.c        - system specific routines for Gnu CC
+   gccconf.h    - header file for Gnu CC -- rename to config.h
+
+   rs6conf.h    - header file for HP RS6000 -- rename to config.h
+                  use gcc.c also.
+
+   unix.cat     - list of files in UNIX.ZIP

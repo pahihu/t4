@@ -1,0 +1,265 @@
+Portability Guidelines for POV-Ray by David Buck
+-------------------------------------------------
+
+In my experiences with DKBTrace, I've found that there are several principles
+which should be followed in order to make the code more portable between
+systems.  In the interest of making POV-Ray as portable as possible, I've
+decided to put some of these principles into writing in order to help others
+who are developing code.
+
+This guide is divided into two parts.  The first part gives some general
+guidelines for making any program more portable from system to system.
+The second part describes a specific proposal for making POVRay and other
+programs such as GUI's portable.
+
+
+General Portability Guidelines
+------------------------------
+
+Keep in mind that not all compilers are ANSI compliant.  Many only support the
+original K&R specification.
+
+  1) Don't call functions or use variables that are system-specific.  This may
+     only be done in the system-specific C module.  This is rather obvious,
+     but it's worth mentioning.
+
+  2) Don't use conditional compiling in the core of the raytracer.  The only
+     places where conditional compilation is acceptable is in frame.h in
+     order to define defaults for #define'd values, in the config.h file,
+     and in the system specific C file (and even then, it shouldn't be
+     necessary.)
+
+  3) Be careful about ints.  It's usually best to specify short or long.
+     Not all ints are the same size.
+
+  4) On many systems, the toupper and tolower functions only work properly if
+     the parameters are already lowercase or uppercase respectively.  Always
+     put a test before these calls when converting the case:
+
+        if (isupper(c))
+           c = tolower(c);
+
+  5) When declaring external functions or variables in a .h file, always
+     put the keyword "extern" in front of the definition.  Many C compilers
+     will choke on multiply declared identifiers otherwise.
+
+  6) Always use the old pre-ANSI parameter declaration mechanism
+      i.e.,
+            int junk (a,b,c)
+                DBL a;
+                int b;
+                int *c;
+                {...
+
+  7) Don't use (void) as a function parameter.  If you do this, put PARAMS
+     around the definition:
+
+           int junk PARAMS((void)))
+
+  8) Don't take the address of an array using the & operator.  Use the name
+     of the array itself.
+
+      eg.
+           int x[10];
+
+           junk(x);    is ok, but   junk(&x) is not.
+
+  9) Avoid using pre-defined words or names of library functions as variable
+     names.  The following are not acceptable as variable names:
+       max, min, abs, system
+
+ 10) When declaring a large amount of space, it's best to malloc it instead
+     of declaring it directly.  Some systems have trouble with large objects
+     allocated staticly.
+
+ 11) When including header files, don't put in any pathname or subdirectory
+     name (except possibly in system-specific modules.)  Not all systems have
+     the same characters for pathname separators.
+
+ 12) When declaring variables to hold values from 0 to 255, use unsigned char.
+     Don't use "char".  This is especially true when representing colors.
+     Some systems set the top bit of chars to 0 all the time.  Using unsigned
+     chars are ok.
+
+ 13) When declaring non-static functions (except in system-specific modules),
+     always add a prototype for the function in the povproto.h file.  For system
+     specific modules, you should include the prototypes at the top of the
+     system-specific file.
+
+ 14) When declaring prototypes, always use the PARAMS macro.
+
+ 15) Don't declare identifiers longer than 32 characters.  Many systems break
+     at that limit.  In fact, some compilers break after 8 characters.  I
+     don't intend to compensate for those compilers.
+
+ 16) Never assume byte ordering.  For example, if you want to take a short and
+     output it as two bytes, use "% 256" and "/ 256".  You should be able to
+     use "&" and ">>", but don't play tricks with pointers.
+
+       eg.
+         Bad:
+            short x;
+
+            putchar (*(unsigned char *)x);
+            putchar (*((unsigned char *)x+1));
+
+         Good:
+            short x;
+
+            putchar (x/256);
+            putchar (x%256);
+
+         Good:
+            short x;
+
+            putchar (x & 0xFF);
+            putchar ((x >> 8) & 0xFF);
+
+     Be especially careful with fwrite's:
+         fwrite (file, x, 2);
+
+ 17) Don't assume that all systems can handle vt100 control characters.  It's
+     best to use standard text for output.  Don't try to be fancy and change
+     colors, underlining, etc. on screen output.  At the very least, provide
+     a way of turning it off with a command line option.  As it turns out,
+     some systems (read Mac) don't support standard output or command-line
+     parameters.  Fortunately, we can get around those.
+
+ 18) If you really need to create temporary files, be sure to delete them
+     when you are finished.  Don't assume that you can just overwrite the
+     files when the program runs another time.  Some systems (Vax) store
+     several versions of files around and these can take up a lot of space.
+     As a rule of thumb, it's best to avoid temporary files if at all possible.
+     They make it difficult for multi-tasking systems to run more than one
+     session of the program at any one time.
+
+ 19) Avoid enums.  Not all compilers have them and those that do are very
+     inconsistent about their usage.  Many won't allow you to convert enums
+     to ints and others won't allow you to switch on an enum.  Stick with
+     #define's.  It's harder to manage, but it saves on complaints afterwards.
+
+ 20) If you encounter a major error and must exit the program, be sure to
+     call close_all first.  Some systems have to close windows, screens, etc.
+     before exiting.
+
+ 21) All C files must include "config.h". This is required for many systems
+     that need to override missing system functions with #defines.
+
+ 22) Never assume you know the size of an int or a pointer.  Always use sizeof
+     to determine the size.
+
+ 22) When compiling, use as many error checking options as possible.  Many
+     systems warn about unused variables, variables used before set, 
+     missing prototypes, etc.  The more of these you can catch yourself, the
+     better.
+
+ 23) Avoid closing and re-opening a file frequently. On some systems, this
+     causes disk head thrashing.  You should at least provide a command-line
+     option to disable this.
+
+ 24) Don't pass structure parameters.  Pass pointers to the structures
+     instead.  Most compilers these days can handle structure copies, but
+     not many handle structure parameters.
+
+ 25) When reading or writing binary files, always open them with the "b"
+     option.  Otherwise, many systems will discard '\0' characters and perform
+     translations on CR's and LF's.
+
+      eg.
+          f = fopen ("filename", "wb");
+
+
+POV-Ray Portable Graphics Proposal
+-----------------------------------
+
+The problem of making a portable graphics program is a difficult one.  In many
+ways, POV-Ray itself is easy to port because the only real graphics primitive
+required is one to draw a point of a certain color at a certain x,y coordinate.
+The coordinates are guaranteed to proceed from left to right, top to bottom.
+(Incidently, the left-to-right ordering is assumed by the Amiga drivers.)
+
+The problem of making a more general interface for something more complex
+such as a GUI is dramatically more difficult.  Most systems provide routines
+to draw lines, circles, etc. on the screen.  Some (eg. Amiga), have special
+hardware to do this.  On some systems, third party boards have such primitives.
+Even the more complex operations are provided in hardware on some systems.
+Silicon Graphics Iris workstations, for example, have hardware support for
+Gouraud-shaded filled polygons.
+
+Our strategy should follow some common principles:
+
+   1) It should be easy to use from an application level.  Application programs
+      shouldn't need to care about the type of system they're running on.
+   2) It should be able to use any number of colors in your palette from
+      2 colors to 256.  Support for 24 bit color should also be available.
+   3) People who port the code should be able to provide their own low-level
+      routines to handle their particular graphics system.
+   4) If a particular system has special hardware that could speed up certain
+      operations, the person porting the code should be able to use it easily.
+   5) Simple ports should be possible by providing only the basic required
+      functions.  The port can be made faster if more primitives are
+      implemented specifically for that system.
+
+
+Here's my proposal:
+
+Consider the following system diagram:
+
+                            -----------------
+                            |               |
+                            |  Applications |
+                            |               |
+                            -----------------
+                                    |
+                                    |
+                                    |
+                                    |
+               -------------------  |
+               |                 |  |   ------------------
+               | System-specific |  |   |                |
+               |    Functions    |  |   | Non-primitives |
+               |                 |  |   |                |
+               -------------------  |   ------------------
+                               |    |    |
+                               |    |    |
+                               |    |    |
+                            -----------------
+                            |               |
+                            |    Function   |
+                            |   Variables   |
+                            |               |
+                            -----------------
+
+In this diagram, the applications will perform their operations by calling
+function variables.  This would probably be simplified by providing macros to
+perform the actual calls.
+
+When the application starts, it calls two initialization functions:
+
+   pov_init_gfx_defaults();
+   pov_init_gfx_system_specific();
+
+The call to pov_init_gfx_defaults() will call a function in the non-primitives
+area to bind default functions to all of the function variables in the base
+module.  The subsequent call to pov_init_gfx_system_specific() will call a function
+in the system-specific area to over-ride functions bound in by the
+non-primitive area with functions that work for that specific system.
+
+For example, if we had a draw_line function we could write a non-primitive
+function to perform draw_filled_polygon().  This function would be bound to the
+appropriate function variable when the non-primitive area is initialized.
+
+If your particular hardware has hardware support for draw_filled_polygon(), then
+you can bind in your own function in the system-specific area to perform the
+same action.
+
+Sometimes, the system-specific function will want to perform its own work in
+addition to the work done by the non-primitive function.  In this case, the
+system function will store away a copy of the function pointer before it over-
+writes it with its own.  In its own function, it will call the stored function
+pointer in addition to performing its own operations.
+
+The system-specific functions can call other system-specific functions
+directly if they desire (although this is not recommended.)  The applications
+and the non-primitives must make their calls through the function variables.
+

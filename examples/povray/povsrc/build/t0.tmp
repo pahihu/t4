@@ -1,0 +1,2476 @@
+	debug 13,0,16902
+	debug 0,1
+	debug 11,2,"bezier.c"
+	debug 17,3,1
+	debug 17,4,1
+	debug 9,5,5,0,0,0,"___assert"
+ patch 4 long modnumber
+Â 0
+..0:
+	debug 17,6,26
+	debug 0,7
+	debug 11,8,"frame.h"
+	debug 17,9,25
+	debug 0,10
+	debug 11,11,"math.h"
+	debug 17,13,13
+	debug 17,14,15
+	debug 9,15,5,0,0,0,"acos"
+	debug 17,16,16
+	debug 9,17,5,0,0,0,"asin"
+	debug 17,18,17
+	debug 9,19,5,0,0,0,"atan"
+	debug 17,20,18
+	debug 9,21,5,0,0,0,"atan2"
+	debug 17,22,19
+	debug 9,23,5,0,0,0,"cos"
+	debug 17,24,20
+	debug 9,25,5,0,0,0,"sin"
+	debug 17,26,21
+	debug 9,27,5,0,0,0,"tan"
+	debug 17,28,22
+	debug 9,29,5,0,0,0,"cosh"
+	debug 17,30,23
+	debug 9,31,5,0,0,0,"sinh"
+	debug 17,32,24
+	debug 9,33,5,0,0,0,"tanh"
+	debug 17,34,25
+	debug 9,35,5,0,0,0,"exp"
+	debug 17,36,26
+	debug 9,37,5,0,0,0,"frexp"
+	debug 17,38,27
+	debug 9,39,5,0,0,0,"ldexp"
+	debug 17,40,28
+	debug 9,41,5,0,0,0,"log"
+	debug 17,42,29
+	debug 9,43,5,0,0,0,"log10"
+	debug 17,44,30
+	debug 9,45,5,0,0,0,"modf"
+	debug 17,46,31
+	debug 9,47,5,0,0,0,"pow"
+	debug 17,48,32
+	debug 9,49,5,0,0,0,"sqrt"
+	debug 17,50,33
+	debug 9,51,5,0,0,0,"ceil"
+	debug 17,52,34
+	debug 9,53,5,0,0,0,"fabs"
+	debug 17,54,35
+	debug 9,55,5,0,0,0,"floor"
+	debug 17,56,36
+	debug 9,57,5,0,0,0,"fmod"
+	debug 1,58
+	debug 17,59,26
+	debug 0,60
+	debug 11,61,"stdio.h"
+	debug 17,62,12
+	debug 0,63
+	debug 11,64,"subsem.h"
+	debug 17,65,9
+	debug 0,66
+	debug 11,67,"subchan.h"
+	debug 22,68,50,"_IMS_Channel",35,0,0
+	debug 17,69,11
+	debug 1,70
+	debug 22,71,51,"_IMS_SemPacket",37,0,0
+	debug 22,72,52,"_IMS_SemPacket",35,51,0
+	debug 17,73,11
+	debug 22,74,53,"_IMS_Sim_Semaphore",37,0,0
+	debug 22,75,54,"_IMS_Sim_Semaphore",35,53,0
+	debug 17,76,12
+	debug 22,77,55,"_IMS_Semaphore",37,0,0
+	debug 22,78,56,"_IMS_Semaphore",35,55,0
+	debug 17,79,13
+	debug 22,80,57,"_IMS_Channel",35,0,0
+	debug 22,81,58,,31,52,0
+	debug 22,82,51,"_IMS_SemPacket",33,8,2
+	debug 25,83,57,"__post",0,32
+	debug 25,84,58,"__next",32,32
+	debug 22,85,59,,31,52,0
+	debug 22,86,60,,31,52,0
+	debug 22,87,53,"_IMS_Sim_Semaphore",33,12,3
+	debug 25,88,19,"__value",0,32
+	debug 25,89,59,"__head",32,32
+	debug 25,90,60,"__tail",64,32
+	debug 22,91,61,,31,52,0
+	debug 22,92,62,,31,52,0
+	debug 22,93,63,"_IMS_Channel",35,0,0
+	debug 22,94,55,"_IMS_Semaphore",33,44,7
+	debug 25,95,19,"__value",0,32
+	debug 25,96,61,"__head",32,32
+	debug 25,97,62,"__tail",64,32
+	debug 25,98,54,"__lo_sem",96,96
+	debug 25,99,54,"__hi_sem",192,96
+	debug 25,100,4,"__lo_using",288,32
+	debug 25,101,63,"__hi_chan",320,32
+	debug 1,102
+	debug 22,103,64,"size_t",35,19,0
+	debug 17,104,16
+	debug 22,105,65,,31,3,0
+	debug 22,106,66,,30,65,1
+	debug 22,107,67,"__va_list",35,66,0
+	debug 17,108,19
+	debug 22,109,68,"__fpos_t_struct",33,4,1
+	debug 25,110,17,"__lo",0,32
+	debug 22,111,69,"fpos_t",35,68,0
+	debug 17,112,27
+	debug 22,113,71,,30,3,2
+	debug 22,114,72,,31,3,0
+	debug 22,115,70,"__extradata",33,80,10
+	debug 25,116,71,"__lilbuf",0,16
+	debug 25,117,6,"_lspos",32,32
+	debug 25,118,72,"__extent",64,32
+	debug 25,119,4,"__buflim",96,32
+	debug 25,120,4,"__savedicnt",128,32
+	debug 25,121,4,"__savedocnt",160,32
+	debug 25,122,56,"__sem",192,352
+	debug 25,123,4,"__check",544,32
+	debug 25,124,6,"__lastftell",576,32
+	debug 25,125,4,"__lastnumcrlf",608,32
+	debug 22,126,73,"_extradata",35,70,0
+	debug 17,127,41
+	debug 22,128,74,,31,70,0
+	debug 22,129,75,"_extradatap",35,74,0
+	debug 17,130,41
+	debug 22,131,77,,31,3,0
+	debug 22,132,78,,31,3,0
+	debug 22,133,79,,31,70,0
+	debug 22,134,76,"__FILE_struct",33,40,10
+	debug 25,135,77,"__ptr",0,32
+	debug 25,136,4,"__icnt",32,32
+	debug 25,137,4,"__ocnt",64,32
+	debug 25,138,6,"__flag",96,32
+	debug 25,139,78,"__base",128,32
+	debug 25,140,4,"__file",160,32
+	debug 25,141,6,"__pos",192,32
+	debug 25,142,4,"__bufsiz",224,32
+	debug 25,143,4,"__signature",256,32
+	debug 25,144,79,"__extrap",288,32
+	debug 22,145,80,"FILE",35,76,0
+	debug 17,146,54
+	debug 22,147,81,,30,80,16
+	debug 17,149,78
+	debug 17,150,84
+	debug 9,151,5,0,0,0,"remove"
+	debug 17,152,85
+	debug 9,153,5,0,0,0,"rename"
+	debug 17,154,86
+	debug 9,155,5,0,0,0,"tmpfile"
+	debug 17,156,87
+	debug 9,157,5,0,0,0,"tmpnam"
+	debug 17,158,88
+	debug 9,159,5,0,0,0,"fclose"
+	debug 17,160,89
+	debug 9,161,5,0,0,0,"fflush"
+	debug 17,162,90
+	debug 9,163,5,0,0,0,"fopen"
+	debug 17,164,92
+	debug 9,165,5,0,0,0,"freopen"
+	debug 17,166,93
+	debug 9,167,4,0,0,0,"setbuf"
+	debug 17,168,95
+	debug 9,169,5,0,0,0,"setvbuf"
+	debug 17,170,99
+	debug 9,171,5,0,0,0,"fprintf"
+	debug 17,172,100
+	debug 9,173,5,0,0,0,"printf"
+	debug 17,174,101
+	debug 9,175,5,0,0,0,"sprintf"
+	debug 17,176,106
+	debug 9,177,5,0,0,0,"fscanf"
+	debug 17,178,107
+	debug 9,179,5,0,0,0,"scanf"
+	debug 17,180,108
+	debug 9,181,5,0,0,0,"sscanf"
+	debug 17,182,112
+	debug 9,183,5,0,0,0,"vprintf"
+	debug 17,184,114
+	debug 9,185,5,0,0,0,"vfprintf"
+	debug 17,186,115
+	debug 9,187,5,0,0,0,"vsprintf"
+	debug 17,188,116
+	debug 9,189,5,0,0,0,"fgetc"
+	debug 17,190,117
+	debug 9,191,5,0,0,0,"fgets"
+	debug 17,192,118
+	debug 9,193,5,0,0,0,"fputc"
+	debug 17,194,119
+	debug 9,195,5,0,0,0,"fputs"
+	debug 17,196,120
+	debug 9,197,5,0,0,0,"getc"
+	debug 17,198,124
+	debug 9,199,5,0,0,0,"getchar"
+	debug 17,200,125
+	debug 9,201,5,0,0,0,"gets"
+	debug 17,202,127
+	debug 9,203,5,0,0,0,"putc"
+	debug 17,204,131
+	debug 9,205,5,0,0,0,"putchar"
+	debug 17,206,132
+	debug 9,207,5,0,0,0,"puts"
+	debug 17,208,133
+	debug 9,209,5,0,0,0,"ungetc"
+	debug 17,210,135
+	debug 9,211,5,0,0,0,"fread"
+	debug 17,212,137
+	debug 9,213,5,0,0,0,"fwrite"
+	debug 17,214,138
+	debug 9,215,5,0,0,0,"fgetpos"
+	debug 17,216,139
+	debug 9,217,5,0,0,0,"fseek"
+	debug 17,218,140
+	debug 9,219,5,0,0,0,"fsetpos"
+	debug 17,220,141
+	debug 9,221,5,0,0,0,"ftell"
+	debug 17,222,142
+	debug 9,223,4,0,0,0,"rewind"
+	debug 17,224,143
+	debug 9,225,4,0,0,0,"clearerr"
+	debug 17,226,145
+	debug 9,227,5,0,0,0,"feof"
+	debug 17,228,147
+	debug 9,229,5,0,0,0,"ferror"
+	debug 17,230,148
+	debug 9,231,4,0,0,0,"perror"
+	debug 1,232
+	debug 17,233,27
+	debug 0,234
+	debug 11,235,"string.h"
+	debug 17,236,21
+	debug 9,237,5,0,0,0,"memcpy"
+	debug 17,238,22
+	debug 9,239,5,0,0,0,"memmove"
+	debug 17,240,23
+	debug 9,241,5,0,0,0,"strcpy"
+	debug 17,242,24
+	debug 9,243,5,0,0,0,"strncpy"
+	debug 17,244,25
+	debug 9,245,5,0,0,0,"strcat"
+	debug 17,246,26
+	debug 9,247,5,0,0,0,"strncat"
+	debug 17,248,27
+	debug 9,249,5,0,0,0,"memcmp"
+	debug 17,250,28
+	debug 9,251,5,0,0,0,"strcmp"
+	debug 17,252,29
+	debug 9,253,5,0,0,0,"strncmp"
+	debug 17,254,30
+	debug 9,255,5,0,0,0,"strcoll"
+	debug 17,256,31
+	debug 9,257,5,0,0,0,"strxfrm"
+	debug 17,258,32
+	debug 9,259,5,0,0,0,"memchr"
+	debug 17,260,33
+	debug 9,261,5,0,0,0,"strchr"
+	debug 17,262,34
+	debug 9,263,5,0,0,0,"strcspn"
+	debug 17,264,35
+	debug 9,265,5,0,0,0,"strpbrk"
+	debug 17,266,36
+	debug 9,267,5,0,0,0,"strrchr"
+	debug 17,268,37
+	debug 9,269,5,0,0,0,"strspn"
+	debug 17,270,38
+	debug 9,271,5,0,0,0,"strstr"
+	debug 17,272,39
+	debug 9,273,5,0,0,0,"strtok"
+	debug 17,274,40
+	debug 9,275,5,0,0,0,"memset"
+	debug 17,276,41
+	debug 9,277,5,0,0,0,"strerror"
+	debug 17,278,42
+	debug 9,279,5,0,0,0,"strlen"
+	debug 17,280,43
+	debug 9,281,5,0,0,0,"_memcpy"
+	debug 17,282,44
+	debug 9,283,5,0,0,0,"_strcpy"
+	debug 1,284
+	debug 17,285,28
+	debug 0,286
+	debug 11,287,"config.h"
+	debug 17,288,128
+	debug 9,289,4,0,0,0,"transputer_init_povray"
+	debug 17,290,137
+	debug 0,291
+	debug 11,292,"stdlib.h"
+	debug 22,293,82,"wchar_t",35,4,0
+	debug 17,294,18
+	debug 22,295,83,"div_t",33,8,2
+	debug 25,296,4,"quot",0,32
+	debug 25,297,4,"rem",32,32
+	debug 22,298,84,"div_t",35,83,0
+	debug 17,299,26
+	debug 22,300,85,"ldiv_t",33,8,2
+	debug 25,301,6,"quot",0,32
+	debug 25,302,6,"rem",32,32
+	debug 22,303,86,"ldiv_t",35,85,0
+	debug 17,304,28
+	debug 17,305,41
+	debug 9,306,5,0,0,0,"atof"
+	debug 17,307,42
+	debug 9,308,5,0,0,0,"atoi"
+	debug 17,309,43
+	debug 9,310,5,0,0,0,"atol"
+	debug 17,311,44
+	debug 9,312,5,0,0,0,"strtod"
+	debug 17,313,45
+	debug 9,314,5,0,0,0,"strtol"
+	debug 17,315,47
+	debug 9,316,5,0,0,0,"strtoul"
+	debug 17,317,48
+	debug 9,318,5,0,0,0,"rand"
+	debug 17,319,49
+	debug 9,320,4,0,0,0,"srand"
+	debug 17,321,50
+	debug 9,322,5,0,0,0,"calloc"
+	debug 17,323,51
+	debug 9,324,4,0,0,0,"free"
+	debug 17,325,52
+	debug 9,326,5,0,0,0,"malloc"
+	debug 17,327,53
+	debug 9,328,5,0,0,0,"realloc"
+	debug 17,329,54
+	debug 9,330,4,0,0,0,"abort"
+	debug 17,331,55
+	debug 9,332,5,0,0,0,"atexit"
+	debug 17,333,56
+	debug 9,334,4,0,0,0,"exit"
+	debug 17,335,57
+	debug 9,336,5,0,0,0,"getenv"
+	debug 17,337,58
+	debug 9,338,5,0,0,0,"system"
+	debug 17,339,61
+	debug 9,340,5,0,0,0,"bsearch"
+	debug 17,341,63
+	debug 9,342,4,0,0,0,"qsort"
+	debug 17,343,64
+	debug 9,344,5,0,0,0,"abs"
+	debug 17,345,65
+	debug 9,346,5,0,0,0,"div"
+	debug 17,347,66
+	debug 9,348,5,0,0,0,"labs"
+	debug 17,349,67
+	debug 9,350,5,0,0,0,"ldiv"
+	debug 17,351,68
+	debug 9,352,5,0,0,0,"mblen"
+	debug 17,353,69
+	debug 9,354,5,0,0,0,"mbtowc"
+	debug 17,355,70
+	debug 9,356,5,0,0,0,"wctomb"
+	debug 17,357,71
+	debug 9,358,5,0,0,0,"mbstowcs"
+	debug 17,359,72
+	debug 9,360,5,0,0,0,"wcstombs"
+	debug 1,361
+	debug 17,362,138
+	debug 0,363
+	debug 11,364,"process.h"
+	debug 17,365,9
+	debug 0,366
+	debug 11,367,"channel.h"
+	debug 17,368,9
+	debug 0,369
+	debug 11,370,"subchan.h"
+	debug 1,371
+	debug 22,372,87,"_IMS_Channel",35,0,0
+	debug 22,373,88,"Channel",35,87,0
+	debug 17,374,11
+	debug 17,375,27
+	debug 9,376,4,0,0,0,"ChanOut"
+	debug 17,377,28
+	debug 9,378,4,0,0,0,"ChanIn"
+	debug 17,379,29
+	debug 9,380,5,0,0,0,"ChanAlloc"
+	debug 17,381,30
+	debug 9,382,4,0,0,0,"ChanInit"
+	debug 17,383,31
+	debug 9,384,5,0,0,0,"ChanReset"
+	debug 17,385,32
+	debug 9,386,4,0,0,0,"ChanOutChar"
+	debug 17,387,33
+	debug 9,388,4,0,0,0,"ChanOutInt"
+	debug 17,389,34
+	debug 9,390,5,0,0,0,"ChanInChar"
+	debug 17,391,35
+	debug 9,392,5,0,0,0,"ChanInInt"
+	debug 17,393,37
+	debug 9,394,5,0,0,0,"ChanOutTimeFail"
+	debug 17,395,39
+	debug 9,396,5,0,0,0,"ChanOutChanFail"
+	debug 17,397,41
+	debug 9,398,5,0,0,0,"ChanInTimeFail"
+	debug 17,399,43
+	debug 9,400,5,0,0,0,"ChanInChanFail"
+	debug 1,401
+	debug 22,402,89,"Process",37,0,0
+	debug 22,403,90,"Process",35,89,0
+	debug 17,404,11
+	debug 22,405,91,,31,90,0
+	debug 22,406,92,,31,4,0
+	debug 22,407,93,,31,4,0
+	debug 22,408,89,"Process",33,28,7
+	debug 25,409,91,"link",0,32
+	debug 25,410,4,"wsret",32,32
+	debug 25,411,92,"wbase",64,32
+	debug 25,412,4,"wsize",96,32
+	debug 25,413,93,"wp",128,32
+	debug 25,414,4,"psize",160,32
+	debug 25,415,20,"func",192,32
+	debug 22,416,94,,31,90,0
+	debug 17,418,23
+	debug 17,419,54
+	debug 9,420,5,0,0,0,"ProcAlloc"
+	debug 17,421,57
+	debug 9,422,5,0,0,0,"ProcInit"
+	debug 17,423,58
+	debug 9,424,4,0,0,0,"ProcParam"
+	debug 17,425,59
+	debug 9,426,5,0,0,0,"ProcTime"
+	debug 17,427,60
+	debug 9,428,5,0,0,0,"ProcGetPriority"
+	debug 17,429,61
+	debug 9,430,4,0,0,0,"ProcReschedule"
+	debug 17,431,62
+	debug 9,432,4,0,0,0,"ProcRun"
+	debug 17,433,63
+	debug 9,434,4,0,0,0,"ProcRunHigh"
+	debug 17,435,64
+	debug 9,436,4,0,0,0,"ProcRunLow"
+	debug 17,437,65
+	debug 9,438,4,0,0,0,"ProcPar"
+	debug 17,439,66
+	debug 9,440,4,0,0,0,"ProcParList"
+	debug 17,441,67
+	debug 9,442,4,0,0,0,"ProcPriPar"
+	debug 17,443,68
+	debug 9,444,5,0,0,0,"ProcAlt"
+	debug 17,445,69
+	debug 9,446,5,0,0,0,"ProcAltList"
+	debug 17,447,70
+	debug 9,448,5,0,0,0,"ProcSkipAlt"
+	debug 17,449,71
+	debug 9,450,5,0,0,0,"ProcSkipAltList"
+	debug 17,451,72
+	debug 9,452,5,0,0,0,"ProcTimerAlt"
+	debug 17,453,73
+	debug 9,454,5,0,0,0,"ProcTimerAltList"
+	debug 17,455,74
+	debug 9,456,5,0,0,0,"ProcTimePlus"
+	debug 17,457,75
+	debug 9,458,5,0,0,0,"ProcTimeMinus"
+	debug 17,459,76
+	debug 9,460,5,0,0,0,"ProcTimeAfter"
+	debug 17,461,77
+	debug 9,462,4,0,0,0,"ProcAfter"
+	debug 17,463,78
+	debug 9,464,4,0,0,0,"ProcWait"
+	debug 17,465,79
+	debug 9,466,4,0,0,0,"ProcStop"
+	debug 17,467,80
+	debug 9,468,4,0,0,0,"ProcInitClean"
+	debug 17,469,81
+	debug 9,470,4,0,0,0,"ProcAllocClean"
+	debug 1,471
+	debug 17,472,139
+	debug 0,473
+	debug 11,474,"misc.h"
+	debug 17,475,9
+	debug 0,476
+	debug 11,477,"subsem.h"
+	debug 1,478
+	debug 17,479,20
+	debug 9,480,4,0,0,0,"exit_repeat"
+	debug 17,481,21
+	debug 9,482,4,0,0,0,"exit_terminate"
+	debug 17,483,22
+	debug 9,484,5,0,0,0,"set_abort_action"
+	debug 17,485,23
+	debug 9,486,4,0,0,0,"debug_message"
+	debug 17,487,24
+	debug 9,488,4,0,0,0,"debug_assert"
+	debug 17,489,25
+	debug 9,490,4,0,0,0,"debug_stop"
+	debug 17,491,26
+	debug 9,492,5,0,0,0,"get_param"
+	debug 17,493,27
+	debug 9,494,5,0,0,0,"max_stack_usage"
+	debug 1,495
+	debug 17,496,140
+	debug 0,497
+	debug 11,498,"channel.h"
+	debug 1,499
+	debug 17,501,151
+	debug 17,503,152
+	debug 22,504,95,,31,88,0
+	debug 17,506,153
+	debug 1,507
+	debug 22,508,96,"q_entry",37,0,0
+	debug 22,509,97,"INTERSECTION",35,96,0
+	debug 17,510,223
+	debug 22,511,98,"Vector_Struct",37,0,0
+	debug 22,512,99,"VECTOR",35,98,0
+	debug 17,513,224
+	debug 22,514,100,,30,9,4
+	debug 22,515,101,,30,100,4
+	debug 22,516,102,"MATRIX",35,101,0
+	debug 17,517,225
+	debug 22,518,103,"Colour_Struct",37,0,0
+	debug 22,519,104,"COLOUR",35,103,0
+	debug 17,520,226
+	debug 22,521,105,"Colour_Map_Entry",37,0,0
+	debug 22,522,106,"COLOUR_MAP_ENTRY",35,105,0
+	debug 17,523,227
+	debug 22,524,107,"Colour_Map_Struct",37,0,0
+	debug 22,525,108,"COLOUR_MAP",35,107,0
+	debug 17,526,228
+	debug 22,527,109,"Transformation_Struct",37,0,0
+	debug 22,528,110,"TRANSFORMATION",35,109,0
+	debug 17,529,229
+	debug 22,530,111,"Image_Struct",37,0,0
+	debug 22,531,112,"IMAGE",35,111,0
+	debug 17,532,230
+	debug 22,533,113,"Texture_Struct",37,0,0
+	debug 22,534,114,"TEXTURE",35,113,0
+	debug 17,535,231
+	debug 22,536,115,"Method_Struct",37,0,0
+	debug 22,537,116,"METHODS",35,115,0
+	debug 17,538,232
+	debug 22,539,117,"Viewpoint_Struct",37,0,0
+	debug 22,540,118,"VIEWPOINT",35,117,0
+	debug 17,541,233
+	debug 22,542,119,"Object_Shape",37,0,0
+	debug 22,543,120,"SHAPE",35,119,0
+	debug 17,544,234
+	debug 22,545,121,"Object_Struct",37,0,0
+	debug 22,546,122,"OBJECT",35,121,0
+	debug 17,547,235
+	debug 22,548,123,"Sphere_Shape",37,0,0
+	debug 22,549,124,"SPHERE",35,123,0
+	debug 17,550,236
+	debug 22,551,125,"Light_Source_Shape",37,0,0
+	debug 22,552,126,"LIGHT_SHAPE",35,125,0
+	debug 17,553,237
+	debug 22,554,127,"Quadric_Shape",37,0,0
+	debug 22,555,128,"QUADRIC",35,127,0
+	debug 17,556,238
+	debug 22,557,129,"Poly_Shape",37,0,0
+	debug 22,558,130,"POLY",35,129,0
+	debug 17,559,239
+	debug 22,560,131,"Bicubic_Patch_Shape",37,0,0
+	debug 22,561,132,"BICUBIC_PATCH",35,131,0
+	debug 17,562,240
+	debug 22,563,133,"Triangle_Shape",37,0,0
+	debug 22,564,134,"TRIANGLE",35,133,0
+	debug 17,565,241
+	debug 22,566,135,"Smooth_Triangle_Shape",37,0,0
+	debug 22,567,136,"SMOOTH_TRIANGLE",35,135,0
+	debug 17,568,242
+	debug 22,569,137,"Plane_Shape",37,0,0
+	debug 22,570,138,"PLANE",35,137,0
+	debug 17,571,243
+	debug 22,572,139,"Box_Shape",37,0,0
+	debug 22,573,140,"BOX",35,139,0
+	debug 17,574,244
+	debug 22,575,141,"Blob_Shape",37,0,0
+	debug 22,576,142,"BLOB",35,141,0
+	debug 17,577,245
+	debug 22,578,143,"CSG_Type",37,0,0
+	debug 22,579,144,"CSG_SHAPE",35,143,0
+	debug 17,580,246
+	debug 22,581,145,"Composite_Object_Struct",37,0,0
+	debug 22,582,146,"COMPOSITE",35,145,0
+	debug 17,583,247
+	debug 22,584,147,"Ray_Struct",37,0,0
+	debug 22,585,148,"RAY",35,147,0
+	debug 17,586,248
+	debug 22,587,149,"Frame_Struct",37,0,0
+	debug 22,588,150,"FRAME",35,149,0
+	debug 17,589,249
+	debug 22,590,151,"prioq_struct",37,0,0
+	debug 22,591,152,"PRIOQ",35,151,0
+	debug 17,592,250
+	debug 22,593,153,"TOKEN",35,4,0
+	debug 17,594,251
+	debug 22,595,154,"CONSTANT",35,4,0
+	debug 17,596,252
+	debug 22,597,155,"Chunk_Header_Struct",37,0,0
+	debug 22,598,156,"CHUNK_HEADER",35,155,0
+	debug 17,599,253
+	debug 22,600,157,"Data_File_Struct",37,0,0
+	debug 22,601,158,"DATA_FILE",35,157,0
+	debug 17,602,254
+	debug 22,603,159,"complex_block",37,0,0
+	debug 22,604,160,"complex",35,159,0
+	debug 17,605,255
+	debug 22,606,161,"Height_Field_Shape",37,0,0
+	debug 22,607,162,"HEIGHT_FIELD",35,161,0
+	debug 17,608,256
+	debug 22,609,163,"WORD",35,5,0
+	debug 17,610,257
+	debug 22,611,98,"Vector_Struct",33,24,3
+	debug 25,612,9,"x",0,64
+	debug 25,613,9,"y",64,64
+	debug 25,614,9,"z",128,64
+	debug 22,615,103,"Colour_Struct",33,32,4
+	debug 25,616,9,"Red",0,64
+	debug 25,617,9,"Green",64,64
+	debug 25,618,9,"Blue",128,64
+	debug 25,619,9,"Alpha",192,64
+	debug 22,620,105,"Colour_Map_Entry",33,80,4
+	debug 25,621,9,"start",0,64
+	debug 25,622,9,"end",64,64
+	debug 25,623,104,"Start_Colour",128,256
+	debug 25,624,104,"End_Colour",384,256
+	debug 22,625,164,,31,106,0
+	debug 22,626,107,"Colour_Map_Struct",33,12,3
+	debug 25,627,4,"Number_Of_Entries",0,32
+	debug 25,628,164,"Colour_Map_Entries",32,32
+	debug 25,629,4,"Transparency_Flag",64,32
+	debug 22,630,109,"Transformation_Struct",33,256,2
+	debug 25,631,102,"matrix",0,1024
+	debug 25,632,102,"inverse",1024,1024
+	debug 22,633,165,"<Anon1_at_line_295>",33,8,4
+	debug 25,634,16,"Red",0,16
+	debug 25,635,16,"Green",16,16
+	debug 25,636,16,"Blue",32,16
+	debug 25,637,16,"Alpha",48,16
+	debug 22,638,166,"IMAGE_COLOUR",35,165,0
+	debug 17,639,297
+	debug 22,640,168,,31,3,0
+	debug 22,641,169,,31,3,0
+	debug 22,642,170,,31,3,0
+	debug 22,643,167,"Image_Line",33,12,3
+	debug 25,644,168,"red",0,32
+	debug 25,645,169,"green",32,32
+	debug 25,646,170,"blue",64,32
+	debug 22,647,171,"IMAGE_LINE",35,167,0
+	debug 17,648,304
+	debug 22,649,172,,31,166,0
+	debug 22,650,174,,31,171,0
+	debug 22,651,175,,31,3,0
+	debug 22,652,176,,31,175,0
+	debug 22,653,173,"<Anon1_at_line_317>",34,4,2
+	debug 26,654,174,"rgb_lines",0,32
+	debug 26,655,176,"map_lines",0,32
+	debug 22,656,111,"Image_Struct",33,72,12
+	debug 25,657,9,"width",0,64
+	debug 25,658,9,"height",64,64
+	debug 25,659,4,"iwidth",128,32
+	debug 25,660,4,"iheight",160,32
+	debug 25,661,4,"Map_Type",192,32
+	debug 25,662,4,"Interpolation_Type",224,32
+	debug 25,663,5,"Once_Flag",256,16
+	debug 25,664,5,"Use_Colour_Flag",272,16
+	debug 25,665,99,"Image_Gradient",288,192
+	debug 25,666,5,"Colour_Map_Size",480,16
+	debug 25,667,172,"Colour_Map",512,32
+	debug 25,668,173,"data",544,32
+	debug 22,669,177,,31,114,0
+	debug 22,670,178,,31,114,0
+	debug 22,671,179,,31,110,0
+	debug 22,672,180,,31,104,0
+	debug 22,673,181,,31,104,0
+	debug 22,674,182,,31,108,0
+	debug 22,675,183,,31,112,0
+	debug 22,676,184,,31,112,0
+	debug 22,677,185,,31,112,0
+	debug 22,678,113,"Texture_Struct",33,224,35
+	debug 25,679,177,"Next_Texture",0,32
+	debug 25,680,178,"Next_Material",32,32
+	debug 25,681,4,"Number_Of_Materials",64,32
+	debug 25,682,9,"Object_Reflection",96,64
+	debug 25,683,9,"Object_Ambient",160,64
+	debug 25,684,9,"Object_Diffuse",224,64
+	debug 25,685,9,"Object_Brilliance",288,64
+	debug 25,686,9,"Object_Index_Of_Refraction",352,64
+	debug 25,687,9,"Object_Refraction",416,64
+	debug 25,688,9,"Object_Transmit",480,64
+	debug 25,689,9,"Object_Specular",544,64
+	debug 25,690,9,"Object_Roughness",608,64
+	debug 25,691,9,"Object_Phong",672,64
+	debug 25,692,9,"Object_PhongSize",736,64
+	debug 25,693,9,"Bump_Amount",800,64
+	debug 25,694,9,"Texture_Randomness",864,64
+	debug 25,695,9,"Frequency",928,64
+	debug 25,696,9,"Phase",992,64
+	debug 25,697,4,"Texture_Number",1056,32
+	debug 25,698,4,"Bump_Number",1088,32
+	debug 25,699,4,"Texture_Index",1120,32
+	debug 25,700,179,"Texture_Transformation",1152,32
+	debug 25,701,180,"Colour1",1184,32
+	debug 25,702,181,"Colour2",1216,32
+	debug 25,703,9,"Turbulence",1248,64
+	debug 25,704,99,"Texture_Gradient",1312,192
+	debug 25,705,182,"Colour_Map",1504,32
+	debug 25,706,183,"Image",1536,32
+	debug 25,707,184,"Bump_Image",1568,32
+	debug 25,708,185,"Material_Image",1600,32
+	debug 25,709,5,"Metallic_Flag",1632,16
+	debug 25,710,5,"Once_Flag",1648,16
+	debug 25,711,5,"Constant_Flag",1664,16
+	debug 25,712,4,"Octaves",1696,32
+	debug 25,713,9,"Mortar",1728,64
+	debug 22,714,186,,31,116,0
+	debug 22,715,187,,31,121,0
+	debug 22,716,188,,31,120,0
+	debug 22,717,189,,31,120,0
+	debug 22,718,190,,31,120,0
+	debug 22,719,191,,31,104,0
+	debug 22,720,192,,31,114,0
+	debug 22,721,121,"Object_Struct",33,36,9
+	debug 25,722,186,"Methods",0,32
+	debug 25,723,4,"Type",32,32
+	debug 25,724,187,"Next_Object",64,32
+	debug 25,725,188,"Bounding_Shapes",96,32
+	debug 25,726,189,"Clipping_Shapes",128,32
+	debug 25,727,190,"Shape",160,32
+	debug 25,728,3,"No_Shadow_Flag",192,8
+	debug 25,729,191,"Object_Colour",224,32
+	debug 25,730,192,"Object_Texture",256,32
+	debug 22,731,193,"INTERSECTION_METHOD",35,20,0
+	debug 17,732,442
+	debug 22,733,194,"ALL_INTERSECTIONS_METHOD",35,20,0
+	debug 17,734,443
+	debug 22,735,195,"INSIDE_METHOD",35,20,0
+	debug 17,736,444
+	debug 22,737,196,"NORMAL_METHOD",35,20,0
+	debug 17,738,445
+	debug 22,739,197,"COPY_METHOD",35,20,0
+	debug 17,740,446
+	debug 22,741,198,"TRANSLATE_METHOD",35,20,0
+	debug 17,742,447
+	debug 22,743,199,"ROTATE_METHOD",35,20,0
+	debug 17,744,448
+	debug 22,745,200,"SCALE_METHOD",35,20,0
+	debug 17,746,449
+	debug 22,747,201,"INVERT_METHOD",35,20,0
+	debug 17,748,450
+	debug 22,749,115,"Method_Struct",33,36,9
+	debug 25,750,193,"Intersection_Method",0,32
+	debug 25,751,194,"All_Intersections_Method",32,32
+	debug 25,752,195,"Inside_Method",64,32
+	debug 25,753,196,"Normal_Method",96,32
+	debug 25,754,197,"Copy_Method",128,32
+	debug 25,755,198,"Translate_Method",160,32
+	debug 25,756,199,"Rotate_Method",192,32
+	debug 25,757,200,"Scale_Method",224,32
+	debug 25,758,201,"Invert_Method",256,32
+	debug 22,759,202,,31,116,0
+	debug 22,760,117,"Viewpoint_Struct",33,128,7
+	debug 25,761,202,"Methods",0,32
+	debug 25,762,4,"Type",32,32
+	debug 25,763,99,"Location",64,192
+	debug 25,764,99,"Direction",256,192
+	debug 25,765,99,"Up",448,192
+	debug 25,766,99,"Right",640,192
+	debug 25,767,99,"Sky",832,192
+	debug 22,768,203,,31,116,0
+	debug 22,769,204,,31,119,0
+	debug 22,770,205,,31,14,0
+	debug 22,771,206,,31,114,0
+	debug 22,772,207,,31,104,0
+	debug 22,773,119,"Object_Shape",33,24,6
+	debug 25,774,203,"Methods",0,32
+	debug 25,775,4,"Type",32,32
+	debug 25,776,204,"Next_Object",64,32
+	debug 25,777,205,"Parent_Object",96,32
+	debug 25,778,206,"Shape_Texture",128,32
+	debug 25,779,207,"Shape_Colour",160,32
+	debug 22,780,208,,31,116,0
+	debug 22,781,209,,31,120,0
+	debug 22,782,210,,31,122,0
+	debug 22,783,211,,31,114,0
+	debug 22,784,212,,31,104,0
+	debug 22,785,123,"Sphere_Shape",33,112,15
+	debug 25,786,208,"Methods",0,32
+	debug 25,787,4,"Type",32,32
+	debug 25,788,209,"Next_Object",64,32
+	debug 25,789,210,"Parent_Object",96,32
+	debug 25,790,211,"Shape_Texture",128,32
+	debug 25,791,212,"Shape_Colour",160,32
+	debug 25,792,99,"Center",192,192
+	debug 25,793,9,"Radius",384,64
+	debug 25,794,9,"Radius_Squared",448,64
+	debug 25,795,9,"Inverse_Radius",512,64
+	debug 25,796,99,"VPOtoC",576,192
+	debug 25,797,9,"VPOCSquared",768,64
+	debug 25,798,5,"VPinside",832,16
+	debug 25,799,5,"VPCached",848,16
+	debug 25,800,5,"Inverted",864,16
+	debug 22,801,213,,31,116,0
+	debug 22,802,214,,31,120,0
+	debug 22,803,215,,31,122,0
+	debug 22,804,216,,31,114,0
+	debug 22,805,217,,31,104,0
+	debug 22,806,218,,31,110,0
+	debug 22,807,219,,30,99,2
+	debug 22,808,139,"Box_Shape",33,80,9
+	debug 25,809,213,"Methods",0,32
+	debug 25,810,4,"Type",32,32
+	debug 25,811,214,"Next_Object",64,32
+	debug 25,812,215,"Parent_Object",96,32
+	debug 25,813,216,"Shape_Texture",128,32
+	debug 25,814,217,"Shape_Colour",160,32
+	debug 25,815,218,"Transform",192,32
+	debug 25,816,219,"bounds",224,384
+	debug 25,817,5,"Inverted",608,16
+	debug 22,818,221,,30,9,3
+	debug 22,819,222,,30,9,5
+	debug 22,820,220,"<Anon1_at_line_530>",33,96,4
+	debug 25,821,99,"pos",0,192
+	debug 25,822,9,"radius2",192,64
+	debug 25,823,221,"coeffs",256,192
+	debug 25,824,222,"tcoeffs",448,320
+	debug 22,825,223,"Blob_Element",35,220,0
+	debug 17,826,535
+	debug 22,827,224,"blob_list_struct",37,0,0
+	debug 22,828,225,,31,224,0
+	debug 22,829,226,"blobstackptr",35,225,0
+	debug 17,830,537
+	debug 22,831,224,"blob_list_struct",33,100,2
+	debug 25,832,223,"elem",0,768
+	debug 25,833,226,"next",768,32
+	debug 22,834,227,"<Anon1_at_line_543>",33,16,3
+	debug 25,835,4,"type",0,32
+	debug 25,836,4,"index",32,32
+	debug 25,837,9,"bound",64,64
+	debug 22,838,228,"Blob_Interval",35,227,0
+	debug 17,839,546
+	debug 22,840,229,,31,116,0
+	debug 22,841,230,,31,120,0
+	debug 22,842,231,,31,122,0
+	debug 22,843,232,,31,114,0
+	debug 22,844,233,,31,104,0
+	debug 22,845,234,,31,110,0
+	debug 22,846,235,,31,223,0
+	debug 22,847,236,,31,228,0
+	debug 22,848,141,"Blob_Shape",33,56,13
+	debug 25,849,229,"Methods",0,32
+	debug 25,850,4,"Type",32,32
+	debug 25,851,230,"Next_Object",64,32
+	debug 25,852,231,"Parent_Object",96,32
+	debug 25,853,232,"Shape_Texture",128,32
+	debug 25,854,233,"Shape_Colour",160,32
+	debug 25,855,234,"Transform",192,32
+	debug 25,856,5,"Inverted",224,16
+	debug 25,857,4,"count",256,32
+	debug 25,858,9,"threshold",288,64
+	debug 25,859,235,"list",352,32
+	debug 25,860,236,"intervals",384,32
+	debug 25,861,4,"Sturm_Flag",416,32
+	debug 22,862,237,,31,116,0
+	debug 22,863,238,,31,120,0
+	debug 22,864,239,,31,122,0
+	debug 22,865,240,,31,114,0
+	debug 22,866,241,,31,104,0
+	debug 22,867,242,,31,126,0
+	debug 22,868,125,"Light_Source_Shape",33,104,13
+	debug 25,869,237,"Methods",0,32
+	debug 25,870,4,"Type",32,32
+	debug 25,871,238,"Next_Object",64,32
+	debug 25,872,239,"Parent_Object",96,32
+	debug 25,873,240,"Shape_Texture",128,32
+	debug 25,874,241,"Shape_Colour",160,32
+	debug 25,875,99,"Center",192,192
+	debug 25,876,99,"Points_At",384,192
+	debug 25,877,242,"Next_Light_Source",576,32
+	debug 25,878,5,"Inverted",608,16
+	debug 25,879,9,"Coeff",640,64
+	debug 25,880,9,"Radius",704,64
+	debug 25,881,9,"Falloff",768,64
+	debug 22,882,243,,31,116,0
+	debug 22,883,244,,31,120,0
+	debug 22,884,245,,31,122,0
+	debug 22,885,246,,31,114,0
+	debug 22,886,247,,31,104,0
+	debug 22,887,127,"Quadric_Shape",33,120,13
+	debug 25,888,243,"Methods",0,32
+	debug 25,889,4,"Type",32,32
+	debug 25,890,244,"Next_Object",64,32
+	debug 25,891,245,"Parent_Object",96,32
+	debug 25,892,246,"Shape_Texture",128,32
+	debug 25,893,247,"Shape_Colour",160,32
+	debug 25,894,99,"Object_2_Terms",192,192
+	debug 25,895,99,"Object_Mixed_Terms",384,192
+	debug 25,896,99,"Object_Terms",576,192
+	debug 25,897,9,"Object_Constant",768,64
+	debug 25,898,9,"Object_VP_Constant",832,64
+	debug 25,899,4,"Constant_Cached",896,32
+	debug 25,900,4,"Non_Zero_Square_Term",928,32
+	debug 22,901,248,"<Anon1_at_line_601>",33,16,2
+	debug 25,902,9,"min_y",0,64
+	debug 25,903,9,"max_y",64,64
+	debug 22,904,249,"HF_BLOCK",35,248,0
+	debug 17,905,603
+	debug 22,906,250,,31,116,0
+	debug 22,907,251,,31,120,0
+	debug 22,908,252,,31,122,0
+	debug 22,909,253,,31,114,0
+	debug 22,910,254,,31,104,0
+	debug 22,911,255,,31,110,0
+	debug 22,912,256,,31,140,0
+	debug 22,913,257,,31,249,0
+	debug 22,914,258,,31,257,0
+	debug 22,915,259,,31,8,0
+	debug 22,916,260,,31,259,0
+	debug 22,917,161,"Height_Field_Shape",33,56,12
+	debug 25,918,250,"Methods",0,32
+	debug 25,919,4,"Type",32,32
+	debug 25,920,251,"Next_Object",64,32
+	debug 25,921,252,"Parent_Object",96,32
+	debug 25,922,253,"Shape_Texture",128,32
+	debug 25,923,254,"Shape_Colour",160,32
+	debug 25,924,255,"Transformation",192,32
+	debug 25,925,256,"bounding_box",224,32
+	debug 25,926,9,"Block_Size",256,64
+	debug 25,927,9,"Inv_Blk_Size",320,64
+	debug 25,928,258,"Block",384,32
+	debug 25,929,260,"Map",416,32
+	debug 22,930,261,,31,116,0
+	debug 22,931,262,,31,120,0
+	debug 22,932,263,,31,122,0
+	debug 22,933,264,,31,114,0
+	debug 22,934,265,,31,104,0
+	debug 22,935,266,,31,110,0
+	debug 22,936,267,,31,9,0
+	debug 22,937,129,"Poly_Shape",33,44,11
+	debug 25,938,261,"Methods",0,32
+	debug 25,939,4,"Type",32,32
+	debug 25,940,262,"Next_Object",64,32
+	debug 25,941,263,"Parent_Object",96,32
+	debug 25,942,264,"Shape_Texture",128,32
+	debug 25,943,265,"Shape_Colour",160,32
+	debug 25,944,266,"Transform",192,32
+	debug 25,945,5,"Inverted",224,16
+	debug 25,946,4,"Order",256,32
+	debug 25,947,4,"Sturm_Flag",288,32
+	debug 25,948,267,"Coeffs",320,32
+	debug 22,949,268,"Bezier_Node_Struct",37,0,0
+	debug 22,950,269,"BEZIER_NODE",35,268,0
+	debug 17,951,638
+	debug 22,952,270,"Bezier_Child_Struct",37,0,0
+	debug 22,953,271,"BEZIER_CHILDREN",35,270,0
+	debug 17,954,639
+	debug 22,955,272,"Bezier_Vertices_Struct",37,0,0
+	debug 22,956,273,"BEZIER_VERTICES",35,272,0
+	debug 17,957,640
+	debug 22,958,274,,31,269,0
+	debug 22,959,275,,30,274,4
+	debug 22,960,270,"Bezier_Child_Struct",33,16,1
+	debug 25,961,275,"Children",0,128
+	debug 22,962,276,,30,99,4
+	debug 22,963,272,"Bezier_Vertices_Struct",33,96,1
+	debug 25,964,276,"Vertices",0,768
+	debug 22,965,277,,31,14,0
+	debug 22,966,268,"Bezier_Node_Struct",33,44,5
+	debug 25,967,4,"Node_Type",0,32
+	debug 25,968,99,"Center",32,192
+	debug 25,969,9,"Radius_Squared",224,64
+	debug 25,970,4,"Count",288,32
+	debug 25,971,277,"Data_Ptr",320,32
+	debug 22,972,278,,31,116,0
+	debug 22,973,279,,31,120,0
+	debug 22,974,280,,31,122,0
+	debug 22,975,281,,31,114,0
+	debug 22,976,282,,31,104,0
+	debug 22,977,283,,30,99,4
+	debug 22,978,284,,30,283,4
+	debug 22,979,285,,30,99,32
+	debug 22,980,286,,30,99,32
+	debug 22,981,287,,31,99,0
+	debug 22,982,288,,31,287,0
+	debug 22,983,289,,31,99,0
+	debug 22,984,290,,31,289,0
+	debug 22,985,291,,31,99,0
+	debug 22,986,292,,31,291,0
+	debug 22,987,293,,31,9,0
+	debug 22,988,294,,31,293,0
+	debug 22,989,295,,31,269,0
+	debug 22,990,131,"Bicubic_Patch_Shape",33,2020,21
+	debug 25,991,278,"Methods",0,32
+	debug 25,992,4,"Type",32,32
+	debug 25,993,279,"Next_Object",64,32
+	debug 25,994,280,"Parent_Object",96,32
+	debug 25,995,281,"Shape_Texture",128,32
+	debug 25,996,282,"Shape_Colour",160,32
+	debug 25,997,4,"Patch_Type",192,32
+	debug 25,998,4,"U_Steps",224,32
+	debug 25,999,4,"V_Steps",256,32
+	debug 25,1000,284,"Control_Points",288,3072
+	debug 25,1001,99,"Bounding_Sphere_Center",3360,192
+	debug 25,1002,9,"Bounding_Sphere_Radius",3552,64
+	debug 25,1003,9,"Flatness_Value",3616,64
+	debug 25,1004,4,"Intersection_Count",3680,32
+	debug 25,1005,285,"Normal_Vector",3712,6144
+	debug 25,1006,286,"Intersection_Point",9856,6144
+	debug 25,1007,288,"Interpolated_Grid",16000,32
+	debug 25,1008,290,"Interpolated_Normals",16032,32
+	debug 25,1009,292,"Smooth_Normals",16064,32
+	debug 25,1010,294,"Interpolated_D",16096,32
+	debug 25,1011,295,"Node_Tree",16128,32
+	debug 22,1012,296,,31,116,0
+	debug 22,1013,297,,31,120,0
+	debug 22,1014,298,,31,122,0
+	debug 22,1015,299,,31,114,0
+	debug 22,1016,300,,31,104,0
+	debug 22,1017,133,"Triangle_Shape",33,144,17
+	debug 25,1018,296,"Methods",0,32
+	debug 25,1019,4,"Type",32,32
+	debug 25,1020,297,"Next_Object",64,32
+	debug 25,1021,298,"Parent_Object",96,32
+	debug 25,1022,299,"Shape_Texture",128,32
+	debug 25,1023,300,"Shape_Colour",160,32
+	debug 25,1024,99,"Normal_Vector",192,192
+	debug 25,1025,9,"Distance",384,64
+	debug 25,1026,9,"VPNormDotOrigin",448,64
+	debug 25,1027,19,"VPCached",512,1
+	debug 25,1028,19,"Dominant_Axis",513,2
+	debug 25,1029,19,"Inverted",515,1
+	debug 25,1030,19,"vAxis",516,2
+	debug 25,1031,99,"P1",544,192
+	debug 25,1032,99,"P2",736,192
+	debug 25,1033,99,"P3",928,192
+	debug 25,1034,5,"Degenerate_Flag",1120,16
+	debug 22,1035,301,,31,116,0
+	debug 22,1036,302,,31,120,0
+	debug 22,1037,303,,31,122,0
+	debug 22,1038,304,,31,114,0
+	debug 22,1039,305,,31,104,0
+	debug 22,1040,135,"Smooth_Triangle_Shape",33,248,22
+	debug 25,1041,301,"Methods",0,32
+	debug 25,1042,4,"Type",32,32
+	debug 25,1043,302,"Next_Object",64,32
+	debug 25,1044,303,"Parent_Object",96,32
+	debug 25,1045,304,"Shape_Texture",128,32
+	debug 25,1046,305,"Shape_Colour",160,32
+	debug 25,1047,99,"Normal_Vector",192,192
+	debug 25,1048,9,"Distance",384,64
+	debug 25,1049,9,"VPNormDotOrigin",448,64
+	debug 25,1050,19,"VPCached",512,1
+	debug 25,1051,19,"Dominant_Axis",513,2
+	debug 25,1052,19,"Inverted",515,1
+	debug 25,1053,19,"vAxis",516,2
+	debug 25,1054,99,"P1",544,192
+	debug 25,1055,99,"P2",736,192
+	debug 25,1056,99,"P3",928,192
+	debug 25,1057,5,"Degenerate_Flag",1120,16
+	debug 25,1058,99,"N1",1152,192
+	debug 25,1059,99,"N2",1344,192
+	debug 25,1060,99,"N3",1536,192
+	debug 25,1061,99,"Perp",1728,192
+	debug 25,1062,9,"BaseDelta",1920,64
+	debug 22,1063,306,,31,116,0
+	debug 22,1064,307,,31,120,0
+	debug 22,1065,308,,31,122,0
+	debug 22,1066,309,,31,114,0
+	debug 22,1067,310,,31,104,0
+	debug 22,1068,137,"Plane_Shape",33,68,10
+	debug 25,1069,306,"Methods",0,32
+	debug 25,1070,4,"Type",32,32
+	debug 25,1071,307,"Next_Object",64,32
+	debug 25,1072,308,"Parent_Object",96,32
+	debug 25,1073,309,"Shape_Texture",128,32
+	debug 25,1074,310,"Shape_Colour",160,32
+	debug 25,1075,99,"Normal_Vector",192,192
+	debug 25,1076,9,"Distance",384,64
+	debug 25,1077,9,"VPNormDotOrigin",448,64
+	debug 25,1078,4,"VPCached",512,32
+	debug 22,1079,311,,31,116,0
+	debug 22,1080,312,,31,120,0
+	debug 22,1081,313,,31,122,0
+	debug 22,1082,314,,31,120,0
+	debug 22,1083,143,"CSG_Type",33,20,5
+	debug 25,1084,311,"Methods",0,32
+	debug 25,1085,4,"Type",32,32
+	debug 25,1086,312,"Next_Object",64,32
+	debug 25,1087,313,"Parent_Object",96,32
+	debug 25,1088,314,"Shapes",128,32
+	debug 22,1089,315,,31,116,0
+	debug 22,1090,316,,31,122,0
+	debug 22,1091,317,,31,120,0
+	debug 22,1092,318,,31,120,0
+	debug 22,1093,319,,31,122,0
+	debug 22,1094,145,"Composite_Object_Struct",33,24,6
+	debug 25,1095,315,"Methods",0,32
+	debug 25,1096,4,"Type",32,32
+	debug 25,1097,316,"Next_Object",64,32
+	debug 25,1098,317,"Bounding_Shapes",96,32
+	debug 25,1099,318,"Clipping_Shapes",128,32
+	debug 25,1100,319,"Objects",160,32
+	debug 22,1101,320,,31,114,0
+	debug 22,1102,321,,30,320,10
+	debug 22,1103,322,,30,9,10
+	debug 22,1104,147,"Ray_Struct",33,320,12
+	debug 25,1105,99,"Initial",0,192
+	debug 25,1106,99,"Direction",192,192
+	debug 25,1107,99,"Initial_2",384,192
+	debug 25,1108,99,"Direction_2",576,192
+	debug 25,1109,99,"Initial_Direction",768,192
+	debug 25,1110,99,"Mixed_Initial_Initial",960,192
+	debug 25,1111,99,"Mixed_Dir_Dir",1152,192
+	debug 25,1112,99,"Mixed_Init_Dir",1344,192
+	debug 25,1113,4,"Containing_Index",1536,32
+	debug 25,1114,321,"Containing_Textures",1568,320
+	debug 25,1115,322,"Containing_IORs",1888,640
+	debug 25,1116,4,"Quadric_Constants_Cached",2528,32
+	debug 22,1117,323,,31,126,0
+	debug 22,1118,324,,31,122,0
+	debug 22,1119,149,"Frame_Struct",33,200,9
+	debug 25,1120,118,"View_Point",0,1024
+	debug 25,1121,4,"Screen_Height",1024,32
+	debug 25,1122,4,"Screen_Width",1056,32
+	debug 25,1123,323,"Light_Sources",1088,32
+	debug 25,1124,324,"Objects",1120,32
+	debug 25,1125,9,"Atmosphere_IOR",1152,64
+	debug 25,1126,9,"Antialias_Threshold",1216,64
+	debug 25,1127,9,"Fog_Distance",1280,64
+	debug 25,1128,104,"Fog_Colour",1344,256
+	debug 22,1129,325,,31,122,0
+	debug 22,1130,326,,31,120,0
+	debug 22,1131,96,"q_entry",33,40,4
+	debug 25,1132,9,"Depth",0,64
+	debug 25,1133,325,"Object",64,32
+	debug 25,1134,99,"Point",96,192
+	debug 25,1135,326,"Shape",288,32
+	debug 22,1136,327,,31,151,0
+	debug 22,1137,328,,31,96,0
+	debug 22,1138,151,"prioq_struct",33,16,4
+	debug 25,1139,327,"next_pq",0,32
+	debug 25,1140,328,"queue",32,32
+	debug 25,1141,19,"current_entry",64,32
+	debug 25,1142,19,"queue_size",96,32
+	debug 22,1143,330,,31,3,0
+	debug 22,1144,329,"Reserved_Word_Struct",33,8,2
+	debug 25,1145,153,"Token_Number",0,32
+	debug 25,1146,330,"Token_Name",32,32
+	debug 22,1147,332,,31,3,0
+	debug 22,1148,333,,31,3,0
+	debug 22,1149,331,"Token_Struct",33,36,8
+	debug 25,1150,153,"Token_Id",0,32
+	debug 25,1151,4,"Token_Line_No",32,32
+	debug 25,1152,332,"Token_String",64,32
+	debug 25,1153,9,"Token_Float",96,64
+	debug 25,1154,4,"Identifier_Number",160,32
+	debug 25,1155,4,"Unget_Token",192,32
+	debug 25,1156,4,"End_Of_File",224,32
+	debug 25,1157,333,"Filename",256,32
+	debug 22,1158,335,,31,3,0
+	debug 22,1159,334,"Constant_Struct",33,12,3
+	debug 25,1160,4,"Identifier_Number",0,32
+	debug 25,1161,154,"Constant_Type",32,32
+	debug 25,1162,335,"Constant_Data",64,32
+	debug 22,1163,155,"Chunk_Header_Struct",33,8,2
+	debug 25,1164,6,"name",0,32
+	debug 25,1165,6,"size",32,32
+	debug 22,1166,336,,31,80,0
+	debug 22,1167,337,,31,3,0
+	debug 22,1168,157,"Data_File_Struct",33,12,3
+	debug 25,1169,336,"File",0,32
+	debug 25,1170,337,"Filename",32,32
+	debug 25,1171,4,"Line_Number",64,32
+	debug 22,1172,159,"complex_block",33,16,2
+	debug 25,1173,9,"r",0,64
+	debug 25,1174,9,"c",64,64
+	debug 22,1175,339,,31,3,0
+	debug 22,1176,340,,31,3,0
+	debug 22,1177,341,,31,80,0
+	debug 22,1178,338,"file_handle_struct",33,52,13
+	debug 25,1179,339,"filename",0,32
+	debug 25,1180,4,"mode",32,32
+	debug 25,1181,4,"width",64,32
+	debug 25,1182,4,"height",96,32
+	debug 25,1183,4,"buffer_size",128,32
+	debug 25,1184,340,"buffer",160,32
+	debug 25,1185,341,"file",192,32
+	debug 25,1186,20,"Default_File_Name_p",224,32
+	debug 25,1187,20,"Open_File_p",256,32
+	debug 25,1188,20,"Write_Line_p",288,32
+	debug 25,1189,20,"Read_Line_p",320,32
+	debug 25,1190,20,"Read_Image_p",352,32
+	debug 25,1191,20,"Close_File_p",384,32
+	debug 22,1192,342,"FILE_HANDLE",35,338,0
+	debug 17,1193,1088
+	debug 1,1194
+	debug 17,1195,27
+	debug 0,1196
+	debug 11,1197,"vector.h"
+	debug 17,1199,26
+	debug 1,1200
+	debug 17,1201,28
+	debug 0,1202
+	debug 11,1203,"povproto.h"
+	debug 17,1204,25
+	debug 9,1205,4,0,0,0,"usage"
+	debug 17,1206,26
+	debug 9,1207,4,0,0,0,"init_vars"
+	debug 17,1208,27
+	debug 9,1209,4,0,0,0,"close_all"
+	debug 17,1210,28
+	debug 9,1211,4,0,0,0,"get_defaults"
+	debug 17,1212,29
+	debug 9,1213,4,0,0,0,"read_options"
+	debug 17,1214,30
+	debug 9,1215,4,0,0,0,"parse_option"
+	debug 17,1216,31
+	debug 9,1217,4,0,0,0,"parse_file_name"
+	debug 17,1218,32
+	debug 9,1219,4,0,0,0,"Print_Options"
+	debug 17,1220,33
+	debug 9,1221,4,0,0,0,"print_stats"
+	debug 17,1222,34
+	debug 9,1223,4,0,0,0,"print_credits"
+	debug 17,1224,35
+	debug 9,1225,5,0,0,0,"Locate_File"
+	debug 17,1226,38
+	debug 9,1227,4,0,0,0,"Read_Rendered_Part"
+	debug 17,1228,39
+	debug 9,1229,4,0,0,0,"Create_Ray"
+	debug 17,1230,40
+	debug 9,1231,4,0,0,0,"Supersample"
+	debug 17,1232,41
+	debug 9,1233,4,0,0,0,"Start_Tracing"
+	debug 17,1234,42
+	debug 9,1235,4,0,0,0,"Trace"
+	debug 17,1236,43
+	debug 9,1237,4,0,0,0,"Initialize_Renderer"
+	debug 17,1238,46
+	debug 9,1239,4,0,0,0,"Initialize_Tokenizer"
+	debug 17,1240,47
+	debug 9,1241,4,0,0,0,"Terminate_Tokenizer"
+	debug 17,1242,48
+	debug 9,1243,4,0,0,0,"Tokenize"
+	debug 17,1244,49
+	debug 9,1245,5,0,0,0,"Process_Token"
+	debug 17,1246,50
+	debug 9,1247,5,0,0,0,"Skip_Spaces"
+	debug 17,1248,51
+	debug 9,1249,5,0,0,0,"Parse_Comments"
+	debug 17,1250,52
+	debug 9,1251,5,0,0,0,"Parse_C_Comments"
+	debug 17,1252,54
+	debug 9,1253,4,0,0,0,"Begin_String"
+	debug 17,1254,55
+	debug 9,1255,4,0,0,0,"Stuff_Character"
+	debug 17,1256,56
+	debug 9,1257,4,0,0,0,"End_String"
+	debug 17,1258,57
+	debug 9,1259,5,0,0,0,"Read_Float"
+	debug 17,1260,58
+	debug 9,1261,4,0,0,0,"Parse_String"
+	debug 17,1262,59
+	debug 9,1263,5,0,0,0,"Read_Symbol"
+	debug 17,1264,60
+	debug 9,1265,5,0,0,0,"Find_Reserved"
+	debug 17,1266,61
+	debug 9,1267,5,0,0,0,"Find_Symbol"
+	debug 17,1268,62
+	debug 9,1269,4,0,0,0,"Write_Token"
+	debug 17,1270,63
+	debug 9,1271,4,0,0,0,"Token_Error"
+	debug 17,1272,64
+	debug 9,1273,4,0,0,0,"Get_Token"
+	debug 17,1274,65
+	debug 9,1275,4,0,0,0,"Unget_Token"
+	debug 17,1276,68
+	debug 9,1277,4,0,0,0,"Parse"
+	debug 17,1278,69
+	debug 9,1279,4,0,0,0,"Token_Init"
+	debug 17,1280,70
+	debug 9,1281,4,0,0,0,"Frame_Init"
+	debug 17,1282,71
+	debug 9,1283,5,0,0,0,"Get_Composite_Object"
+	debug 17,1284,72
+	debug 9,1285,5,0,0,0,"Get_Light_Source_Shape"
+	debug 17,1286,73
+	debug 9,1287,5,0,0,0,"Get_Sphere_Shape"
+	debug 17,1288,74
+	debug 9,1289,5,0,0,0,"Get_Quadric_Shape"
+	debug 17,1290,75
+	debug 9,1291,5,0,0,0,"Get_Poly_Shape"
+	debug 17,1292,76
+	debug 9,1293,5,0,0,0,"Get_Box_Shape"
+	debug 17,1294,77
+	debug 9,1295,5,0,0,0,"Get_Blob_Shape"
+	debug 17,1296,78
+	debug 9,1297,5,0,0,0,"Get_Bicubic_Patch_Shape"
+	debug 17,1298,79
+	debug 9,1299,5,0,0,0,"Get_Height_Field_Shape"
+	debug 17,1300,80
+	debug 9,1301,5,0,0,0,"Get_Plane_Shape"
+	debug 17,1302,81
+	debug 9,1303,5,0,0,0,"Get_Triangle_Shape"
+	debug 17,1304,82
+	debug 9,1305,5,0,0,0,"Get_Smooth_Triangle_Shape"
+	debug 17,1306,83
+	debug 9,1307,5,0,0,0,"Get_CSG_Shape"
+	debug 17,1308,84
+	debug 9,1309,5,0,0,0,"Get_CSG_Union"
+	debug 17,1310,85
+	debug 9,1311,5,0,0,0,"Get_CSG_Intersection"
+	debug 17,1312,86
+	debug 9,1313,5,0,0,0,"Get_Object"
+	debug 17,1314,87
+	debug 9,1315,5,0,0,0,"Get_Texture"
+	debug 17,1316,88
+	debug 9,1317,5,0,0,0,"Get_Viewpoint"
+	debug 17,1318,89
+	debug 9,1319,5,0,0,0,"Get_Colour"
+	debug 17,1320,90
+	debug 9,1321,5,0,0,0,"Get_Vector"
+	debug 17,1322,91
+	debug 9,1323,5,0,0,0,"Get_Float"
+	debug 17,1324,92
+	debug 9,1325,5,0,0,0,"Get_Transformation"
+	debug 17,1326,93
+	debug 9,1327,5,0,0,0,"Parse_Float"
+	debug 17,1328,94
+	debug 9,1329,4,0,0,0,"Parse_Vector"
+	debug 17,1330,95
+	debug 9,1331,4,0,0,0,"Parse_Coeffs"
+	debug 17,1332,96
+	debug 9,1333,4,0,0,0,"Parse_Colour"
+	debug 17,1334,97
+	debug 9,1335,5,0,0,0,"Parse_Colour_Map"
+	debug 17,1336,98
+	debug 9,1337,5,0,0,0,"Copy_Texture"
+	debug 17,1338,99
+	debug 9,1339,5,0,0,0,"Parse_Texture"
+	debug 17,1340,100
+	debug 9,1341,5,0,0,0,"Parse_Sphere"
+	debug 17,1342,101
+	debug 9,1343,5,0,0,0,"Parse_Light_Source"
+	debug 17,1344,103
+	debug 9,1345,5,0,0,0,"Parse_Plane"
+	debug 17,1346,104
+	debug 9,1347,5,0,0,0,"Parse_Triangle"
+	debug 17,1348,105
+	debug 9,1349,5,0,0,0,"Parse_Smooth_Triangle"
+	debug 17,1350,106
+	debug 9,1351,5,0,0,0,"Parse_Quadric"
+	debug 17,1352,107
+	debug 9,1353,5,0,0,0,"Parse_Poly"
+	debug 17,1354,108
+	debug 9,1355,5,0,0,0,"Parse_Box"
+	debug 17,1356,109
+	debug 9,1357,5,0,0,0,"Parse_Blob"
+	debug 17,1358,110
+	debug 9,1359,5,0,0,0,"Parse_Bicubic_Patch"
+	debug 17,1360,111
+	debug 9,1361,5,0,0,0,"Parse_Height_Field"
+	debug 17,1362,112
+	debug 9,1363,5,0,0,0,"Parse_CSG"
+	debug 17,1364,113
+	debug 9,1365,5,0,0,0,"Parse_Shape"
+	debug 17,1366,114
+	debug 9,1367,5,0,0,0,"Parse_Object"
+	debug 17,1368,115
+	debug 9,1369,5,0,0,0,"Parse_Composite"
+	debug 17,1370,116
+	debug 9,1371,4,0,0,0,"Parse_Fog"
+	debug 17,1372,117
+	debug 9,1373,4,0,0,0,"Parse_Frame"
+	debug 17,1374,118
+	debug 9,1375,4,0,0,0,"Parse_Viewpoint"
+	debug 17,1376,119
+	debug 9,1377,4,0,0,0,"Parse_Declare"
+	debug 17,1378,120
+	debug 9,1379,4,0,0,0,"Init_Viewpoint"
+	debug 17,1380,121
+	debug 9,1381,4,0,0,0,"Link"
+	debug 17,1382,122
+	debug 9,1383,5,0,0,0,"Find_Constant"
+	debug 17,1384,123
+	debug 9,1385,5,0,0,0,"Get_Token_String"
+	debug 17,1386,124
+	debug 9,1387,4,0,0,0,"Parse_Error"
+	debug 17,1388,125
+	debug 9,1389,4,0,0,0,"Type_Error"
+	debug 17,1390,126
+	debug 9,1391,4,0,0,0,"Undeclared"
+	debug 17,1392,127
+	debug 9,1393,4,0,0,0,"Error"
+	debug 17,1394,130
+	debug 9,1395,5,0,0,0,"Object_Intersect"
+	debug 17,1396,131
+	debug 9,1397,5,0,0,0,"All_Composite_Intersections"
+	debug 17,1398,132
+	debug 9,1399,5,0,0,0,"All_Object_Intersections"
+	debug 17,1400,133
+	debug 9,1401,5,0,0,0,"Inside_Basic_Object"
+	debug 17,1402,134
+	debug 9,1403,5,0,0,0,"Inside_Composite_Object"
+	debug 17,1404,135
+	debug 9,1405,5,0,0,0,"Copy_Basic_Object"
+	debug 17,1406,136
+	debug 9,1407,5,0,0,0,"Copy_Composite_Object"
+	debug 17,1408,137
+	debug 9,1409,4,0,0,0,"Translate_Basic_Object"
+	debug 17,1410,138
+	debug 9,1411,4,0,0,0,"Rotate_Basic_Object"
+	debug 17,1412,139
+	debug 9,1413,4,0,0,0,"Scale_Basic_Object"
+	debug 17,1414,140
+	debug 9,1415,4,0,0,0,"Translate_Composite_Object"
+	debug 17,1416,141
+	debug 9,1417,4,0,0,0,"Rotate_Composite_Object"
+	debug 17,1418,142
+	debug 9,1419,4,0,0,0,"Scale_Composite_Object"
+	debug 17,1420,143
+	debug 9,1421,4,0,0,0,"Invert_Basic_Object"
+	debug 17,1422,144
+	debug 9,1423,4,0,0,0,"Invert_Composite_Object"
+	debug 17,1424,147
+	debug 9,1425,5,0,0,0,"All_Sphere_Intersections"
+	debug 17,1426,148
+	debug 9,1427,5,0,0,0,"Intersect_Sphere"
+	debug 17,1428,149
+	debug 9,1429,5,0,0,0,"Inside_Sphere"
+	debug 17,1430,150
+	debug 9,1431,4,0,0,0,"Sphere_Normal"
+	debug 17,1432,151
+	debug 9,1433,5,0,0,0,"Copy_Sphere"
+	debug 17,1434,152
+	debug 9,1435,4,0,0,0,"Translate_Sphere"
+	debug 17,1436,153
+	debug 9,1437,4,0,0,0,"Rotate_Sphere"
+	debug 17,1438,154
+	debug 9,1439,4,0,0,0,"Scale_Sphere"
+	debug 17,1440,155
+	debug 9,1441,4,0,0,0,"Invert_Sphere"
+	debug 17,1442,158
+	debug 9,1443,5,0,0,0,"All_Point_Intersections"
+	debug 17,1444,159
+	debug 9,1445,5,0,0,0,"Inside_Point"
+	debug 17,1446,160
+	debug 9,1447,5,0,0,0,"Copy_Point"
+	debug 17,1448,161
+	debug 9,1449,4,0,0,0,"Translate_Point"
+	debug 17,1450,162
+	debug 9,1451,4,0,0,0,"Rotate_Point"
+	debug 17,1452,163
+	debug 9,1453,4,0,0,0,"Scale_Point"
+	debug 17,1454,164
+	debug 9,1455,4,0,0,0,"Invert_Point"
+	debug 17,1456,165
+	debug 9,1457,5,0,0,0,"Attenuate_Light"
+	debug 17,1458,168
+	debug 9,1459,5,0,0,0,"All_Quadric_Intersections"
+	debug 17,1460,169
+	debug 9,1461,5,0,0,0,"Intersect_Quadric"
+	debug 17,1462,170
+	debug 9,1463,5,0,0,0,"Inside_Quadric"
+	debug 17,1464,171
+	debug 9,1465,4,0,0,0,"Quadric_Normal"
+	debug 17,1466,172
+	debug 9,1467,5,0,0,0,"Copy_Quadric"
+	debug 17,1468,173
+	debug 9,1469,4,0,0,0,"Transform_Quadric"
+	debug 17,1470,174
+	debug 9,1471,4,0,0,0,"Quadric_To_Matrix"
+	debug 17,1472,175
+	debug 9,1473,4,0,0,0,"Matrix_To_Quadric"
+	debug 17,1474,176
+	debug 9,1475,4,0,0,0,"Translate_Quadric"
+	debug 17,1476,177
+	debug 9,1477,4,0,0,0,"Rotate_Quadric"
+	debug 17,1478,178
+	debug 9,1479,4,0,0,0,"Scale_Quadric"
+	debug 17,1480,179
+	debug 9,1481,4,0,0,0,"Invert_Quadric"
+	debug 17,1482,182
+	debug 9,1483,5,0,0,0,"All_Poly_Intersections"
+	debug 17,1484,183
+	debug 9,1485,5,0,0,0,"Inside_Poly"
+	debug 17,1486,184
+	debug 9,1487,4,0,0,0,"Poly_Normal"
+	debug 17,1488,185
+	debug 9,1489,5,0,0,0,"Copy_Poly"
+	debug 17,1490,186
+	debug 9,1491,4,0,0,0,"Translate_Poly"
+	debug 17,1492,187
+	debug 9,1493,4,0,0,0,"Rotate_Poly"
+	debug 17,1494,188
+	debug 9,1495,4,0,0,0,"Scale_Poly"
+	debug 17,1496,189
+	debug 9,1497,4,0,0,0,"Invert_Poly"
+	debug 17,1498,192
+	debug 9,1499,4,0,0,0,"Precompute_Patch_Values"
+	debug 17,1500,193
+	debug 9,1501,5,0,0,0,"All_Bicubic_Patch_Intersections"
+	debug 17,1502,194
+	debug 9,1503,5,0,0,0,"Inside_Bicubic_Patch"
+	debug 17,1504,195
+	debug 9,1505,4,0,0,0,"Bicubic_Patch_Normal"
+	debug 17,1506,196
+	debug 9,1507,5,0,0,0,"Copy_Bicubic_Patch"
+	debug 17,1508,197
+	debug 9,1509,4,0,0,0,"Translate_Bicubic_Patch"
+	debug 17,1510,198
+	debug 9,1511,4,0,0,0,"Rotate_Bicubic_Patch"
+	debug 17,1512,199
+	debug 9,1513,4,0,0,0,"Scale_Bicubic_Patch"
+	debug 17,1514,200
+	debug 9,1515,4,0,0,0,"Invert_Bicubic_Patch"
+	debug 17,1516,203
+	debug 9,1517,5,0,0,0,"All_Box_Intersections"
+	debug 17,1518,204
+	debug 9,1519,5,0,0,0,"Intersect_Boxx"
+	debug 17,1520,205
+	debug 9,1521,5,0,0,0,"Inside_Box"
+	debug 17,1522,206
+	debug 9,1523,4,0,0,0,"Box_Normal"
+	debug 17,1524,207
+	debug 9,1525,5,0,0,0,"Copy_Box"
+	debug 17,1526,208
+	debug 9,1527,4,0,0,0,"Translate_Box"
+	debug 17,1528,209
+	debug 9,1529,4,0,0,0,"Rotate_Box"
+	debug 17,1530,210
+	debug 9,1531,4,0,0,0,"Scale_Box"
+	debug 17,1532,211
+	debug 9,1533,4,0,0,0,"Invert_Box"
+	debug 17,1534,215
+	debug 9,1535,4,0,0,0,"MakeBlob"
+	debug 17,1536,216
+	debug 9,1537,5,0,0,0,"All_Blob_Intersections"
+	debug 17,1538,217
+	debug 9,1539,5,0,0,0,"Inside_Blob"
+	debug 17,1540,218
+	debug 9,1541,4,0,0,0,"Blob_Normal"
+	debug 17,1542,219
+	debug 9,1543,5,0,0,0,"Copy_Blob"
+	debug 17,1544,220
+	debug 9,1545,4,0,0,0,"Translate_Blob"
+	debug 17,1546,221
+	debug 9,1547,4,0,0,0,"Rotate_Blob"
+	debug 17,1548,222
+	debug 9,1549,4,0,0,0,"Scale_Blob"
+	debug 17,1550,223
+	debug 9,1551,4,0,0,0,"Invert_Blob"
+	debug 17,1552,226
+	debug 9,1553,4,0,0,0,"Find_Hf_Min_Max"
+	debug 17,1554,227
+	debug 9,1555,5,0,0,0,"Intersect_Pixel"
+	debug 17,1556,229
+	debug 9,1557,5,0,0,0,"Intersect_Sub_Block"
+	debug 17,1558,230
+	debug 9,1559,5,0,0,0,"Intersect_Hf_Node"
+	debug 17,1560,231
+	debug 9,1561,5,0,0,0,"All_HeightFld_Intersections"
+	debug 17,1562,232
+	debug 9,1563,5,0,0,0,"Intersect_HeightFld"
+	debug 17,1564,233
+	debug 9,1565,5,0,0,0,"Inside_HeightFld"
+	debug 17,1566,234
+	debug 9,1567,4,0,0,0,"HeightFld_Normal"
+	debug 17,1568,235
+	debug 9,1569,5,0,0,0,"Copy_HeightFld"
+	debug 17,1570,236
+	debug 9,1571,4,0,0,0,"Translate_HeightFld"
+	debug 17,1572,237
+	debug 9,1573,4,0,0,0,"Rotate_HeightFld"
+	debug 17,1574,238
+	debug 9,1575,4,0,0,0,"Scale_HeightFld"
+	debug 17,1576,239
+	debug 9,1577,4,0,0,0,"Invert_HeightFld"
+	debug 17,1578,242
+	debug 9,1579,4,0,0,0,"Find_Triangle_Dominant_Axis"
+	debug 17,1580,243
+	debug 9,1581,5,0,0,0,"Compute_Triangle"
+	debug 17,1582,244
+	debug 9,1583,4,0,0,0,"Compute_Smooth_Triangle"
+	debug 17,1584,245
+	debug 9,1585,5,0,0,0,"All_Triangle_Intersections"
+	debug 17,1586,246
+	debug 9,1587,5,0,0,0,"Intersect_Triangle"
+	debug 17,1588,247
+	debug 9,1589,5,0,0,0,"Inside_Triangle"
+	debug 17,1590,248
+	debug 9,1591,4,0,0,0,"Triangle_Normal"
+	debug 17,1592,249
+	debug 9,1593,5,0,0,0,"Copy_Triangle"
+	debug 17,1594,250
+	debug 9,1595,4,0,0,0,"Translate_Triangle"
+	debug 17,1596,251
+	debug 9,1597,4,0,0,0,"Rotate_Triangle"
+	debug 17,1598,252
+	debug 9,1599,4,0,0,0,"Scale_Triangle"
+	debug 17,1600,253
+	debug 9,1601,4,0,0,0,"Invert_Triangle"
+	debug 17,1602,254
+	debug 9,1603,4,0,0,0,"Smooth_Triangle_Normal"
+	debug 17,1604,255
+	debug 9,1605,5,0,0,0,"Copy_Smooth_Triangle"
+	debug 17,1606,256
+	debug 9,1607,4,0,0,0,"Translate_Smooth_Triangle"
+	debug 17,1608,257
+	debug 9,1609,4,0,0,0,"Rotate_Smooth_Triangle"
+	debug 17,1610,258
+	debug 9,1611,4,0,0,0,"Scale_Smooth_Triangle"
+	debug 17,1612,259
+	debug 9,1613,4,0,0,0,"Invert_Smooth_Triangle"
+	debug 17,1614,262
+	debug 9,1615,5,0,0,0,"solve_quadratic"
+	debug 17,1616,263
+	debug 9,1617,5,0,0,0,"solve_cubic"
+	debug 17,1618,264
+	debug 9,1619,5,0,0,0,"solve_quartic"
+	debug 17,1620,265
+	debug 9,1621,5,0,0,0,"polysolve"
+	debug 17,1622,268
+	debug 9,1623,4,0,0,0,"Colour_At"
+	debug 17,1624,269
+	debug 9,1625,4,0,0,0,"Perturb_Normal"
+	debug 17,1626,270
+	debug 9,1627,4,0,0,0,"Ambient"
+	debug 17,1628,271
+	debug 9,1629,4,0,0,0,"Diffuse"
+	debug 17,1630,272
+	debug 9,1631,4,0,0,0,"Reflect"
+	debug 17,1632,273
+	debug 9,1633,4,0,0,0,"Refract"
+	debug 17,1634,274
+	debug 9,1635,4,0,0,0,"Fog"
+	debug 17,1636,275
+	debug 9,1637,4,0,0,0,"Compute_Reflected_Colour"
+	debug 17,1638,276
+	debug 9,1639,4,0,0,0,"Determine_Surface_Colour"
+	debug 17,1640,279
+	debug 9,1641,4,0,0,0,"pq_init"
+	debug 17,1642,280
+	debug 9,1643,5,0,0,0,"pq_alloc"
+	debug 17,1644,281
+	debug 9,1645,4,0,0,0,"pq_free"
+	debug 17,1646,282
+	debug 9,1647,5,0,0,0,"pq_new"
+	debug 17,1648,283
+	debug 9,1649,4,0,0,0,"pq_balance"
+	debug 17,1650,284
+	debug 9,1651,4,0,0,0,"pq_add"
+	debug 17,1652,285
+	debug 9,1653,5,0,0,0,"pq_get_highest"
+	debug 17,1654,286
+	debug 9,1655,5,0,0,0,"pq_is_empty"
+	debug 17,1656,287
+	debug 9,1657,4,0,0,0,"pq_delete_highest"
+	debug 17,1658,290
+	debug 9,1659,4,0,0,0,"Compute_Colour"
+	debug 17,1660,291
+	debug 9,1661,4,0,0,0,"Initialize_Noise"
+	debug 17,1662,292
+	debug 9,1663,4,0,0,0,"InitTextureTable"
+	debug 17,1664,293
+	debug 9,1665,4,0,0,0,"InitRTable"
+	debug 17,1666,294
+	debug 9,1667,5,0,0,0,"R"
+	debug 17,1668,295
+	debug 9,1669,5,0,0,0,"Crc16"
+	debug 17,1670,296
+	debug 9,1671,4,0,0,0,"setup_lattice"
+	debug 17,1672,297
+	debug 9,1673,5,0,0,0,"Noise"
+	debug 17,1674,298
+	debug 9,1675,4,0,0,0,"DNoise"
+	debug 17,1676,299
+	debug 9,1677,5,0,0,0,"cycloidal"
+	debug 17,1678,300
+	debug 9,1679,5,0,0,0,"Triangle_Wave"
+	debug 17,1680,301
+	debug 9,1681,5,0,0,0,"Turbulence"
+	debug 17,1682,302
+	debug 9,1683,4,0,0,0,"DTurbulence"
+	debug 17,1684,303
+	debug 9,1685,4,0,0,0,"Translate_Texture"
+	debug 17,1686,304
+	debug 9,1687,4,0,0,0,"Rotate_Texture"
+	debug 17,1688,305
+	debug 9,1689,4,0,0,0,"Scale_Texture"
+	debug 17,1690,309
+	debug 9,1691,4,0,0,0,"agate"
+	debug 17,1692,310
+	debug 9,1693,4,0,0,0,"bozo"
+	debug 17,1694,311
+	debug 9,1695,4,0,0,0,"brick"
+	debug 17,1696,312
+	debug 9,1697,4,0,0,0,"checker"
+	debug 17,1698,313
+	debug 9,1699,4,0,0,0,"checker_texture"
+	debug 17,1700,314
+	debug 9,1701,4,0,0,0,"gradient"
+	debug 17,1702,315
+	debug 9,1703,4,0,0,0,"granite"
+	debug 17,1704,316
+	debug 9,1705,4,0,0,0,"marble"
+	debug 17,1706,317
+	debug 9,1707,4,0,0,0,"spotted"
+	debug 17,1708,318
+	debug 9,1709,4,0,0,0,"wood"
+	debug 17,1710,320
+	debug 9,1711,4,0,0,0,"leopard"
+	debug 17,1712,321
+	debug 9,1713,4,0,0,0,"onion"
+	debug 17,1714,324
+	debug 9,1715,4,0,0,0,"bumps"
+	debug 17,1716,325
+	debug 9,1717,4,0,0,0,"dents"
+	debug 17,1718,326
+	debug 9,1719,4,0,0,0,"ripples"
+	debug 17,1720,327
+	debug 9,1721,4,0,0,0,"waves"
+	debug 17,1722,328
+	debug 9,1723,4,0,0,0,"wrinkles"
+	debug 17,1724,332
+	debug 9,1725,4,0,0,0,"painted1"
+	debug 17,1726,333
+	debug 9,1727,4,0,0,0,"painted2"
+	debug 17,1728,334
+	debug 9,1729,4,0,0,0,"painted3"
+	debug 17,1730,335
+	debug 9,1731,4,0,0,0,"bumpy1"
+	debug 17,1732,336
+	debug 9,1733,4,0,0,0,"bumpy2"
+	debug 17,1734,337
+	debug 9,1735,4,0,0,0,"bumpy3"
+	debug 17,1736,340
+	debug 9,1737,5,0,0,0,"map"
+	debug 17,1738,341
+	debug 9,1739,4,0,0,0,"image_map"
+	debug 17,1740,342
+	debug 9,1741,5,0,0,0,"material_map"
+	debug 17,1742,343
+	debug 9,1743,4,0,0,0,"bump_map"
+	debug 17,1744,347
+	debug 9,1745,5,0,0,0,"All_CSG_Union_Intersections"
+	debug 17,1746,348
+	debug 9,1747,5,0,0,0,"All_CSG_Intersect_Intersections"
+	debug 17,1748,349
+	debug 9,1749,5,0,0,0,"Inside_CSG_Union"
+	debug 17,1750,350
+	debug 9,1751,5,0,0,0,"Inside_CSG_Intersection"
+	debug 17,1752,351
+	debug 9,1753,5,0,0,0,"Copy_CSG"
+	debug 17,1754,352
+	debug 9,1755,4,0,0,0,"Translate_CSG"
+	debug 17,1756,353
+	debug 9,1757,4,0,0,0,"Rotate_CSG"
+	debug 17,1758,354
+	debug 9,1759,4,0,0,0,"Scale_CSG"
+	debug 17,1760,355
+	debug 9,1761,4,0,0,0,"Invert_CSG"
+	debug 17,1762,356
+	debug 9,1763,4,0,0,0,"Set_CSG_Parents"
+	debug 17,1764,359
+	debug 9,1765,5,0,0,0,"Colour_Distance"
+	debug 17,1766,360
+	debug 9,1767,4,0,0,0,"Add_Colour"
+	debug 17,1768,361
+	debug 9,1769,4,0,0,0,"Scale_Colour"
+	debug 17,1770,362
+	debug 9,1771,4,0,0,0,"Clip_Colour"
+	debug 17,1772,365
+	debug 9,1773,5,0,0,0,"Copy_Viewpoint"
+	debug 17,1774,366
+	debug 9,1775,4,0,0,0,"Translate_Viewpoint"
+	debug 17,1776,367
+	debug 9,1777,4,0,0,0,"Rotate_Viewpoint"
+	debug 17,1778,368
+	debug 9,1779,4,0,0,0,"Scale_Viewpoint"
+	debug 17,1780,371
+	debug 9,1781,4,0,0,0,"Make_Ray"
+	debug 17,1782,372
+	debug 9,1783,4,0,0,0,"Initialize_Ray_Containers"
+	debug 17,1784,373
+	debug 9,1785,4,0,0,0,"Copy_Ray_Containers"
+	debug 17,1786,374
+	debug 9,1787,4,0,0,0,"Ray_Enter"
+	debug 17,1788,375
+	debug 9,1789,4,0,0,0,"Ray_Exit"
+	debug 17,1790,378
+	debug 9,1791,5,0,0,0,"All_Plane_Intersections"
+	debug 17,1792,379
+	debug 9,1793,5,0,0,0,"Intersect_Plane"
+	debug 17,1794,380
+	debug 9,1795,5,0,0,0,"Inside_Plane"
+	debug 17,1796,381
+	debug 9,1797,4,0,0,0,"Plane_Normal"
+	debug 17,1798,382
+	debug 9,1799,5,0,0,0,"Copy_Plane"
+	debug 17,1800,383
+	debug 9,1801,4,0,0,0,"Translate_Plane"
+	debug 17,1802,384
+	debug 9,1803,4,0,0,0,"Rotate_Plane"
+	debug 17,1804,385
+	debug 9,1805,4,0,0,0,"Scale_Plane"
+	debug 17,1806,386
+	debug 9,1807,4,0,0,0,"Invert_Plane"
+	debug 17,1808,389
+	debug 9,1809,4,0,0,0,"iff_error"
+	debug 17,1810,390
+	debug 9,1811,5,0,0,0,"read_byte"
+	debug 17,1812,391
+	debug 9,1813,5,0,0,0,"read_word"
+	debug 17,1814,392
+	debug 9,1815,5,0,0,0,"read_long"
+	debug 17,1816,393
+	debug 9,1817,4,0,0,0,"Read_Chunk_Header"
+	debug 17,1818,394
+	debug 9,1819,4,0,0,0,"Read_Iff_Image"
+	debug 17,1820,397
+	debug 9,1821,5,0,0,0,"out_line"
+	debug 17,1822,398
+	debug 9,1823,5,0,0,0,"get_byte"
+	debug 17,1824,399
+	debug 9,1825,4,0,0,0,"Read_Gif_Image"
+	debug 17,1826,402
+	debug 9,1827,4,0,0,0,"cleanup_gif_decoder"
+	debug 17,1828,403
+	debug 9,1829,5,0,0,0,"init_exp"
+	debug 17,1830,406
+	debug 9,1831,5,0,0,0,"get_next_code"
+	debug 17,1832,407
+	debug 9,1833,5,0,0,0,"decoder"
+	debug 17,1834,410
+	debug 9,1835,4,0,0,0,"display_finished"
+	debug 17,1836,411
+	debug 9,1837,4,0,0,0,"display_init"
+	debug 17,1838,412
+	debug 9,1839,4,0,0,0,"display_close"
+	debug 17,1840,413
+	debug 9,1841,4,0,0,0,"display_plot"
+	debug 17,1842,416
+	debug 9,1843,4,0,0,0,"MZero"
+	debug 17,1844,417
+	debug 9,1845,4,0,0,0,"MIdentity"
+	debug 17,1846,418
+	debug 9,1847,4,0,0,0,"MTimes"
+	debug 17,1848,419
+	debug 9,1849,4,0,0,0,"MAdd"
+	debug 17,1850,420
+	debug 9,1851,4,0,0,0,"MSub"
+	debug 17,1852,421
+	debug 9,1853,4,0,0,0,"MScale"
+	debug 17,1854,422
+	debug 9,1855,4,0,0,0,"MTranspose"
+	debug 17,1856,423
+	debug 9,1857,4,0,0,0,"MTransformVector"
+	debug 17,1858,424
+	debug 9,1859,4,0,0,0,"MInverseTransformVector"
+	debug 17,1860,425
+	debug 9,1861,4,0,0,0,"MTransVector"
+	debug 17,1862,426
+	debug 9,1863,4,0,0,0,"MInvTransVector"
+	debug 17,1864,427
+	debug 9,1865,4,0,0,0,"MTransNormal"
+	debug 17,1866,428
+	debug 9,1867,4,0,0,0,"Get_Scaling_Transformation"
+	debug 17,1868,429
+	debug 9,1869,4,0,0,0,"Get_Inversion_Transformation"
+	debug 17,1870,430
+	debug 9,1871,4,0,0,0,"Get_Translation_Transformation"
+	debug 17,1872,431
+	debug 9,1873,4,0,0,0,"Get_Rotation_Transformation"
+	debug 17,1874,432
+	debug 9,1875,4,0,0,0,"Get_Look_At_Transformation"
+	debug 17,1876,433
+	debug 9,1877,4,0,0,0,"Compose_Transformations"
+	debug 17,1878,436
+	debug 9,1879,5,0,0,0,"Get_Dump_File_Handle"
+	debug 17,1880,437
+	debug 9,1881,5,0,0,0,"Default_Dump_File_Name"
+	debug 17,1882,439
+	debug 9,1883,5,0,0,0,"Open_Dump_File"
+	debug 17,1884,440
+	debug 9,1885,4,0,0,0,"Write_Dump_Line"
+	debug 17,1886,441
+	debug 9,1887,5,0,0,0,"Read_Dump_Line"
+	debug 17,1888,442
+	debug 9,1889,5,0,0,0,"Read_Dump_Int_Line"
+	debug 17,1890,443
+	debug 9,1891,4,0,0,0,"Read_Dump_Image"
+	debug 17,1892,444
+	debug 9,1893,4,0,0,0,"Close_Dump_File"
+	debug 17,1894,447
+	debug 9,1895,5,0,0,0,"Get_Targa_File_Handle"
+	debug 17,1896,448
+	debug 9,1897,5,0,0,0,"Default_Targa_File_Name"
+	debug 17,1898,450
+	debug 9,1899,5,0,0,0,"Open_Targa_File"
+	debug 17,1900,451
+	debug 9,1901,4,0,0,0,"Write_Targa_Line"
+	debug 17,1902,452
+	debug 9,1903,5,0,0,0,"Read_Targa_Line"
+	debug 17,1904,453
+	debug 9,1905,4,0,0,0,"Read_Targa_Image"
+	debug 17,1906,454
+	debug 9,1907,4,0,0,0,"Close_Targa_File"
+	debug 17,1908,455
+	debug 9,1909,5,0,0,0,"Read_Targa_Int_Line"
+	debug 17,1910,458
+	debug 9,1911,5,0,0,0,"Get_Raw_File_Handle"
+	debug 17,1912,459
+	debug 9,1913,5,0,0,0,"Default_Raw_File_Name"
+	debug 17,1914,461
+	debug 9,1915,5,0,0,0,"Open_Raw_File"
+	debug 17,1916,462
+	debug 9,1917,4,0,0,0,"Write_Raw_Line"
+	debug 17,1918,463
+	debug 9,1919,5,0,0,0,"Read_Raw_Line"
+	debug 17,1920,464
+	debug 9,1921,4,0,0,0,"Close_Raw_File"
+..1:
+	debug 1,1922
+	debug 5,1923,116,6,0,0,"Bicubic_Patch_Methods"
+	debug 17,1924,39
+	debug 17,1926,41
+	debug 17,1928,41
+	debug 17,1930,42
+	debug 22,1931,343,,31,148,0
+	debug 17,1933,43
+	debug 17,1935,44
+..2:
+	debug 5,1936,4,6,0,9,"max_depth_reached"
+	debug 17,1937,46
+	debug 17,1938,49
+	debug 9,1939,6,0,0,0,"bezier_value"
+	debug 17,1940,51
+	debug 9,1941,6,0,0,0,"bezier_partial"
+	debug 17,1942,53
+	debug 9,1943,7,0,0,0,"subpatch_normal"
+	debug 17,1944,58
+	debug 9,1945,7,0,0,0,"intersect_subpatch"
+	debug 17,1946,60
+	debug 9,1947,6,0,0,0,"find_average"
+	debug 17,1948,62
+	debug 9,1949,7,0,0,0,"spherical_bounds_check"
+	debug 17,1950,64
+	debug 9,1951,7,0,0,0,"intersect_bicubic_patch0"
+	debug 17,1952,66
+	debug 9,1953,7,0,0,0,"intersect_bicubic_patch1"
+	debug 17,1954,68
+	debug 9,1955,7,0,0,0,"intersect_bicubic_patch2"
+	debug 17,1956,70
+	debug 9,1957,7,0,0,0,"intersect_bicubic_patch3"
+	debug 17,1958,72
+	debug 9,1959,7,0,0,0,"intersect_bicubic_patch4"
+	debug 17,1960,73
+	debug 9,1961,7,0,0,0,"point_plane_distance"
+	debug 17,1962,74
+	debug 9,1963,7,0,0,0,"determine_subpatch_flatness"
+	debug 17,1964,75
+	debug 9,1965,7,0,0,0,"flat_enough"
+	debug 17,1966,76
+	debug 9,1967,6,0,0,0,"bezier_bounding_sphere"
+	debug 17,1968,79
+	debug 9,1969,6,0,0,0,"bezier_subpatch_intersect"
+	debug 17,1970,81
+	debug 9,1971,6,0,0,0,"bezier_split_left_right"
+	debug 17,1972,83
+	debug 9,1973,6,0,0,0,"bezier_split_up_down"
+	debug 17,1974,86
+	debug 9,1975,6,0,0,0,"bezier_subdivider"
+	debug 17,1976,87
+	debug 9,1977,6,0,0,0,"bezier_tree_deleter"
+	debug 17,1978,89
+	debug 9,1979,7,0,0,0,"bezier_tree_builder"
+	debug 17,1980,91
+	debug 9,1981,6,0,0,0,"bezier_tree_walker"
+	debug 17,1982,92
+	debug 9,1983,7,0,0,0,"create_new_bezier_node"
+	debug 17,1984,93
+	debug 9,1985,7,0,0,0,"create_bezier_vertex_block"
+	debug 17,1986,94
+	debug 9,1987,7,0,0,0,"create_bezier_child_block"
+	debug 17,1988,97
+	debug 9,1989,1,0,3,0,"create_new_bezier_node"
+	debug 3,1990,1,0,1
+	debug 15,1991,1989
+	debug 17,1992,99
+	debug 14,1993,1992 
+$create_new_bezier_node:
+	debug 3,1994,8,1,0
+ã -1
+	debug 17,1995,99
+	debug 6,1996
+	debug 17,1997,99
+	debug 14,1998,1997 
+	debug 22,1999,344,,31,269,0
+	debug 5,2000,344,2,0,0,"Node"
+	debug 17,2001,100
+	debug 17,2002,100
+	debug 14,2003,2002 
+Ñ 44
+á 2
+â$malloc
+ç 0
+	debug 17,2004,101
+	debug 14,2005,2004 
+á 0
+å 0
+ä..5
+	debug 17,2006,101
+	debug 14,2007,2006 
+	debug 17,2008,102
+	debug 14,2009,2008 
+Ñ..4-2è27
+á 2
+â$_IMS_printf
+	debug 17,2010,103
+	debug 14,2011,2010 
+Ñ 0
+á 2
+â$exit
+..5:
+	debug 17,2012,105
+	debug 14,2013,2012 
+Ñ 0
+á 0
+é 10
+	debug 17,2014,106
+	debug 14,2015,2014 
+á 0
+ã 1
+	debug 3,2016,8,-1,0
+	debug 17,2017,106
+	debug 14,2018,2017 
+	debug 4,2019
+è32
+	debug 7,2020
+	debug 4,2021
+	debug 4,2022
+-- Literals
+‰..4:
+Ê"Failed to allocate Bezier node\n"
+Ê0
+‰	debug 17,2023,109
+	debug 9,2024,1,0,3,0,"create_bezier_vertex_block"
+	debug 3,2025,1,0,1
+	debug 15,2026,2024
+	debug 17,2027,111
+	debug 14,2028,2027 
+$create_bezier_vertex_block:
+	debug 3,2029,8,1,0
+ã -1
+	debug 17,2030,111
+	debug 6,2031
+	debug 17,2032,111
+	debug 14,2033,2032 
+	debug 22,2034,345,,31,273,0
+	debug 5,2035,345,2,0,0,"Vertices"
+	debug 17,2036,112
+	debug 17,2037,112
+	debug 14,2038,2037 
+Ñ 96
+á 2
+â$malloc
+ç 0
+	debug 17,2039,113
+	debug 14,2040,2039 
+á 0
+å 0
+ä..9
+	debug 17,2041,113
+	debug 14,2042,2041 
+	debug 17,2043,114
+	debug 14,2044,2043 
+Ñ..8-2è27
+á 2
+â$_IMS_printf
+	debug 17,2045,115
+	debug 14,2046,2045 
+Ñ 0
+á 2
+â$exit
+..9:
+	debug 17,2047,117
+	debug 14,2048,2047 
+á 0
+ã 1
+	debug 3,2049,8,-1,0
+	debug 17,2050,117
+	debug 14,2051,2050 
+	debug 4,2052
+è32
+	debug 7,2053
+	debug 4,2054
+	debug 4,2055
+-- Literals
+‰..8:
+Ê"Failed to allocate Bezier vertices\n"
+Ê0
+‰	debug 17,2056,120
+	debug 9,2057,1,0,3,0,"create_bezier_child_block"
+	debug 3,2058,1,0,1
+	debug 15,2059,2057
+	debug 17,2060,122
+	debug 14,2061,2060 
+$create_bezier_child_block:
+	debug 3,2062,8,1,0
+ã -1
+	debug 17,2063,122
+	debug 6,2064
+	debug 17,2065,122
+	debug 14,2066,2065 
+	debug 22,2067,346,,31,271,0
+	debug 5,2068,346,2,0,0,"Children"
+	debug 17,2069,123
+	debug 17,2070,123
+	debug 14,2071,2070 
+Ñ 16
+á 2
+â$malloc
+ç 0
+	debug 17,2072,124
+	debug 14,2073,2072 
+á 0
+å 0
+ä..13
+	debug 17,2074,124
+	debug 14,2075,2074 
+	debug 17,2076,125
+	debug 14,2077,2076 
+Ñ..12-2è27
+á 2
+â$_IMS_printf
+	debug 17,2078,126
+	debug 14,2079,2078 
+Ñ 0
+á 2
+â$exit
+..13:
+	debug 17,2080,128
+	debug 14,2081,2080 
+á 0
+ã 1
+	debug 3,2082,8,-1,0
+	debug 17,2083,128
+	debug 14,2084,2083 
+	debug 4,2085
+è32
+	debug 7,2086
+	debug 4,2087
+	debug 4,2088
+-- Literals
+‰..12:
+Ê"Failed to allocate Bezier children\n"
+Ê0
+‰	debug 17,2089,131
+	debug 9,2090,1,0,391,0,"bezier_tree_builder"
+	debug 3,2091,1,0,1
+	debug 15,2092,2090
+	debug 22,2093,347,,31,132,0
+	debug 5,2094,347,2,0,2,"Object"
+	debug 22,2095,348,,30,99,4
+	debug 22,2096,349,,30,348,4
+	debug 22,2097,350,,31,349,0
+	debug 5,2098,350,2,0,3,"Patch"
+	debug 5,2099,4,2,0,4,"depth"
+	debug 17,2100,135
+	debug 14,2101,2100 
+$bezier_tree_builder:
+	debug 3,2102,8,389,0
+ã -389
+á 390
+ patch 3 ldnl modnumber
+’   
+ç 388
+	debug 17,2103,135
+	debug 6,2104
+	debug 17,2105,135
+	debug 14,2106,2105 
+	debug 22,2107,351,,30,99,4
+	debug 22,2108,352,,30,351,4
+	debug 5,2109,352,2,0,4,"Lower_Left"
+	debug 17,2110,136
+	debug 22,2111,353,,30,99,4
+	debug 22,2112,354,,30,353,4
+	debug 5,2113,354,2,0,100,"Lower_Right"
+	debug 17,2114,136
+	debug 22,2115,355,,30,99,4
+	debug 22,2116,356,,30,355,4
+	debug 5,2117,356,2,0,196,"Upper_Left"
+	debug 17,2118,137
+	debug 22,2119,357,,30,99,4
+	debug 22,2120,358,,30,357,4
+	debug 5,2121,358,2,0,292,"Upper_Right"
+	debug 17,2122,137
+	debug 22,2123,359,,31,271,0
+	debug 5,2124,359,2,0,2,"Children"
+	debug 17,2125,138
+	debug 22,2126,360,,31,273,0
+	debug 5,2127,360,2,0,3,"Vertices"
+	debug 17,2128,139
+	debug 22,2129,361,,31,269,0
+	debug 5,2130,361,2,0,1,"Node"
+	debug 17,2131,140
+	debug 17,2132,140
+	debug 14,2133,2132 
+á 390
+â$create_new_bezier_node
+ç 1
+	debug 17,2134,142
+	debug 14,2135,2134 
+á 393
+á 388
+É$__dataseg+9
+è9
+ä..16
+	debug 17,2136,142
+	debug 14,2137,2136 
+á 393
+á 388
+é$__dataseg+9
+..16:
+	debug 17,2138,145
+	debug 14,2139,2138 
+á 1
+Ö 7
+ç 0
+á 1
+Ö 1
+á 392
+á 390
+â$bezier_bounding_sphere
+	debug 17,2140,149
+	debug 14,2141,2140 
+á 392
+á 391
+á 390
+â$flat_enough
+ä..18
+	debug 17,2142,149
+	debug 14,2143,2142 
+	debug 17,2144,151
+	debug 14,2145,2144 
+Ñ 1
+á 1
+é 0
+	debug 17,2146,152
+	debug 14,2147,2146 
+á 390
+â$create_bezier_vertex_block
+ç 3
+	debug 17,2148,153
+	debug 14,2149,2148 
+á 392
+á 3
+Ñ 24
+è74
+	debug 17,2150,154
+	debug 14,2151,2150 
+á 392
+Ö 18
+á 3
+Ö 6
+Ñ 24
+è74
+	debug 17,2152,155
+	debug 14,2153,2152 
+á 392
+Ö 90
+á 3
+Ö 12
+Ñ 24
+è74
+	debug 17,2154,156
+	debug 14,2155,2154 
+á 392
+Ö 72
+á 3
+Ö 18
+Ñ 24
+è74
+	debug 17,2156,157
+	debug 14,2157,2156 
+á 3
+á 1
+é 10
+Ä..20
+..18:
+	debug 17,2158,159
+	debug 14,2159,2158 
+á 391
+É 7
+á 393
+è9
+å 0
+ä..21
+	debug 17,2160,160
+	debug 14,2161,2160 
+á 391
+É 8
+á 393
+è9
+å 0
+ä..23
+	debug 17,2162,160
+	debug 14,2163,2162 
+	debug 17,2164,162
+	debug 14,2165,2164 
+Ñ 1
+á 1
+é 0
+	debug 17,2166,163
+	debug 14,2167,2166 
+á 390
+â$create_bezier_vertex_block
+ç 3
+	debug 17,2168,164
+	debug 14,2169,2168 
+á 392
+á 3
+Ñ 24
+è74
+	debug 17,2170,165
+	debug 14,2171,2170 
+á 392
+Ö 18
+á 3
+Ö 6
+Ñ 24
+è74
+	debug 17,2172,166
+	debug 14,2173,2172 
+á 392
+Ö 90
+á 3
+Ö 12
+Ñ 24
+è74
+	debug 17,2174,167
+	debug 14,2175,2174 
+á 392
+Ö 72
+á 3
+Ö 18
+Ñ 24
+è74
+	debug 17,2176,168
+	debug 14,2177,2176 
+á 3
+á 1
+é 10
+Ä..20
+..23:
+	debug 17,2178,170
+	debug 14,2179,2178 
+	debug 17,2180,171
+	debug 14,2181,2180 
+Å 196
+ç 0
+Å 4
+á 392
+á 390
+â$bezier_split_up_down
+	debug 17,2182,172
+	debug 14,2183,2182 
+Ñ 0
+á 1
+é 0
+	debug 17,2184,173
+	debug 14,2185,2184 
+á 390
+â$create_bezier_child_block
+ç 2
+	debug 17,2186,174
+	debug 14,2187,2186 
+á 393
+à 1
+ç 0
+Å 4
+á 391
+á 390
+â$bezier_tree_builder
+á 2
+é 0
+	debug 17,2188,175
+	debug 14,2189,2188 
+á 393
+à 1
+ç 0
+Å 196
+á 391
+á 390
+â$bezier_tree_builder
+á 2
+é 1
+	debug 17,2190,176
+	debug 14,2191,2190 
+Ñ 2
+á 1
+é 9
+	debug 17,2192,177
+	debug 14,2193,2192 
+á 2
+á 1
+é 10
+Ä..20
+..21:
+	debug 17,2194,179
+	debug 14,2195,2194 
+á 391
+É 8
+á 393
+è9
+å 0
+ä..27
+	debug 17,2196,179
+	debug 14,2197,2196 
+	debug 17,2198,180
+	debug 14,2199,2198 
+Å 100
+ç 0
+Å 4
+á 392
+á 390
+â$bezier_split_left_right
+	debug 17,2200,181
+	debug 14,2201,2200 
+Ñ 0
+á 1
+é 0
+	debug 17,2202,182
+	debug 14,2203,2202 
+á 390
+â$create_bezier_child_block
+ç 2
+	debug 17,2204,183
+	debug 14,2205,2204 
+á 393
+à 1
+ç 0
+Å 4
+á 391
+á 390
+â$bezier_tree_builder
+á 2
+é 0
+	debug 17,2206,184
+	debug 14,2207,2206 
+á 393
+à 1
+ç 0
+Å 100
+á 391
+á 390
+â$bezier_tree_builder
+á 2
+é 1
+	debug 17,2208,185
+	debug 14,2209,2208 
+Ñ 2
+á 1
+é 9
+	debug 17,2210,186
+	debug 14,2211,2210 
+á 2
+á 1
+é 10
+Ä..20
+..27:
+	debug 17,2212,188
+	debug 14,2213,2212 
+	debug 17,2214,189
+	debug 14,2215,2214 
+Å 100
+ç 0
+Å 4
+á 39

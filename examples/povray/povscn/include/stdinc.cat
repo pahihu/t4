@@ -1,0 +1,18 @@
+Persistance of Vision Raytracer Version 1.0
+Files contained in include.zip
+-----------------------------
+COLORS.INC    <- Standard colors include file
+FOV.INC       <- Constants to define field of view
+IOR.INC       <- Index of refraction constants
+POVMAP.GIF    <- GIF file to illustrate material maps
+README.DOC    <- Info about POV-Ray scene files
+ROUGH.GIF     <- Rough textured sample GIF can illustrate interpolation
+SHAPES2.INC   <- Extra standard shapes
+SHAPESQ.INC   <- Quartic sample shapes
+SHAPES.INC    <- Standard shapes
+SHAPES.OLD    <- Older version of SHAPES.INC
+STDINC.CAT    <- This file
+STONES.INC    <- Lots of great stone textures by Mike Miller
+TEST.GIF      <- GIF image for image map testing
+TEXTURES.DOC  <- Info about TEXTURES.INC
+TEXTURES.INC  <- Standard texture include file

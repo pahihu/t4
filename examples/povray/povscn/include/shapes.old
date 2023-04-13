@@ -1,0 +1,214 @@
+// Persistence Of Vision Raytracer 
+// Historical include file.
+
+// Old standard shapes include file
+// Included for historical comparison.  
+// Some shapes have been changed
+// for POV-Ray Version 1.0.
+
+#declare Sphere = quadric {
+	<1.0 1.0 1.0>
+	<0.0 0.0 0.0>
+	<0.0 0.0 0.0>
+	-1.0
+}
+
+#declare Cylinder_X = quadric {
+	<0.0 1.0 1.0>
+	<0.0 0.0 0.0>
+	<0.0 0.0 0.0>
+	-1.0
+}
+
+#declare Cylinder_Y = quadric {
+	<1.0 0.0 1.0>
+	<0.0 0.0 0.0>
+	<0.0 0.0 0.0>
+	-1.0
+}
+
+#declare Cylinder_Z = quadric {
+	<1.0 1.0 0.0>
+	<0.0 0.0 0.0>
+	<0.0 0.0 0.0>
+	-1.0
+}
+
+#declare Cone_X = quadric {
+	<-1.0 1.0 1.0>
+	<0.0 0.0 0.0>
+	<0.0 0.0 0.0>
+	0.0
+}
+
+#declare Cone_Y = quadric {
+	<1.0 -1.0 1.0>
+	<0.0 0.0 0.0>
+	<0.0 0.0 0.0>
+	0.0
+}
+
+#declare Cone_Z = quadric {
+	<1.0 1.0 -1.0>
+	<0.0 0.0 0.0>
+	<0.0 0.0 0.0>
+	0.0
+}
+
+#declare Plane_YZ = quadric {
+	<0.0 0.0 0.0>
+	<0.0 0.0 0.0>
+	<1.0 0.0 0.0>
+	0.0
+}
+       
+#declare Plane_XZ = quadric {
+	<0.0 0.0 0.0>
+	<0.0 0.0 0.0>
+	<0.0 1.0 0.0>
+	0.0
+}
+       
+#declare Plane_XY = quadric {
+	<0.0 0.0 0.0>
+	<0.0 0.0 0.0>
+	<0.0 0.0 1.0>
+	0.0
+}
+
+/* y^2 + z^2 - x = 0 */
+#declare Paraboloid_X = quadric {
+	<0.0  1.0  1.0>
+	<0.0  0.0  0.0>
+	<-1.0 0.0  0.0>
+	0.0
+}
+
+/* x^2 + z^2 - y = 0 */
+#declare Paraboloid_Y = quadric {
+	<1.0  0.0  1.0>
+	<0.0  0.0  0.0>
+	<0.0 -1.0  0.0>
+	0.0
+}
+
+/* x^2 + y^2 - z = 0 */
+#declare Paraboloid_Z = quadric {
+	<1.0  1.0  0.0>
+	<0.0  0.0  0.0>
+	<0.0  0.0 -1.0>
+	0.0
+}
+
+/* y - x^2 + z^2 = 0 */
+#declare Hyperboloid = quadric {
+	< -1.0  0.0  1.0>
+	<  0.0  0.0  0.0>
+	<  0.0  1.0  0.0>
+	0.0
+}
+
+#declare Hyperboloid_Y = quadric {  /* Vertical hyperboloid */
+	<1.0 -1.0  1.0>          /*                      */
+	<0.0  0.0  0.0>          /*            \   /     */
+	<0.0  0.0  0.0>          /* Like this:  ) (      */
+	-1.0                     /*            /   \     */
+}
+
+#declare Cube = intersection {	box { <-1 -1 -1> <1 1 1> } }
+
+#declare Tetrahedron = intersection {
+	plane { <0.0 -1.0 0.0> 1.0 }
+	plane { <0.0 0.0 1.0> 1.0 rotate <-30.0 0.0 0.0> }
+	plane { <1.0 0.0 0.0> 1.0 rotate <0.0 30.0 30.0> }
+	plane { <-1.0 0.0 0.0> 1.0 rotate <0.0 -30.0 -30.0> }
+}
+
+#declare X_Disk = intersection {       /* Capped cylinder, Length in x axis */
+  quadric { Cylinder_X }
+  plane { <1.0 0.0 0.0> 0.0 inverse }
+  plane { <1.0 0.0 0.0> 1.0 }
+}
+
+#declare Y_Disk = intersection {       /* Capped cylinder, Length in y axis */
+  quadric { Cylinder_Y }
+  plane { <0.0 1.0 0.0> 0.0 inverse }
+  plane { <0.0 1.0 0.0> 1.0 }
+}
+
+#declare Z_Disk = intersection {       /* Capped cylinder, Length in z axis */
+  quadric { Cylinder_Z }
+  plane { <0.0 0.0 1.0> 0.0 inverse }
+  plane { <0.0 0.0 1.0> 1.0 }
+}
+
+#declare Hexagon = intersection {	        /* Hexagonal Solid, axis along x */
+    plane { <0.0 0.0 1.0> 1.0 }   /* Rotate 90 in z axis to stand up */
+    plane { <0.0 0.0 1.0> 1.0 rotate <60.0 0.0 0.0> }
+    plane { <0.0 0.0 1.0> 1.0 rotate <120.0 0.0 0.0> }
+    plane { <0.0 0.0 1.0> 1.0 rotate <180.0 0.0 0.0> }
+    plane { <0.0 0.0 1.0> 1.0 rotate <240.0 0.0 0.0> }
+    plane { <0.0 0.0 1.0> 1.0 rotate <300.0 0.0 0.0> }
+    plane { <1.0 0.0 0.0> 1.0 }
+    plane { <1.0 0.0 0.0> -1.0 inverse }
+}
+
+#declare Rhomboid =			/* Three Dimensional 4-Sided Diamond */
+intersection {
+	plane { <-1.0  0.0  0.0>  1.0 rotate <0.0 0.0 -30.0> }
+	plane { < 1.0  0.0  0.0>  1.0 rotate <0.0 0.0 -30.0> }
+	plane { < 0.0  0.0  1.0>  1.0 }
+	plane { < 0.0  0.0 -1.0>  1.0 }
+	plane { < 0.0  1.0  0.0>  1.0 }
+	plane { < 0.0 -1.0  0.0>  1.0 }
+}
+
+#declare Square_X =  union {        /* Scale-able plane in x */
+    triangle {
+        < 0  1 -1>
+        < 0 -1  1>
+        < 1  1  1>
+    }
+    triangle {
+        < 0  1 -1>
+        < 0 -1  1>
+        < 0 -1 -1>
+    }
+}
+
+#declare Square_Y =  union {        /* Scale-able plane in y */
+    triangle {
+        <-1 0 1>
+        <1 0 -1>
+        <1 0 1>
+    }
+    triangle {
+        <-1 0  1>
+        < 1 0 -1>
+        <-1 0 -1>
+    }
+}
+
+#declare Square_Z =  union {        /* Scale-able plane in z */
+    triangle {
+        <-1 1 0.0>
+        <1 -1 0.0>
+        <-1 -1 0.0>
+    }
+    triangle {
+        <-1 1 0.0>
+        <1 -1 0.0>
+        <1 1 0.0>
+    }
+}
+
+#declare Pyramid =
+    intersection {
+        union {
+            triangle { <-1 0 -1> <+1 0 -1> <0 1 0> }
+            triangle { <+1 0 -1> <+1 0 +1> <0 1 0> }
+            triangle { <-1 0 +1> <+1 0 +1> <0 1 0> }
+            triangle { <-1 0 +1> <-1 0 -1> <0 1 0> }
+        }
+        plane { <0.0 -1.0  0.0> 0.0 }
+}

@@ -1,0 +1,184 @@
+Dear transputer user,
+
+This directory contains all file files for the transputerversion of
+POV-Ray1.0. This is a special version of this software and is not
+supported by the POV-Team!! Any question and bug reports of the
+transputerversion should be send to me (menes@statistik.tu-muenchen.de)!!
+I will trace down the problems and contact the POV-Team if the bug is in
+there sourcecode. Thanks for your cooperation.
+
+Basics
+
+0. This is source only distrubution so you need the INMOS TOOLSET ANSI-C
+compiler. If not please contact me. May be i will be able to give you an
+executable of the transputer POVRay.
+
+1. What kind of transputer system do I need to run POV?
+
+Every transputer system with a minimum of 4 and a maximum ??? T8XX transputer could be used.
+The memory one cache transputer (t0) should be 4 MBytes the other could run with 1
+Mbyte, but default is also 4 MByte. But for some scenes you will need more the 4 MByte of ram 
+on each transputer.
+
+2. How to connect the links of the transputer to match the configuration
+file?
+
+The hardware configuration for 10 transputer should look like this.
+
+
+			
+			t3	t6	t9 
+			|	|	|
+			t2	t5	t8
+			|	|	|
+			t1	t4	t7
+			|	|	|
+			--------t0-------
+ 				|
+			       HOST
+
+/* connection to the host */
+connect HOST to t0 link0
+/* PIPE 0 */
+connect t0 link1 to t1 link0
+connect t1 link1 to t2 link0
+connect t2 link1 to t3 link0
+/* PIPE 1 */
+connect t0 link2 to t4 link0
+connect t4 link1 to t5 link0
+connect t5 link1 to t6 link0
+/* PIPE 2 */
+connect t0 link3 to t7 link0
+connect t7 link1 to t8 link0
+connect t8 link1 to t9 link0
+
+The povray.cfs (the configuration file) has by default this hardware
+configuration. If you want to change it because you have more transputer
+than 10 or less no problem. Edit povray.cfs with your editor. In the first
+lines you will find three values PIPE0, PIPE1, PIPE2. Every PIPE can have
+values from 1 transputer to any number of transputer you like. They also can
+be of differnt size. But you will get the best performence if you distribute
+the transputer equally to the PIPE's.
+
+3. How to configure differnt RAM sizes?
+
+Some lines below the PIPE values you see a comment 
+/*{{{ Hardware description }}} */. After that you could change the memory 
+values for your transputer system.
+
+For example you have 16 MByte of ram for each transputer in the PIPE's and
+the cache transputer than the lines should look like this:
+
+T800 (memory = 16M) Root;
+T800 (memory = 16M) WorkerPipe0[PIPE0];
+T800 (memory = 16M) WorkerPipe1[PIPE1];
+T800 (memory = 16M) WorkerPipe2[PIPE2];
+
+4. What should i do if i have an other architecture of transputernetwork?
+
+Than you have to change at minimum the configuration file povray.cfs. Most
+problems will araise if you aren't able to connect link0 of transputer t0 to
+the host, or the pipe connection are not link0 and link1. This is easy to
+fix. Right below the PIPE values you can change the values of the hardware
+link connections for BootLink, the link values from transputer t0 to the 3
+PIPES and the in and out link of the Pipes. If this doesn't fit your needs
+than a lot of work to change the configuration file is laying a head.
+
+Installation:
+
+1. Try to get the sources of POV-Ray1.0 from alfred.ccs.carleton.ca
+(134.117.1.1) (for US based users) or ftp.informatik.uni-oldenburg.de
+(134.106.1.9) (for europa based users) via ftp. These are the two official
+sites for POV related stuff. Also a bunch of utilitys can be found on these
+sites.
+
+2. Make a directory in the toolset path for POV-Ray. Put all *.tar.Z files
+in it and extract them. After that you will have 3 dirs (povdoc, povscn,
+povsrc). Go to povsrc/ and make a dir called build. Now copy all files
+from the source dir to the build dir. After that change to machine dir.
+Create a dir call transp (home of the transputer sources). Copy the
+transp.tar.Z in that directory. Extract all files from the tar file and copy
+all file to the ../../build dir. Now change again to ../../build and rename
+the file transconf.h to config.h. After that type make -f povray.mak. (Be
+sure to have all paths and env variables set correct for compiling with the
+INMOS toolset befor you start with make). Now the compiler will build your
+version of POV-Ray. Don't worry about the tones of warnings during
+compilation this is normal!! 
+
+If some thing doesn't work please try to find the real reason for your problems 
+befor you conntact me. I couldn't help you if you only send me a mail like this: 
+
+Oh Rainer,
+ 
+the POV-Ray would compile what should i do?  
+
+Help!!
+
+xxx
+
+Running:
+
+1. There some shell scripts in the build dir witch are intended for unix
+systems. To run all povdemos just type povdemo if your are on a unix
+machine. If not it should be easy to convert it to a for example to batch
+files for MSDOS. If you have problems with it send me mail.
+
+Options:
+
+1. Normaly the makefile for POV-Ray will give you file support
+(-dFILE_SUPPORT) for the traced images. After you have finshed your 
+trace there is a file with the name picture.ppm in the working directory. 
+A ppm file is a RGB file format
+from pbmplus3.0 graphics utilities. If you dont know were to get try
+wuarchive.wustl.edu in the dirs /usenet/comp.sources.misc/volume23 or for
+PC users /usenet/comp.binaries.ibm.pc/volume15. If you are running X11 on
+your machine the application XV2.21 is able to read display and convert the
+ppm files.
+
+2. If you have one transputer with a truecolor graphic hardware like i do,
+than enable the option -dG300_SUPPORT in the makefile, and change in the
+muxdemux.c file in the first line the addresse of the video buffer
+(VRAM_BASE) to your hardware addresse. 
+
+To initialize the graphic display you should run a init
+of your own for the graphiccard as seperate program. Also the witdh on hight
+of the display is defined in the values MAXX and MAXY below VRAM_BASE.
+
+Bugs:
+
+1. Antialising doesn't run. I didn't had time to trace down the problem, but
+if you want to help me a bit try to find the mistake.
+
+2. The maximal resolution is 640x480, because of a static definition in
+muxdemux.c (MAXX and MAXY). This will change in in the near future.
+
+
+Development:
+
+1. Support of a newer version of POV-Ray if it is out.
+2. ....??? (mail me and give me idears)
+
+Performace:
+
+	machine		       min   sec
+SGI indigo R3000+R3100  	5  : 31
+SGI crimpson R4000+R4100 	3  : 14
+11 Transputer (T805 20MHz)	4  : 35
+43 Transputer (T805 20 MHz)	1  : 14
+
+Performence increse per transputer is up to 95% off the maximal possible
+improfment. (depends on the scenes files use for benchmarking)
+
+Now have fun with this software and happy tracing.
+ 
+Rainer Menes
+
+Institut fuer Angewandte Mathematik und Statistik
+der technische Universitaet Muenchen
+Arcisstr. 23
+8000 Muenchen 2
+Germany
+
+Tel: XX49 89 2105 8226
+Fax: XX49 89 2105 8228
+email: menes@statistik.tu-muenchen.de

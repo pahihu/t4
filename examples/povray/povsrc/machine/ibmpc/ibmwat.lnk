@@ -1,0 +1,16 @@
+option map=povray
+option verbose
+option stack=12032
+option packcode=65536
+name povray
+file povray,render,objects,spheres,quadrics,lighting,hfield
+file prioq,texture,txtcolor,txtbump,txtmap,txttest,matrices
+file csg,colour,viewpnt,ray,planes,point,boxes,blob
+file triangle,raw,dump,targa
+file poly,bezier,vect,ibm
+library ai.lib
+begin
+  section file iff
+  section file gif,gifdecod
+  section file tokenize,parse
+end

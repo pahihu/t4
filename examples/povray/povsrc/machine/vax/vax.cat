@@ -1,0 +1,9 @@
+This archive contains machine specific files for compiling POV-Ray on Vax.
+It contains:
+
+VAX.ZIP:
+   unix.doc     - system specific docs for Vax
+   vaxconf.h    - Vax configuration header -- rename to config.h
+   vaxbuild.com - makefile for VAX
+   vax.c        - system specific source for Vax
+   vax.cat      - list of files in VAX.ZIP

@@ -1,0 +1,19 @@
+noig
+output povray
+overlay CODE, CONST
+library ai.lib
+file povray,render,ray,matrices,viewpnt
+file lighting,prioq,texture,colour,objects,triangle
+file txtcolor,txtbump,txtmap,txttest,hfield,blob
+file spheres,quadrics,poly,vect,planes,point,boxes,csg,ibm
+beginarea
+   section file iff
+   section file raw
+   section file dump
+   section file targa
+endarea
+beginarea
+   section file gif,gifdecod
+   section file tokenize,parse
+   section file bezier
+endarea

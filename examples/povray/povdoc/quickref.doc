@@ -1,0 +1,815 @@
+                  Persistence of Vision Raytracer
+                          Version 1.0 
+                        Quick Reference
+                  -------------------------------
+                   By Larry Tweed & Drew Wells
+
+This document is designed as a quick reference for those already familiar
+with the program POV-Ray. You should use POVRAY.DOC to learn about
+POV-Ray and then use this document as a memory jogger or for quick syntax
+checks. It is not meant to replace the main documents that accompany
+POV-Ray.
+
+NOTE: This document is not complete or perfectly accurate in all cases.
+      We judged it to be useful even with a few innacuracies and its state 
+      of completion. Hopefully, it will be useful to you. 
+      If you can't find something here or can't understand what is here,
+      refer to POVRAY.DOC.
+
+Some entries have been left blank due to time constraints. A later version
+of this document will contain text for these entries. For now, refer to
+POVRAY.DOC. The list is alphabetical, with texture modifiers at the end
+of the list.
+
+---------------------------------------------------------------------------
+                      
+
+bezier/bicubic patches
+----------------------
+Syntax:
+Description:
+
+blob
+----
+Syntax: blob {
+          threshold #
+          component (strength_val) (radius_val) <component center>
+          component (strength_val) (radius_val) <component center>
+          [ any number of components ]
+          [sturm]
+        }   
+
+Description: A blobby shape. Components radii should overlap.
+
+bounded_by
+----------
+Syntax: object {
+           ...
+           bounded_by {
+              shape {...}
+           }
+        }
+
+Description: A bounding shape helps speed rendering time in many cases. The
+             bounding shape is first tested by the raytracer. If the ray
+             does not strike the bounding shape, the raytracer does not need
+             to test or calculate any of the bounded objects.
+
+box
+---
+Syntax: box { <x1 y1 z1> <x2 y2 z2> }
+
+Description: A box shape is defined by specifying 2 corners. The first corner
+             (<x1 y1 z1> in the example above) must be smaller than the
+             second corner.
+
+camera
+------
+Syntax: camera {
+          location <0 0 0>
+          direction <0 0 1>
+          up <0 1 0>
+          right <1.33 0 0>
+          look_at<0 0 0>
+          sky <0 1 0>
+        }
+
+Description: The camera defines the orientation and location in space
+             of the viewer. The values shown above are the default values.
+             If these items are not specified, the defaults will be used.
+
+clipped_by
+----------
+Syntax: object {
+          ...
+          clipped_by {
+             object {...}
+          }
+        }
+
+Description: clipped_by will "cut off" any part of the object that is outside
+             the clipping shape. This should not be confused with bounded_by.
+
+composite
+---------
+Syntax: composite {
+           object1 {...}
+           object2 {...}
+        }
+
+Description: composite will "glue together" 2 or more objects. Essentially,
+             the objects can then be considered as single unit.
+
+difference
+----------
+Syntax: object {
+          difference {
+             shape1 {...}
+             shape2 {...} // This will be "cut out" of shape1
+             shape3 {...} // This will be "cut out" of shape1
+             shape4 {...} // This will be "cut out" of shape1
+             (...)
+          }
+        }
+
+Description: A difference is a CSG shape. All points in shape1 that are not
+             in shape2 will be included in the final shape. A difference
+             essentially subtracts the shapes following shape1 from shape1.
+             Any number of shapes may be used. 
+
+direction
+---------
+Syntax: direction <# # #>
+
+Description: The direction vector is used in the camera block and specifies
+             the direction the camera is pointing with a vector. Normally,
+             this vector points straight ahead (<0 0 1>) and look_at is 
+             used to point the camera. The direction vector should be used
+             to set the "length" of the camera lens. Small values are
+             similar to a wide-angle lens, large values are like a tele-photo
+             lens.
+
+height_field
+------------
+Syntax: height_field { gif "file.gif" water_level # }
+
+Description: A height field is a rectangular mesh of triangles where the
+             height of a triangle at a certain X,Z point is controlled
+             by the number in a file at that same index. GIF, TGA and POT
+             files may be used as height fields. The water_level is
+             the height below which the untransformed height field is cut
+             off. The untransformed height field is similar in size to:
+                 box { <0 0 0> <1 1 1> }
+
+intersection
+------------
+Syntax:  object {
+           intersection {
+              shape1 {...}
+              shape2 {...}
+           }
+         }
+
+Description: An intersection is a CSG shape composed of 2 or more shapes.
+             All points that are contained in all the included shapes are
+             included in the final shape. In essence, an intersection is
+             the space where all the shapes meet.
+
+inverse
+-------
+Syntax: object {
+          csg_shape_type {
+             shape1 {...}
+             shape2 {... inverse }
+          }
+        }
+
+Description: Inverse only has effect when using CSG. When inverse is put into
+             the definition of a shape, it turns the shape "inside-out".
+             Essentially, every point that was "inside" the shape is now
+             "outside" and vice versa.
+
+light_source
+------------
+Syntax: light_source { <x y z> color red # green # blue #}
+
+Description: To shed a little light on a scene, you must provide a
+             light_source. The center of the light is at the vector x, y
+             and z. The red, green, and blue color values define the color 
+             of the light which is cast. The light_source itself is 
+             invisible. A light source is treated as a shape even though it
+             cannot be seen. It may be used in CSG.
+
+look_at
+-------
+Syntax: camera {
+          ...
+          look_at <x y z>
+        }
+
+Description: look_at defines the point in space at which the camera is
+             pointing, or focused on as defined by the x, y and z parameters.
+
+no_shadow
+---------
+Syntax: object {
+          ...
+          no_shadow
+        }
+
+Description: no_shadow causes an object to be transparent to all light
+             sources. The object will not cast a shadow. This feature is
+             especially useful for enclosing a light source to give the
+             illusion that the light source is actually visible with a shape.
+
+object
+------
+Syntax: object { 
+          shape_type { ... }
+          texture { ... }
+        }
+Description: objects are the basic building blocks. An object defines a shape
+             and associated textures. Objects may not be used in CSG, but
+             they may be used in composite objects.
+
+plane
+-----
+Syntax: plane { <x y z> d }
+
+Description: A plane is a flat surface which is infinite in all directions.
+             The surface normal (or orientation) of the plane is determined
+             by the x, y and z arguments. The d parameter specifies the
+             distance of the plane from the origin in the direction of the
+             surface normal.
+                plane { <0 1 0> 0 } // XZ plane, a floor
+                plane { <0 0 1> 10 }// XY plane, a wall
+
+Quadric
+-------
+Syntax:
+
+Description:
+
+Quartic
+-------
+Syntax:
+
+Description:
+
+
+
+right
+-----
+Syntax: right <x y z>
+
+Description: Used in the camera description, it specifies which direction
+             in the ray tracing universe is the right hand side of the
+             image being generated. Usually, right <1.33 0 0>.
+
+rotate
+------
+Syntax: object { ... rotate <x y z> }
+        shape  { ... rotate <x y z> }
+        texture{ ... rotate <x y z> }
+Description: rotate will move any element about the origin in x, y and z
+             degrees. It is important to note that if the object is not
+             centered at the origin, it will "orbit" the origin rather
+             than its current center. 
+scale
+-----
+Syntax: object { ... scale <x y z> }
+        shape  { ... scale <x y z> }
+        texture{ ... scale <x y z> }
+
+Description: scale will enlarge or reduce the size of any element.
+             If the values for x, y or z are greater than 1.0, the object
+             is enlarged. If the values are between 0.0 and 1.0, the object
+             is shrunk. Scale may also be use on textures.
+             NOTE: Scaling by zero will cause an error.
+
+sky
+---
+Syntax: camera {
+          ...
+          sky <x y z>
+        }
+
+Description: sky describes the orientation of the sky, which is not
+             necessarily the same as the UP direction. If sky is defined,
+             it must be defined before the look_at parameter.
+
+sphere
+------
+Syntax: sphere { <x y z> r }
+
+Description: A sphere is a perfectly round shape. Its location in space is
+             defined by the x, y, and z arguments. The radius is determined
+             by the r argument. The width of a sphere will be 2 x r. It
+             cannot be scaled unevenly.
+
+spotlight
+---------
+Syntax: light_source {
+          <x y z> // center of light source
+          color red # green # blue #
+          spotlight
+          point_at <x y z>
+          radius #
+          falloff #
+          tightness #
+        }
+
+Description: A spotlight light_source emulates the behavior of a real
+             spotlight, projecting a cone of light. point_at specifies the
+             point in space that the light is aimed at. radius is the radius
+             in degrees of the circular "hotspot" at the center of the
+             spotlight's area of effect. falloff is the radius in degrees
+             that defines the area where the brightness falls off to zero.
+             Both values may range between 1 and 180. Tightness controls
+             how fast the brightness falls off at the edges. Low values
+             cause softer edges, high values create sharper edges.
+
+texture
+-------
+Syntax:  object {
+           ...
+           texture {
+              (texture modifiers)
+           }
+         }
+         shape { ... texture {...} }
+Description: The texture keyword begins a block which describes the appearance
+             of an object, but not the size. See the section on texture
+             modifiers for a list of available modifiers and their defaults.
+             A texture may be used inside a shape or object, but not
+             in a composite object.
+
+translate
+---------
+Syntax: object { ... translate <x y z> }
+        shape  { ... translate <x y z> }
+        texture{ ... translate <x y z> }
+
+
+Description: translate moves the element in space by the number of units
+             specified by the x, y and z parameters. Translate is relative
+             to the element's current location. If the element is at <3 4 5>
+             and is translated by <1 -1 1>, the element is moved to <4 3 6>.
+             Normally, translate is used after scale because the scale will
+             "scale" the translate.
+
+triangle
+--------
+Syntax: triangle { <x1 y1 z1> <x2 y2 z2> <x3 y3 z3> }
+
+Description: A triangle is specified by the coordinates of the 3 vertices.
+             Triangles have no inside or outside, so cannot be used correctly
+             in CSG shapes.
+
+union
+-----
+Syntax: object {
+          union {
+             shape1 {...}
+             shape2 {...}
+          }
+        }
+
+Description: Union is a CSG shape. A union essentially superimposes two or
+             more shapes to create a single object. All points in the shapes
+             included in a union are included in the final object.
+
+up
+--
+Syntax: camera {
+           ...
+           up <x y z>
+        }
+
+Description: The up parameter describes the surface normal of the "up"
+             direction. up <0 1 0>, for example would have a "up" direction
+             in the positive y direction.
+
+
+
+  
+  
+--------------------------------------------------------------------------
+  Texture Modifiers
+--------------------------------------------------------------------------
+
+agate
+-----
+Syntax: agate color_map {...}
+
+Description: agate is a pattern similar to marble. It is always turbulent
+             and ignores the turbulence keyword. agate is used within a
+             texture block.
+
+alpha
+-----
+Syntax: color red # green # blue # alpha #
+
+Description: The alpha property of a color determines how transparent the
+             color is. Values range from 0.0 (opaque) to 1.0 (totally
+             transparent). Transparency is a filter. Black is always
+             opaque. The color red with alpha 1 will only allow red light
+             through, and so on.
+
+ambient
+-------
+Syntax: texture {
+           ...
+           ambient #
+        }
+
+Description: ambient determines the amount of light an object receives even
+             if it is in complete shadow. This emulates the light that is just
+             "bouncing around" the room. The default value for ambient is
+             0.1. Values range from 0.0 to 1.0.
+
+bozo
+----
+Syntax: bozo color_map {...}
+
+Description: A splotchy color pattern. Turbulence works on it. It's often
+             used to create clouds.
+
+
+brilliance
+----------
+Syntax: texture {
+           ...
+           brilliance #
+        }
+
+Description: brilliance controls the tightness of diffuse illumination on
+             an object and adjusts the appearance of surface shininess. Values
+             from 3.0 to 10.0 can give a shiny or metallic appearance. The
+             default value is 1.0. There is no limit on the brilliance value.
+
+bump_map
+--------
+Syntax: bump_map { file_type "filename"  
+                   map_type # interpolate # bump_size # 
+                    (use_color) (use_index) }
+Ex: bump_map { gif "rough.gif" map_type 1 interpolate 2 bump_size 3 }
+
+Description: Use a graphic image to simulate bumps on a shape.
+
+bumps
+-----
+Syntax: texture {
+             bumps #
+        }
+
+Description: bumps gives the surface of an object a bumpy appearance. Values
+             for bumps range from 0.0 (no bumps) to 1.0 (very bumpy).
+
+checker
+-------
+Syntax: checker color red # green # blue #
+                color red # green # blue #
+
+Description: the checker pattern gives an object a checkerboad appearance.
+             Two colors must be specified after the checker keyword. These
+             are the colors that will alternate in the checker pattern. The
+             checker option is used within the texture block and works best
+             on planes.
+
+color
+-----
+Syntax: color red # green # blue # alpha #
+
+Description: colors are specified using the red, green, blue and
+             (optionally) alpha components. The values for each component
+             range form 0.0 to 1.0. If a component is not specified, it is
+             assumed to be 0 (none of that component color).
+             Alpha specifies the transparency of the color.
+
+color_map
+---------
+Syntax: color_map {
+          [start_value end_value color1 color2]
+          [start_value end_value color1 color2]
+          ...
+        }
+
+Description: A color_map provides a palette for color patterns. A point on the
+             surface is located and it is determined which start_value
+             end_value pair the points falls within. The color is then
+             determined by smoothly blending the colors associated with
+             the start_value end_value pair. Values for start_value and
+             end_value range from 0.0 to 1.0. 
+Example:
+     color_map {
+          [0   .25 color red 1 color red 1]
+          [.25 .5  color red 1 color green 1]
+          [.5 .75  color green 1 color blue 1]
+          [.75 .76 color Yellow color Orange]
+          [.76 1   color Black  color blue 1]
+        }        
+
+default texture
+---------------
+Description: When a texture is first created, POV-Ray initializes it with
+             default values for all options. The default values are:
+
+             color red 0 green 0 blue 0 alpha 0
+             ambient .1
+             diffuse .6
+             phong 0
+             phong_size 40
+             specular 0
+             roughness .05
+             brilliance 1
+             metallic FALSE
+             reflection 0
+             refraction 0
+             ior 1
+             turbulence 0
+             octaves 6
+             texture randomness (dither) 0
+             phase 0
+             frequency 1
+             color map NONE
+
+#default
+---------
+Syntax: #default { texture { (modifications to default texture) }
+
+Description: The default textures can be modified by using the #default
+             option. Any textures created after this option has been used
+             will use the new defaults as specified in #default. All other
+             defaults not specified will remain the unchanged.
+
+dents
+-----
+Syntax: texture {
+           ...
+           dents #
+        }
+
+Description: dents will give the object the appearance of being dented. Values
+             for dents range between 0.0 (no dents) and 1.0 (the dentiest)
+             that determines how dented the surface should be.
+
+diffuse
+-------
+Syntax: texture {
+           ...
+           diffuse #
+        }
+
+Description: The diffuse value specifies how the colors in a texture react
+             to light directly shining on it. Higher values make the colors
+             very bright, lower values make the colors more subdued. Values
+             for diffuse range from 0.0 to 1.0. The default value is 0.6.
+
+fog
+---
+Syntax: fog { color red # green # blue # distance_val }
+
+Description: Simulate a uniform haze over the entire scene. Fog should be
+described outside of all other descriptions. Ie. don't put it inside a 
+texture, object, camera, or shape block.
+
+Example: fog { color red 1 green 1 blue 1 200.0 }
+
+gradient
+--------
+Syntax: gradient <axis vector> color_map {...}
+
+Description: 
+
+
+granite
+-------
+Syntax: granite color_map {...}
+
+Description: This will create a granite pattern based on the supplied
+             color_map. granite will respond to the turbulence keyword, but
+             the default is no turbulence. granite is typically used with
+             small scaling values (2.0 to 5.0).
+
+image_map
+---------
+Syntax: image_map { file_type "filename" alpha (index # or all) # 
+                    map_type # interpolate # (once) }
+
+Description: Place a graphic image on a shape as surface coloring.
+
+
+interpolate
+-------------
+Syntax: image_map { gif "file.gif" interpolate # }
+        
+        interpolate 1  // Norm dist interpolation  
+        interpolate 2  // Bilinear interpolation (best) 
+
+Description: Smooths the jaggies on image_maps and bump_maps.
+
+ior
+---
+Syntax: texture {
+          ...
+          refraction 1
+          ior #
+        }
+
+Description: The ior is the Index of Refraction. This value determines how
+             far light will bend as it passes through a texture. To be
+             effective, refraction should be set to 1 and the texture must
+             have some transparent colors that use alpha. A value of 1.0 will
+             not bend the light. Some typical ior values are 1.0 for air,
+             1.33 for water, 1.5 for glass and 2.4 for diamond.
+
+leopard
+-------
+Syntax: leopard color_map {...}
+
+Description: Uniform spotted color pattern. Turbulence works.  
+
+map_type
+--------
+Syntax: map_type #
+
+Description: Changes the mapping type used with image_map, bump_map, and
+             material map.
+             0 = Planar
+             1 = Spherical
+             2 = Cylindrical
+             3 = Toroidal (donut)
+
+marble
+------
+Syntax: marble color_map {...}
+
+Description: marble creates parallel bands of colors based on the color_map.
+             Adding turbulence will give the appearance of true marble or
+             other types of stones. The default is no turbulence.
+
+
+material_map
+------------
+Syntax: material_map { file_type "filename" map_type #  [once]
+                       texture {...} texture {...} (...) 
+        }
+
+Description: Changes the texture on a surface based on the colors in the
+             mapped image.
+
+max_trace_level
+---------------
+Syntax: max_trace_level #
+
+Description: This option will set the number of levels that a ray will be
+             traced. If a ray is reflected or refracted, it creates another
+             ray. This is 1 level. The default value is 5.
+
+metallic
+--------
+Syntax: texture {
+           ...
+           metallic
+        }
+
+Description: This keyword specifies that the color of specular and phong
+             highlights will be the surface color rather than the color
+             of the light source. This creates a metallic appearance.
+
+octaves
+-------
+Syntax: octaves #
+
+Description: Affects turbulence. Default value is 6. Values range from 1
+             to 16.
+
+onion
+-----
+Syntax: onion color_map {...}
+
+Description: onion creates a pattern of concentric circles based on the
+             supplied color_map. By default, onion has no turbulence.
+
+phong
+-----
+Syntax: texture {
+           ...
+           phong #
+        }
+
+Description: The phong keyword causes a bright shiny spot on the object that
+             is the same color as the light source. Values for phong range
+             from 0.0 (none) to 1.0 (very bright at the center of the
+             highlight). There is no phong highlighting by default.
+
+phong_size
+----------
+Syntax: texture {
+           ...
+           phong_size #
+           phong #
+        }
+
+Description: The value for phong_size determines the size of the phong
+             highlight of the object. The larger the value, the smaller
+             (tighter) the highlight. The smaller the value, the larger
+             (looser) the highlight. Values range from 1.0 (very dull) to
+             250 (highly polished). The default phong_size is 40.
+
+reflection
+----------
+Syntax: texture {
+           ...
+           reflection #
+        }
+
+Description: The value of reflection determines how much of the light coming
+             from an object is reflected from other objects in the scene.
+             Values range from 0.0 (no reflection) to 1.0 (a perfect mirror).
+
+refraction
+----------
+Syntax: texture {
+           ...
+           refraction #
+        }
+
+Description: The value for refraction will affect how light passing through
+             transparent textures is treated. Values range from 0 to 1.
+             Lower values will make the transparent portions less transparent.
+             This value will usually be set to 1 with the transparancy
+             amounts controlled by alpha. By default, there is no refraction.
+
+ripples
+-------
+Syntax: texture {
+          ...
+          ripples #
+         }
+
+Description: Simulates ripples on a shape's surface.
+
+roughness
+---------
+Syntax: texture {
+           ...
+           roughness #
+        }
+
+Description: The roughness value for a surface determines the size of the
+             specular highlight of that object. Typical values range from
+             1.0 (Very Rough, large highlight) to 0.0005 (Very Smooth,
+             small highlight). The default, if no roughness is specified, is
+             0.05.
+
+specular
+--------
+Syntax: texture {
+           ...
+           specular #
+        }
+
+Description: A specular highlight is similar to a phong highlight, but
+             provides a more credible spreading of the highlights near
+             the object horizons. Values for specular range from 0.0
+             (no highlighting) to 1.0 (bright highlighting). The size of
+             the highlight is determined by the roughness value.
+
+spotted
+-------
+Syntax:
+
+Description:
+
+tiles
+-----
+Syntax: texture {
+           tiles {
+              texture {...}
+           tile2
+              texture {...}
+           }
+        }
+
+Description: tiles gives an effect similar to checker, but with textures
+             rather than just colors. The textures for tile1 and tile2
+             may also be layered, but only the first layer will be seen.
+
+turbulence
+----------
+Syntax: texture {
+           ...
+           turbulence #
+        }
+
+Description: turbulence will distort a pattern so that it is not so "perfect".
+             Typcical values for turbulence range between 0.0 and 1.0, but
+             any value can be used.
+
+waves
+-----
+Syntax: waves #
+
+Description: Simulates bumpy waves on a shape's surface.
+
+wood
+----
+Syntax: wood color_map {...}
+
+Description: wood used the supplied color map to create concentric cylindrical
+             bands of color centered on the Z axis. Small amounts of
+             turbulence will make the texture look more like real wood. There
+             is no turbulence by default.
+
+wrinkles
+--------
+Syntax: texture {
+          ...
+          wrinkles #
+        }
+
+Description: wrinkles is a bump pattern that will give the appearance of a
+             wrinkled surface. Values for wrinkles range from 0.0 (no wrinkles
+             to 1.0 (very wrinkled)

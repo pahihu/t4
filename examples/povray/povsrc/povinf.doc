@@ -1,0 +1,197 @@
+                  Persistence of Vision Raytracer
+                          Version 1.0 
+                        Basic Information
+                  -------------------------------
+    
+    The Persistence of Vision Raytracer creates three-dimensional,
+photo-realistic images using a rendering technique called ray tracing.
+It reads in a text file containing information describing the objects and
+lighting in a scene and generates an image of that scene from the view
+point of a camera also described in the text file. Ray tracing is not
+a fast process by any means, but it produces very high quality images
+with realistic reflections, shading, perspective, and other effects.
+
+   The POV-Ray package includes detailed instructions on using the
+raytracer and creating scenes. Many stunning scenes are included with
+POV-Ray so you can start creating images immediately when you get
+the package. These scenes can be modified by the user also so they
+don't have to start from scratch.
+
+   In addition to the pre-defined scenes are a large library of
+predefined shapes and materials that can be used in your own scenes by
+just typing the name of the shape or material.
+
+   POV-Ray is easy to use, and also includes many advanced features
+like bezier patches, blobs, height-fields, bump mapping, and material
+mapping.
+
+   POV-Ray can be used on IBM-PC and compatibles, Apple Macintoshes,
+Commodore Amiga's, UNIX, and other computers.
+
+   Here is a list the files that you need to use POV-Ray on your 
+computer. 
+
+The latest versions of these files are available over CompuServe, 
+America Online, Internet, and several BBS's. See 'Where to find POV-Ray 
+files' section below for more info.
+
+----------------------------------------------------------------------------
+                
+     For IBM-PC & compatibles:
+     -------------------------      
+        Requires: 386 or better CPU and at least 2 meg of RAM
+                  A math co-processor and VGA display is recommended
+                  This version will run under DOS, OS/2 and Windows.
+                  It will not run under Desqview.
+        
+        Files required:
+        POVDOC.ZIP - The documentation for POV-Ray
+        POVSCN.ZIP - The example scene files for POV-Ray
+        POVIBM.ZIP - Executable and docs for IBM-PC and compatibles
+        
+        You will also need a program like PICLAB or Image Alchemy to convert
+        the TGA files output by POV-Ray to GIF files and a GIF viewer
+        program. These programs can be found from any of the sources 
+        listed below.  
+        
+        Optional Files:
+        The source is not needed to use POV-Ray. It is provided for the
+        curious and adventurous
+        
+        POVSRC.ZIP - The C source code for POV-Ray
+        
+        
+     For Apple Macintosh:
+     --------------------
+        Requires: 68020 or better CPU, 32 bit Color Quickdraw, and
+                  a math co-processor or software emulation of a 
+                  math co-processor.
+       
+                  The math co-processor emulator is needed on the Mac LC 
+                  and Powerbook 140. The documentation included with the 
+                  executable describes where to find a math co-processor 
+                  emulator.
+       
+                  32 bit Color Quickdraw is part of System 7's automatic 
+                  installation on color Macs. Owners of Mac SE/30 and 
+                  other non-color Macs will need to use custom 
+                  installation options to add 32 bit Color Quickdraw. 
+                   
+        Files Required:
+        POVDOC.SIT - The documentation for POV-Ray
+        POVSCN.SIT - The example scene files for POV-Ray
+        POVMAC.SIT - Executable and docs for Apple Macintosh
+        
+        Optional Files:
+        The source is not needed to use POV-Ray. It is provided for the
+        curious and adventurous
+        
+        POVSRC.SIT - The C source code for POV-Ray
+        
+     
+     For Commodore Amiga:
+     --------------------
+        Requires: Amiga 500, 1000, 2000, and 3000's and should work 
+                  under AmigaDOS 1.3 or 2.xx.  Supports HAM mode as 
+                  well as HAM-E and the Firecracker.   
+        
+        Files Required:
+        POVDOC.LZH - The documentation for POV-Ray
+        POVSCN.LZH - The example scene files for POV-Ray
+        POVAMI.LZH - Executable and docs for Commodore Amiga
+        
+        Optional Files:
+        The source is not needed to use POV-Ray. It is provided for the
+        curious and adventurous
+        
+        POVSRC.LZH - The C source code for POV-Ray
+        
+     
+     For UNIX & Others:
+     ------------------        
+        Required: A C compiler for your computer and some knowledge
+                  of how to use it.
+        
+        Files required:
+        POVDOC.TAR - The documentation for POV-Ray
+        POVSCN.TAR - The example scene files for POV-Ray
+        POVSRC.TAR - The C source code for POV-Ray
+        
+----------------------------------------------------------------------------
+
+   In the POVDOC archive is the file POVRAY.DOC which contains details 
+on installing and using POV-Ray. Specific instructions for
+using POV-Ray with your computer are included with the executable.
+
+ ** POV-Ray is copyrighted freeware written by the POV-Team. 
+ ** It may be freely distributed subject to the restrictions 
+ ** defined in POVLEGAL.DOC found in POVDOC archive.
+ ** POV-Ray is NOT public domain software.
+   
+ POV-Ray is based on DKBTrace 2.12 by David K. Buck and Aaron A. Collins.
+   
+   The POV-Team is a collection of volunteer programmers, designers,
+animators and artists meeting via electronic mail on Compuserve's
+COMART forum, section 16 Raytracing (COMART is also the home of the
+very popular Fractint and its authors the Stone Soup Group.)
+
+   The POV-Team's goal is to create freely distributable, high
+quality rendering and animation software written in C that can be
+easily ported to many different computers. 
+
+   If you have any questions about POV-Ray, please contact
+
+     Drew Wells
+     [POV-Team Leader]
+     
+     CIS: 73767,1244
+     Internet: 73767.1244@compuserve.com
+     AOL: Drew Wells
+     
+---------------------------------------------------------------------------
+       Where to find the POV-Ray files
+---------------------------------------------------------------------------       
+       
+       Computer Art Forum on CompuServe
+       --------------------------------
+       POV-Ray headquarters are on CompuServe Comart forum 
+       Raytracing section 16. We meet there to share info and 
+       graphics and discuss raytracing, fractals and other kinds of 
+       computer art. Comart is also the home of the Stone Soup 
+       Group, developers of Fractint, a popular IBM-PC fractal 
+       program. Everyone is welcome to join in on the action on CIS 
+       Comart. Hope to see you there! You can get information on 
+       joining CompuServe by calling (800)848-8990. CompuServe 
+       access is also available in Japan, Europe and many other 
+       countries.
+       
+       PC Graphics area on America On-Line
+       -----------------------------------
+       There's an area now on America On-Line dedicated to POV-Ray 
+       support and information. You can find it in the PC Graphics 
+       section of AOL. Jump keyword "PCGRAPHICS". This area 
+       includes the Apple Macintosh executables also.
+       
+       Internet
+       --------
+       The POV-Ray files are also available over Internet by 
+       anonymous FTP from alfred.ccs.carleton.ca (134.117.1.1).
+       
+       
+       You Can Call Me Ray BBS in Chicago
+       ----------------------------------
+       There is a ray-trace specific BBS in the (708) Area Code 
+       (Chicago suburbia, United States) for all you Traceaholics 
+       out there. The phone number of this BBS is (708) 
+       358-5611.Bill Minus is the sysop and Aaron Collins is 
+       co-sysop of that board, and it's filled with interesting 
+       stuff.
+       
+       
+       The Graphics Alternative BBS in Oakland
+       ---------------------------------------
+       For those on the West coast, you may want to find the 
+       POV-Ray files on The Graphics Alternative BBS at (510) 
+       524-2780. It's a great graphics BBS run by Adam Schiffman.
+       
+       

@@ -1,0 +1,294 @@
+                  Persistence of Vision Raytracer
+                          Version 1.0 
+                        Quick Reference
+                  -------------------------------
+                        By Chris Young
+
+This is a formal grammar definition of the POV-Ray scene description
+language.  It is based on PARSE.C and TOKENIZE.C from version 1.0 of POV-Ray.  
+See POVRAY.DOC for in-depth description of the program and language
+
+The POV-Ray language is used to describe something called a FRAME.  Everything
+needed to render that image is stored in a text file describing that FRAME.
+
+Also note,
+
+   #include "filename.inc"
+
+   can appear anywhere in the text to include text from another file.
+The parser will behave as if all the text from filename.inc were inserted
+at that point in the file.
+
+Note that the use of "#" is currently optional, but recommended for
+readability when using include and declare for readability. This will be
+mandatory in future versions.
+
+Any text following "//" to the end of the line is ignored as comments.
+Furthermore text between "/*" and "*/" is considered a comment.
+/* */ comments can be nested.
+
+In the notation used below in general a single character in quotes is that 
+literal character.  All lower case words are also literal and they are 
+reserved keywords.  Upper case words denote language constructs.
+
+An ellipsis denotes one or more.  Square brackets denote optional.
+A bar | denotes a choice of item or items.
+A scroll bracket is a literal "{" or "}" but the quotes have been
+omitted for clarity.
+
+For example:
+      ITEM              one occurrence of ITEM
+      ITEM...           one or more occurrences of ITEM
+      [ITEM]            zero or one occurrence of ITEM
+      [ITEM...]         zero or more occurrences of ITEM
+      ITEM_1 | ITEM_2   one occurrence of either ITEM_1 or ITEM_2 
+
+NOTE: STRING is defined as a string of characters in quotes
+      IDENTIFIER is an alphabetic character followed by one or more 
+                  alphanumerics or underscores
+      ITEM_IDENTIFIER is an IDENTIFIER of type ITEM
+
+Leave questions/comments to Chris Young CIS:[76702,1655]
+--------------------------------------------------------------
+
+DIGIT = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+
+POINT = "."
+
+EXP   = "e" | "E"
+
+SIGN  = "+" | "-"
+
+FLOAT_CONST = [DIGIT...] [POINT] DIGIT... [EXP [SIGN] DIGIT...]
+
+FLOAT = [SIGN] FLOAT_CONST | [SIGN] FLOAT_IDENTIFIER
+
+COLOR_ITEM  = red FLOAT   | green FLOAT | blue FLOAT |
+              alpha FLOAT | COLOR_IDENTIFIER
+
+COLOR_SPEC  = color [COLOR_ITEM...] 
+
+Note:"color" and "colour" can be used interchangeably everywhere.
+
+COLOR_MAP_ENTRY   = "[" FLOAT FLOAT COLOR_SPEC COLOR_SPEC "]"
+
+COLOR_MAP   = color_map { [COLOR_MAP_ENTRY...] }
+
+VECTOR      = "<" FLOAT FLOAT FLOAT ">"
+
+MAP_PREFIX  = FLOAT | VECTOR
+
+MAP_FILE    = iff STRING | 
+              tga STRING |
+              gif STRING |
+              dump STRING
+
+IMAGE_ATTRIB= once |
+              interpolate FLOAT |
+              map_type FLOAT |
+              use_color |
+              use_index |
+              alpha all FLOAT |
+              alpha FLOAT FLOAT
+
+BUMP_ATTRIB = once |
+              interpolate FLOAT |
+              map_type FLOAT |
+              bump_size FLOAT |
+              use_color |
+              use_index 
+
+MATER_ATTRIB= once |
+              interpolate FLOAT |
+              map_type FLOAT |
+              TEXTURE 
+
+TEXTURE_ITEM= TEXTURE_IDENTIFIER |
+              FLOAT | 
+              once |
+              turbulence FLOAT |
+              octaves FLOAT |
+              brick color COLOR_SPEC color COLOR_SPEC |
+              mortar FLOAT |
+              checker [COLOR_SPEC [COLOR_SPEC]] |
+              tiles { [TEXTURE] tile2 [TEXTURE] } |
+              bozo | marble | wood | spotted | agate | 
+              granite | metallic | onion | leopard |
+              painted1 | painted2 | painted3 |
+              gradient VECTOR |
+              ambient FLOAT |
+              brilliance FLOAT |
+              roughness FLOAT |
+              phong_size FLOAT |
+              diffuse FLOAT |
+              specular FLOAT |
+              phong FLOAT |
+              ior FLOAT |
+              refraction FLOAT |
+              reflection FLOAT |
+              waves FLOAT [phase FLOAT] |
+              frequency FLOAT |
+              phase FLOAT |
+              ripples FLOAT |
+              wrinkles FLOAT |
+              bumps FLOAT |
+              dents FLOAT |
+              translate VECTOR |
+              rotate VECTOR |
+              scale VECTOR |
+              COLOR_SPEC |
+              COLOR_MAP |
+              image_map { [MAP_PREFIX...] MAP_FILE [IMAGE_ATTRIB...] } |
+              bump_map { [MAP_PREFIX...] MAP_FILE [BUMP_ATTRIB...] } |
+              material_map { [MAP_PREFIX...] MAP_FILE [MATER_ATTRIB...] }
+
+TEXTURE     = texture { [TEXTURE_ITEMS...] }
+
+USUAL_MODS  = translate VECTOR |
+              rotate VECTOR |
+              scale VECTOR |
+              inverse |
+              TEXTURE |
+              COLOR_SPEC
+
+SPHERE_BODY = VECTOR FLOAT |
+              SPHERE_IDENTIFIER
+
+SPHERE      = sphere { SPHERE_BODY [USUAL_MODS...] }
+
+PLANE_BODY  = VECTOR FLOAT |
+              PLANE_IDENTIFIER
+
+PLANE       = plane { PLANE_IDENTIFIER [USUAL_MODS...] }
+
+HFILE_TYPE  = gif STRING | 
+              pot STRING |
+              tga STRING |
+              HFIELD_IDENTIFIER
+
+HFIELD_MODS = USUAL_MODS |
+              water_level FLOAT
+
+HFIELD      = height_field { HFILE_TYPE [HFIELD_MODS...] }
+
+TRI_BODY    = VECTOR VECTOR VECTOR |
+              TRIANGLE_IDENTIFIER
+
+TRIANGLE    = triangle { TRI_BODY [USUAL_MODS...] }
+
+SMO_TRI_BODY= VECTOR VECTOR VECTOR VECTOR VECTOR VECTOR |
+              SMOOTH_TRIANGLE_IDENTIFIER
+
+SMO_TRIANGLE= smooth_triangle { SMO_TRI_BODY [USUAL_MODS...] }
+
+QUAD_BODY   = VECTOR VECTOR VECTOR FLOAT |
+              QUADRIC_IDENTIFIER
+
+QUADRIC     = quadric { QUAD_BODY [USUAL_MODS...] }
+
+Note a POLY_N has M terms where M = (N+1)*(N+2)*(N+3)/6 
+
+POLY_N      = "<" float_1 float_2... FLOAT_M ">" |
+              POLY_IDENTIFIER
+
+POLY_MODS   = USUAL_MODS | sturm
+
+CUBIC       = cubic { POLY_3 [POLY_MODS...] }
+
+QUARTIC     = quartic { POLY_4 [POLY_MODS...] }
+
+POLY        = poly { FLOAT POLY_N [POLY_MODS...] }
+
+BI_BODY     = FLOAT [FLOAT] FLOAT FLOAT VECTOR_1 VECTOR_2... VECTOR_16 |
+              BICUBIC_IDENTIFIER
+
+BICUBIC     = bicubic_patch { BI_BODY [USUAL_MODS...] }
+
+BOX_BODY    = VECTOR VECTOR |
+              BOX_IDENTIFIER
+
+BOX         = box { BOX_BODY [USUAL_MODS...] }
+
+BLOB_ITEM   = threshold FLOAT |
+              component FLOAT FLOAT VECTOR
+
+BLOB_BODY   = [BLOB_ITEM...] |
+              BLOB_IDENTIFIER
+
+BLOB        = blob { BLOB_BODY [POLY_MODS...] }
+
+LIGHT_MODS  = translate VECTOR |
+              rotate VECTOR |
+              scale VECTOR |
+              point_at VECTOR |
+              tightness FLOAT |
+              radius FLOAT |
+              falloff FLOAT |
+              spotlight |
+              COLOR_SPEC
+
+LIGHT_BODY  = VECTOR | LIGHT_IDENTIFIER
+
+LIGHT_SOURCE= light_source { LIGHT_BODY [LIGHT_MODS..] }
+
+SHAPE       = LIGHT_SOURCE | SPHERE | PLANE | TRIANGLE | SMO_TRIANGLE |
+              QUADRIC | HFIELD | CUBIC | QUARTIC | POLY | BICUBIC |
+              BOX | BLOB | UNION | INTERSECTION | DIFFERENCE
+
+CSG_BODY    = SHAPE | CSG_IDENTIFIER
+
+CSG_MODS    = translate VECTOR |
+              rotate VECTOR |
+              scale VECTOR |
+              inverse 
+
+INTERSECTION= intersection { [CSG_BODY...] [CSG_MODS...] }
+
+UNION       = union { [CSG_BODY...] [CSG_MODS...] }
+
+DIFFERENCE  = difference { [CSG_BODY...] [CSG_MODS...] }
+
+BOUNDED_BY  = bounded_by { [SHAPE...] }
+
+CLIPPED_BY  = clipped_by { [SHAPE...] }
+
+OBJ_BODY    = SHAPE | OBJECT_IDENTIFIER
+
+OBJ_MODS    = USUAL_MODS | BOUNDED_BY | CLIPPED_BY | no_shadow
+
+OBJECT      = object { OBJ_BODY [OBJ_MODS...] }
+
+COMP_MODS   = CSG_MODS | BOUNDED_BY | CLIPPED_BY
+
+COMP_BODY   = COMPOSITE | OBJECT | COMP_IDENTIFIER
+
+COMPOSITE   = composite { COMP_BODY... [COMP_MODS...] }
+
+CAMERA_BODY = location VECTOR |
+              direction VECTOR |
+              up VECTOR |
+              right VECTOR |
+              sky VECTOR |
+              look_at VECTOR |
+              translate VECTOR |
+              rotate VECTOR |
+              scale VECTOR |
+              CAMERA_IDENTIFIER
+
+CAMERA      = camera { [CAMERA_BODY...] }
+
+FOG_BODY    = COLOR_SPEC | FLOAT
+
+FOG         = fog { [FOG_BODY...] }
+
+DECLARE_BODY= OBJECT | SHAPE | COMPOSITE | TEXTURE... | COLOR_SPEC | 
+              CAMERA | VECTOR | FLOAT  
+
+DECLARE     = declare IDENTIFIER "=" DECLARE_BODY
+
+DEFAULT     = default { TEXTURE }
+
+FRAME_ITEM  = FOG | DEFAULT | OBJECT | COMPOSITE | DECLARE | CAMERA |
+              max_trace_level FLOAT
+
+FRAME       = FRAME_ITEM...

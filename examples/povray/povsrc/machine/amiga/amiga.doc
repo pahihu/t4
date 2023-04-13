@@ -1,0 +1,115 @@
+This file contains the documentation specific to the Amiga version of
+POV-Ray.
+
+Differences from original distribution:
+   The original distribution of POV-Ray is in ZIP format.  For the Amiga,
+   this has been converted to LZH format.  In addition, the Amiga
+   distribution of POV-Ray has CR-LF pairs converted to only LF's for text
+   files.  Otherwise, the Amiga distribution is identical to the ZIP
+   distribution.
+
+Note: PLEASE SEE POVLEGAL.DOC.  The Amiga version in LZH format is an
+   officially supported format and can be distributed as is.  You MAY NOT
+   re-package the archive file or distribute any changes to it.  If you
+   do post it on a BBS or network, you must provide at least the scene
+   files and documentation files with the executables.  See POVLEGAL.DOC
+   for complete details.
+
+Executables:
+   Two executables are provided:
+
+   povray881  - The version for systems with 68881 math coprocessors
+   povrayieee - The version for systems without a coprocessor
+
+   
+Running POV-Ray:
+   When running POV-Ray, be sure that you have a large stack set.  If the
+   stack is too small, POV-Ray could crash without warning.  I usually use
+   80,000 bytes, but then again, I have a lot of memory to spare.
+
+Memory Requirements:
+   POV-Ray can run on simple files with 1 Meg of memory.  I would highly
+   recommend having more memory to render more complicated scenes.
+   There's a known bug in this version which prevents POV-Ray from cleaning
+   up gracefully if it runs out of memory in some instances.  If this occurs,
+   the cancel requestor will not be closed.  If you click on it, the system
+   will probably hang or reboot.  This should be fixed in the next release.
+
+Display Formats:
+   The Amiga version of the raytracer supports three types of display
+   formats:
+
+   +d0     - HAM  (default)
+   +dE     - HAME
+   +dF     - Firecracker
+
+   The firecracker mode adjusts the resolution according to the -w (width)
+   parameter of the raytracer.
+
+    320  <= w < 0     use 320 x 482
+    640  <= w < 320   use 640 x 482
+    768  <= w < 640   use 768 x 482
+    1024 <= w < 768   use 1024 x 482
+
+File Formats:
+   The default file format for the Amiga is "dump" format (+fd).  Targa or
+   raw may be specified on the command line or in the povray.def file.
+
+Building the source:
+   POV-Ray was compiled using Lattice (now SAS) version 5.05.  I'm sure that
+   later versions will also work fine.  If you're compiling with another
+   compiler, you'll have to edit the makefile to set the proper compiler
+   options.  As far as that goes, you're on your own.
+
+   To compile POV-Ray from the original source, follow the following
+   instructions:
+
+      1) copy the files in the "source" directory into a "build" directory
+      2) copy the files in machine/amiga to the build directory
+      3) rename amigacon.h to config.h
+      4) rename amiga.mak to makefile
+      5) if you're building an IEEE executable, you must edit the makefile,
+         comment out the line for "CFLAGS = ..." for the '881 and uncomment
+         the line "CFLAGS = ..." for the IEEE emulator.
+
+         Type "lmk povrayieee"
+
+      6) To compile a 68881 version of POV-Ray, leave the original makefile
+         unaltered and type "lmk".
+
+Post-processing Images:
+   A utility called dump2iff has been included in the executable archive to
+   convert the POV-Ray format output to IFF HAM format.  To run this utility,
+   you must provide the names of the input and output files.
+
+   eg.
+      dump2iff picture.dis picture.ham
+
+   The dump2iff program can also write out a file containing the palette
+   it used to make the image.  It can then be told to use this palette for
+   when converting other images.  This is useful for making animations for
+   animation players that can't change color palettes between frames.
+
+   To output a palette, use the -p option of dump2iff:
+      dump2iff -ppicture.pal picture.dis picture.ham
+
+   To use this palette for other images, simply add it to the command line:
+      dump2iff pic2.dis pic2.ham picture.pal
+
+   By default, dump2iff will perform dithering to help smooth out the color
+   changes.  To disable dithering, use -d on the command line.
+
+   Personally, I've started using "The Art Department" by ASDG to
+   post-process my images.  The Art Department Professional can accept QRT
+   format images (which is the format output by POV-Ray with the +fd
+   command-line parameter). Alternatively, you can output Targa (+ft) or
+   raw (+fr).  To read the raw format into The Art Department, use the Scuplt
+   reader.  You'll have to type in the resolution you used to generate the
+   image.
+
+
+Questions and problems in the Amiga version can be directed to David Buck.
+
+David Buck
+Internet:   dbuck@ccs.carleton.ca
+CompuServe: 70521,1371

@@ -1,0 +1,1 @@
++l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/colors.pov -w640 -h480 -v -f +d

@@ -1,0 +1,80 @@
+This file contains the documentation specific to UNIX systems.  Due to the
+wide variety of UNIX systems available, POV-Ray may not compile directly
+as is.  Every effort has been made to make it compile on as many systems as
+we have access to.  If you have problems compiling, try checking with a
+local UNIX guru first.  If you still have problems, contact the POV-Ray team.
+
+If you are trying to compile POV-Ray on an unsupported platform, the UNIX
+version is the best one to use as a base.
+
+
+Differences from original distribution:
+   The original distribution of POV-Ray is in ZIP format.  For UNIX,
+   this has been converted to compressed TAR format.  In addition, the UNIX
+   distribution of POV-Ray has CR-LF pairs converted to only LF's for text
+   files.  Otherwise, this distribution is identical to the ZIP
+   distribution.
+
+Note: PLEASE SEE POVLEGAL.DOC.  The UNIX version in tar-compress format is an
+   officially supported format and can be distributed as is.  You MAY NOT
+   re-package the archive file or distribute any changes to it.  If you
+   do post it on a BBS or network, you must provide at least the scene
+   files and documentation files with the executables.  See POVLEGAL.DOC
+   for complete details.
+
+Executables:
+   No executables are provided for the UNIX version of POV-Ray since there
+   are so many possible executable formats.  In general, however, UNIX
+   systems come bundled with a C compiler, so recompiling the source for
+   your target system shouldn't cause a problem. You may not distribute
+   an executable that you have compiled. It is for your personal use only.
+   
+Display Formats:
+   There are two different ways to create a UNIX system.  The first way has
+   no display options (i.e., it cannot display the image as it's rendering it).
+
+   Alternatively, if you have X-Windows, you can compile in the X-Windows
+   drivers.  See the section on building the source.
+
+File Formats:
+   The default file format for UNIX is "dump" format (+fd).  Targa or
+   raw may be specified on the command line or in the povray.def file.
+
+Building the source:
+   POV-Ray should compile as is with most ANSI or non-ANSI UNIX compilers.
+   No changes should be needed in the core of the raytracer.
+
+   To compile POV-Ray from the original source, follow the following
+   instructions:
+
+      1) copy the files in the "source" directory into a "build" directory
+      2) copy the files in machine/unix to the build directory
+          (note, if your archive is in ZIP format, you probably have CR-LF
+           pairs in the source code.  These should be translated to LF's
+           only before you compile)
+      3) rename config.h to config.h
+          (This file may need to be editted on a system by system basis)
+
+      For the non-X-Windows version:
+      4) rename unix.mak to makefile
+
+      For the X-Windows version,
+      4) rename xwindows.mak to makefile
+
+      5) Type "make"
+
+
+   Your executable will be called povray.
+
+Post-processing Images:
+   POV-Ray images can be post-processed using the same utilities as DKBTrace
+   used.  For UNIX systems, the PBM utilities are an excellent choice for
+   post-processing utilities.  The 'dump' format of POV-Ray is the same as
+   QRT format, so the QRTTOPPM utility can be used to convert these files
+   to PPM format.
+
+Questions and problems in the UNIX version can be directed to David Buck.
+
+David Buck
+Internet:   dbuck@ccs.carleton.ca
+CompuServe: 70521,1371

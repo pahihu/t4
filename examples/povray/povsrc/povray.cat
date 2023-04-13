@@ -1,0 +1,174 @@
+This archive contains all of the files used for compiling various
+versions POV.  You will need SOURCE.ZIP for the source common to all
+versions.  Inside MACHINE.ZIP are several other archives specific to
+a particular machine such as IBM.ZIP or UNIX.ZIP.  You need only retrieve
+those which apply to you.  MISC.ZIP contains other important POV files
+which are not directly involved in compiling.
+
+This archive contains:
+
+SOURCE.ZIP:
+
+    FRAME.H       - header containing typedefs, constants and data structures
+    POVPROTO.H    - header containing all function prototypes
+    TEXTURE.H     - header used by texture modules
+    VECTOR.H      - header for vector math macros
+    
+    BEZIER.C      - bicubic patch object routines
+    COLOUR.C      - color manipulation routines
+    CSG.C         - constructive solid geometry object routines
+    DUMP.C        - RGB dump file handler routines
+    GIFDECOD.C    - generic GIF LZW decoder module
+    GIF.C         - GIF file handler routines
+    HFIELD.C      - height field object routines
+    IFF.C         - IFF file handler routines
+    LIGHTING.C    - lighting calculation routines
+    MATRICES.C    - 3d transformation matrices routines
+    OBJECTS.C     - general routines for all objects
+    PARSE.C       - DAT file parser for POV language
+    PLANES.C      - plane object routines
+    POINT.C       - light source routines
+    POLY.C        - poly, cubic, and quartic object routines
+    POVRAY.C      - main program, command line parsing routines
+    PRIOQ.C       - priority queue for ray/object intersection module
+    QUADRICS.C    - quadric object routines
+    RAW.C         - RAW RGB image file handler routines
+    RAY.C         - ray manipulation routines
+    RENDER.C      - routines to implement main program loop
+    BOXES.C       - box object routines
+    BLOB.C        - blob object routines
+    SPHERES.C     - sphere object routines
+    TARGA.C       - Targa file handler routines
+    TEXTURE.C     - main texture module
+    TOKENIZE.C    - DAT file tokenizer for POV language
+    TRIANGLE.C    - triangle and smooth triangle object routines
+    TXTBUMP.C     - surface normal perturb routines for textures
+    TXTCOLOR.C    - color pattern routines for textures
+    TXTMAP.C      - image, material, bump and gouge map routines for textures
+    TXTTEST.C     - dummy routines for testing new texture types
+    VECT.C        - support routines for poly objects
+    VIEWPNT.C     - viewpoint/camera routines
+          
+    SOURCE.CAT    - list of files in SOURCE.ZIP
+
+MACHINE.ZIP:
+
+AMIGA.ZIP:
+   amiga.doc    - system-specific documentation for Amiga
+   amigacon.h   - Amiga configuration header -- rename to config.h
+   amiga.c      - system-specific code for Amiga
+   amiga.mak    - makefile for Amiga (Lattice C)
+   amiga.cat    - a list of files in AMIGA.ZIP
+
+ IBMPC.ZIP     - archive of files for IBM-PC's and compatibles
+  ibmconf.h    - IBM-PC's configuration header -- rename to config.h
+  ibmicb.mak   - make and link file for Intel Code Builder (ICB)
+                 ICB is used for the IBM-PC release version of POV-Ray
+  _get_ebx.obj - Small util file needed for ICB compile
+  ibm.c        - system-specific code for IBM-PC's under all compilers
+                 for both protected and non-protected modes.  
+  ibmmsc.mak   - makefile for Microsoft C
+  ibmmsc.lnk   - link file for Microsoft C 
+  ibmbc.mak    - makefile for Borland/Turbo-C 
+  ibmbc.lnk    - link file for Borland/Turbo-C 
+  ibmgcc.mak   - makefile for Gnu CC protected mode (386) compiler
+  ibmgcc.lnk   - linkfile for Gnu CC protected mode (386) compiler
+  ibmwat.mak   - makefile for Watcom C 
+  ibmwat.lnk   - link file for Watcom C 
+  ibmwat3.mak  - makefile for protected mode (386) Watcom C 
+  ibmwat3.lnk  - link file for protected mode (386) Watcom C 
+  ibmzor.mak   - makefile for Zortech C/C++
+  ibmzor.lnk   - link file for Zortech C/C++ 
+  ibmzor2.mak  - makefile for 286 extended memory mode Zortech C/C++
+  ibmzor2.lnk  - link file for 286 extended memory mode Zortech C/C++ 
+  ibmzor3.mak  - makefile for 386 protected mode Zortech C/C++
+  ibmzor3.lnk  - link file for 386 protected mode Zortech C/C++ 
+  ztc386.asm   - source asm file for Zortech 386 mode display code
+  ztc386.obj   - object file for Zortech 386 mode display code
+  zpm.def      - misc file for Zortech protected mode
+  rtlink.cfg   - file for use with RTLINK program
+  ai.lib       - needed for TIGA support (Texas Instruments Graphics Adapter)
+  extend.h     - needed for TIGA support (A specialized graphics chip used )
+  tiga.h       - needed for TIGA support (on the Hercules Graphics Station )
+  tigadefs.h   - needed for TIGA support (and some other 24 bit cards. )   
+  ibm.cat      - list of files in IBM.ZIP
+
+ MAC.SIT       - StuffIt archive of file for Mac
+  The MAC.SIT archive contains machine specific files for compiling POV-Ray 
+  on the Macintosh. It was not compressed using the standard archive format
+  because the Stuffit format is much more common in the Mac world.
+  It can be extracted using the Stuffit Expander, available from Aladdin
+  through any one of the following sources: 
+  America Online: use QuickFinder with the following words to describe 
+                  your area of interest: stuffit expander
+ 
+  Compuserve: join the MACSYS forum, and search the libraries for the
+              following keyword: stuffit 
+              The latest version as of 4/26/92 is: stufex.sea, if you want 
+              to download it without searching the libraries.
+ 
+  The Twilight Zone BBS: (619) 480-2435, Escondido, CA.  Download StufEx.sea
+                         from the files section.  
+  The Graphics Alternative BBS: (510) 524-2780, El Cerrito, CA.  
+  You Can Call Me Ray BBS: (708) 358-5611. 
+
+   Files in MAC.SIT:
+   components.h     - Apple include file for QuickTime support
+   config.h         - Mac version of the configuration header file.
+   DoPOVPerf        - an MPW file for doing performance analysis of POV-Ray 
+                      code
+   ImageCompression.h - Apple include file for QuickTime support
+   Mac.cat          - listing of files in MAC.SIT
+   POV.C            - Main application, mac-specific support routines.
+   POV.Make         - MPW-specific make dependency file.
+   POV.r            - MPW-specific resource source code file (SIZE rsrc)
+   pov.?.rsrc       - POV-Ray Mac resources (dialogs, balloon help, icons etc.)
+   POVMac.h         - Header file for POV.C and TextEditor.c
+   printf2window.c  - support code for redirecting C stdio to a window
+   printf2window.h  - header file for printf2window.c, used by POV.C
+   ReadMe.txt       - Release notes for using or compiling the Mac version of
+                      POV-Ray
+   SaveCmpPict.c    - QuickTime compressed picture saving code for POV-Ray
+   SaveCmpPict.h    - header file for QuickTime compressed pictures
+   StdCompression.h -  Apple include file for QuickTime support
+   StdCompressionGlue.o - Apple glue code for using QuickTime under MPW
+   StdCompressionGlue.? - Think C version of glue code
+   stdio_p2w.h      - header file for printf2window.c, used by config.h
+   TextEditor.C     - Code for the POV-Ray Source definition file editor.
+   
+ VAX.ZIP        - archive of files for VAX
+  unix.doc      - system-specific documentation for Vax
+  vaxconf.h     - Vax configuration header -- rename to config.h
+  vaxbuild.com  - makefile for VAX
+  vax.c         - system-specific code for VAX
+  vax.cat       - list of files in VAX.ZIP
+
+ UNIX.ZIP       - archive of files for Unix 
+  unix.doc      - system-specific documentation for Vax
+  unixconf.h    - UNIX configuration header -- rename to config.h
+  unix.c        - system specific routines for UNIX
+  unix.mak      - makefile for UNIX
+  xwindows.c    - B&W or color X Windows code for UNIX systems 
+  xpov.ico      - the Icon for X Windows
+  xwindows.mak  - makefile for X Windows
+  gcc.c         - system specific routines for Gnu CC
+  gccconf.h     - header file for Gnu CC -- rename to config.h
+  rs6conf.h     - header file for HP RS6000 -- rename to config.h
+  unix.cat      - list of files in UNIX.ZIP
+
+ MACHINE.CAT    - list of files in MACHINE.ZIP
+
+MISC.ZIP:
+    DAT2POV.C     - source for DKB\POV-Ray beta to 
+                    POV-Ray 1.0 scene file converter
+    DAT2POV.DOC   - documentation for DAT2POV
+    PORTGUID.TXT  - guidlines for keeping POV-Ray portable
+    POVLANG.TXT   - formal grammar for POV-Ray 1.0 language
+    HFTARGA.DOC   - Explanation of new Targa use with height fields
+    HFSOMB.C      - C demo of new Targa use with height fields
+    HFTARGA.C     - C source to write Targa hf use with HFSOMB.C
+    SOMBRERO.POV  - Demo scene file to use Targa read for height fields. 
+                    Needs the Targa file generated by HFSOMB.C
+    WARNING.DOC   - List of known bugs/problems
+
+    MISC.CAT      - listing of files in MISC.ZIP

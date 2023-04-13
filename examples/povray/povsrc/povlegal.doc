@@ -1,0 +1,187 @@
+                  Persistence of Vision Raytracer
+                          Version 1.0 
+                  Copyright and Legal Information
+                  -------------------------------
+
+  The following is legal information for the Persistence of Vision
+  Ray-tracer a.k.a POV-Ray and applies to all POV-Ray source,     
+  executable, scene file, documentation archives and files contained
+  in the archives. All of these are referred to here as "the software".
+  
+  This notice must accompany all Persistence of Vision files. 
+  It may not be removed or modified. This information pertains to
+  all use of the package worldwide.
+   
+----------------------------------------------------------------------------
+IMPORTANT LEGAL INFORMATION! 
+----------------------------------------------------------------------------
+
+  Permission is granted to the user to use the Persistence of Vision 
+Raytracer and all associated files in this package to create and
+render images. The use of this software for the purpose of creating
+images is free. The creator of a scene file and the image created from
+the scene file, retains all rights to the image and scene file they created
+and may use them for any purpose commercial or non-commercial.
+
+  This software package and all of the files in this archive are
+copyrighted and can not be distributed or modified without the written
+permission of the authors, the POV-Team, led by Drew Wells.
+  
+  No portion of this package may be separated from the package and 
+distributed separately without the written permission of the authors. 
+
+  This software may not be included in whole or in part in any 
+software without the written permission of the POV-Team.
+
+  This software may not be included in any publication, such as, but
+not limited to, magazines, books, newspapers, or newsletters, without
+the written permission of the POV-Team.
+
+  This software may not be included in any software compilation using 
+media such as, but not limited to, CD-ROM, tape backup, optical disks, 
+hard disks, or memory cards, without the written permission of the
+POV-Team.
+
+  This package may not be compiled and distributed, modified or not, without
+the written permission of the POV-Team. The user is granted the 
+privilege to compile the source for their own personal use. Executables 
+created by the user from the source include in the source archive may not, 
+under any circumstances, be distributed without the written permission 
+of the POV-Team. The user is encouraged to send enhancements and bug fixes
+to the POV-Team, but they are in no way required to utilize these 
+enhancements or fixes. 
+
+ The permission to distribute this package under certain very specific 
+conditions is granted in advance, provided that the above and following 
+conditions are met.
+   
+   Conditions for non-commercial distribution
+   --------------------------------------------------------
+   Non-commercial distribution is classified as a user
+   copying the software for a personal friend or colleague
+   and not charging money or services for that copy. This does
+   not include non-profit organizations. These groups should use
+   the Shareware/Freeware distribution company rules below.
+   
+   This method of distribution is encouraged as long as the archives
+   are distributed complete and unmodified. We also ask that
+   the user copy the executable archives, documentation archives, and
+   sample scene file archives together for the friend or colleague.
+   We consider this the full package for normal use.
+
+   If the source archive is copied, we ask that the user also include
+   the documentation archive and sample scene archive.
+   ---------------------------------------------------------------------
+
+   
+   Conditions for SHAREWARE/FREEWARE distribution companies
+   --------------------------------------------------------------
+   Shareware and freeware distribution companies may distribute the 
+   archives under the conditions following this paragraph. This privilege 
+   may be revoked at any time without warning or cause. The provider is 
+   required to cease distribution if and when the POV-Team requests 
+   that distribution stop.
+
+   The archive containing the executable, the archive containing the 
+   documentation, and the archive containing sample scenes must be 
+   distributed together by shareware/freeware distribution companies.
+   These archives must be the ones distributed by the POV-Team. They
+   may not be modified or re-archived using a different method.
+
+   No more than five dollars U.S. ($5) can be charged per disk for the 
+   copying of this software and the media it is provided on. Space on each
+   disk must used completely. 
+   I.E. A shareware/freeware distribution company may only charge 
+   five U.S dollars or less for each disk required to provide this 
+   software. 
+   They must provide the excutable archive, documentation archive and 
+   sample scene file archive as one package. The company may not put
+   each archive on a separate disk and charge for three disks if all 
+   three archives will fit on one disk. If more than one disk is needed
+   to store the archives then more than one disk may be used and charged
+   for.
+
+   The distributor is not required to make the source archive available 
+   with the other archives. But if the distributor does choose to make 
+   the source archive available, the distributor must also make available 
+   the executable archive, the documentation archive and the sample scene 
+   file archive in the same manner.
+   ---------------------------------------------------------------------
+
+   Conditions for On-line Services and BBS's
+   ------------------------------------------
+   On-line services and BBS's may distribute the POV-Ray archives under
+   the conditions following this paragraph. This privilege may be revoked 
+   at any time without warning or cause. The provider is required to cease 
+   distribution if and when the POV-Team requests that distribution stop.
+
+   The archive containing the executable, the archive containing the 
+   documentation, and the archive containing sample scenes must be 
+   all be easily available on the service and should be grouped
+   together in a similar on-line area.
+   These archives must be the ones distributed by the POV-Team. They
+   may not be modified or re-archived using a different method.
+   
+   The distributor is not required to make the source archive available 
+   with the other archives. But if the distrbutor does choose to make 
+   the source archive available, the distributor must also make available 
+   the executable archive, the documentation archive and the sample scene 
+   file archive in the same manner.
+
+   These archives must be the ones distributed by the POV-Team. They
+   may not be modified or re-archived using a different method without
+   the written permission of the POV-Team.
+
+   The on-line service or BBS may only charge standard usage rates for
+   the downloading of this software. A premium may not be charged for
+   this package.
+   I.E. Compuserve or America On-Line may make these archives available
+   to their users, but they may only charge regular usage rates for the
+   time required to download. They must also make the all of the archives
+   available in the same forum, so they can be easily located by a user.
+   ---------------------------------------------------------------------
+ 
+   DISCLAIMER
+   ----------
+ 
+   This software is provided as is without any guarantees or warranty.
+   Although the authors have attempted to find and correct any bugs in 
+   the package, they are not responsible for any damage or losses of any 
+   kind caused by the use or misuse of the package. The authors are 
+   under no obligation to provide service, corrections, or upgrades 
+   to this package.
+
+[End of Legal Information]
+-----------------------------------------------------------------------------
+
+ If you have any problems with the program, the POV people would like to 
+ hear about them. Also, if you have any comments, questions or enhancements, 
+ please contact the POV-Team on the Compuserve Online Service in the 
+ GRAPHICS forums, COMART forum message section 16 (!GO COMART). 
+ The CIS COMART forum is devoted to computer generated artwork like 
+ raytracing, animation and fractals. For more information regarding the 
+ POV-Team see the file POVINF.TXT. For more information on 
+ Compuserve call (USA) 1-800-848-8990.
+ 
+ Inquiries may be made to:
+
+       Drew Wells
+       POV-Team Leader
+       CIS: 73767,1244 (preffered)
+       AOL: Drew Wells
+       Internet: 73767.1244@compuserve.com
+       Prodigy: SXNX74A (not used often)
+       US Mail:
+         905 North Avenue 66
+         Los Angeles, CA, USA
+         90042
+       Phone: (213) 254-4041
+ 
+ The other authors' contact information may be found in POVRAY.DOC, which      
+is included in the documentation archive.
+ 
+ POV-Ray is based on the popular DKBTrace version 2.12 with the 
+ permission of the authors.
+ DKBTrace was originally written by David K. Buck.
+ DKBTrace Ver 2.0-2.12 were written by David K. Buck & Aaron A. Collins.
+ 

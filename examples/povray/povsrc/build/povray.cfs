@@ -1,0 +1,280 @@
+/* povray.cfs 20.11.1992z changed to free pipe length rm 24.02.1993 */
+
+/* transputers in PIPES */
+val PIPE0 5;
+val PIPE1 5;
+val PIPE2 5;
+
+/* number of PIPES don't change this value */ 
+val PIPES 3;
+
+/* Values for the link connections */
+val BootLink 0;
+val PIPE0Link 1;
+val PIPE1Link 2;
+val PIPE2Link 3;
+val PIPEin 0;
+val PIPEout 1;
+ 
+val PIPE_WORKERS {PIPE0,PIPE1,PIPE2};
+val WORKERS PIPE0+PIPE1+PIPE2;
+
+/*{{{  Hardware description*/
+T800 (memory = 4M) Root;
+T800 (memory = 4M) WorkerPipe0[PIPE0];
+T800 (memory = 4M) WorkerPipe1[PIPE1];
+T800 (memory = 4M) WorkerPipe2[PIPE2];
+/*}}}  */
+/*{{{  Interprocessor connections*/
+connection RootToHost;
+connect Root.link[BootLink] to host by RootToHost;
+
+connect Root.link[PIPE0Link] to WorkerPipe0[0].link[PIPEin];
+connect Root.link[PIPE1Link] to WorkerPipe1[0].link[PIPEin];
+connect Root.link[PIPE2Link] to WorkerPipe2[0].link[PIPEin];
+
+rep worker = 0 for PIPE_WORKERS[0]-1
+{
+  connect WorkerPipe0[worker].link[PIPEout] to WorkerPipe0[worker+1].link[PIPEin];
+}
+rep worker = 0 for PIPE_WORKERS[1]-1
+{
+  connect WorkerPipe1[worker].link[PIPEout] to WorkerPipe1[worker+1].link[PIPEin];
+}
+rep worker = 0 for PIPE_WORKERS[2]-1
+{
+  connect WorkerPipe2[worker].link[PIPEout] to WorkerPipe2[worker+1].link[PIPEin];
+}
+/*}}}  */
+
+/*{{{  Software description*/
+/*{{{  processes*/
+/*{{{  Pov Raytracer 1.0*/
+process (stacksize=25K,
+         heapsize=4M-26K-222K-46K-12K,
+         priority=LOW,
+         interface (input HostInput, output HostOutput,
+                    output PixelOut,
+                    int worker_id,
+                    int number_of_workers,
+                    int argc,
+                    char argv0[9],
+                    char argv1[3])) Pov100Pipe0[PIPE_WORKERS[0]],
+                                    Pov100Pipe1[PIPE_WORKERS[1]],
+                                    Pov100Pipe2[PIPE_WORKERS[2]];
+/*}}}  */
+/*{{{  SpMux*/
+process (stacksize=6K,
+         heapsize=40K,
+         priority=HIGH,
+         interface (input StdIn, output StdOut,
+                    input NodeIn0, output NodeOut0,
+                    input NodeIn1, output NodeOut1,
+                    input PixelIn)
+        ) SpMuxPipe0[PIPE_WORKERS[0]],
+          SpMuxPipe1[PIPE_WORKERS[1]],
+          SpMuxPipe2[PIPE_WORKERS[2]];
+/*}}}  */
+/*{{{  dummy*/
+process (
+           stacksize=4K,
+           heapsize=8K,
+           priority=LOW,
+           interface (
+                       input HostInput, output HostOutput
+                     )
+        ) Dummy[PIPES];
+/*}}}  */
+/*{{{  FRead*/
+process (stacksize=32K,
+         heapsize=132K,
+         priority=HIGH,
+         interface (input StdIn, output StdOut,
+                    input NodeIn, output NodeOut)
+        ) FRead[PIPES];
+/*}}}  */
+/*{{{  Cache*/
+process (stacksize=32K,
+         heapsize=3M,
+         priority=HIGH,
+         interface (input HostInput, output HostOutput,
+                    input Input[PIPES], int InputSize = PIPES,
+                    output Output[PIPES], int OutputSize = PIPES)
+        ) Cache;
+/*}}}  */
+/*}}}  */
+/*{{{  process parameters*/
+rep k = 0 for PIPE_WORKERS[0]
+{
+      Pov100Pipe0[k](worker_id = k);
+      Pov100Pipe0[k](number_of_workers = WORKERS);
+      Pov100Pipe0[k](argc = 2);
+      Pov100Pipe0[k](argv0 = "Povtrace\0");
+      Pov100Pipe0[k](argv1 = "-v\0");
+}
+rep k = 0 for PIPE_WORKERS[1]
+{
+      Pov100Pipe1[k](worker_id = PIPE_WORKERS[0] + k);
+      Pov100Pipe1[k](number_of_workers = WORKERS);
+      Pov100Pipe1[k](argc = 2);
+      Pov100Pipe1[k](argv0 = "Povtrace\0");
+      Pov100Pipe1[k](argv1 = "-v\0");
+}
+rep k = 0 for PIPE_WORKERS[2]
+{
+      Pov100Pipe2[k](worker_id = (PIPE_WORKERS[0] + PIPE_WORKERS[1]) + k);
+      Pov100Pipe2[k](number_of_workers = WORKERS);
+      Pov100Pipe2[k](argc = 2);
+      Pov100Pipe2[k](argv0 = "Povtrace\0");
+      Pov100Pipe2[k](argv1 = "-v\0");
+}
+/*}}}  */
+/*{{{  host connection*/
+connection HostMultHostInputToHostInput, HostMultHostOutputToHostOutput;
+
+input HostInput;
+output HostOutput;
+/*}}}  */
+/*}}}  */
+/*{{{  Interprocess Connections*/
+/*{{{  first node*/
+connect Cache.HostInput   to HostInput  by HostMultHostInputToHostInput;
+connect Cache.HostOutput  to HostOutput by HostMultHostOutputToHostOutput;
+
+connect Cache.Input[0]    to FRead[0].StdOut;
+connect FRead[0].NodeIn   to SpMuxPipe0[0].StdOut;
+
+connect Cache.Output[0]   to FRead[0].StdIn;
+connect FRead[0].NodeOut  to SpMuxPipe0[0].StdIn;
+
+connect Cache.Input[1]    to FRead[1].StdOut;
+connect FRead[1].NodeIn   to SpMuxPipe1[0].StdOut;
+
+connect Cache.Output[1]   to FRead[1].StdIn;
+connect FRead[1].NodeOut  to SpMuxPipe1[0].StdIn;
+
+connect Cache.Input[2]    to FRead[2].StdOut;
+connect FRead[2].NodeIn   to SpMuxPipe2[0].StdOut;
+
+connect Cache.Output[2]   to FRead[2].StdIn;
+connect FRead[2].NodeOut  to SpMuxPipe2[0].StdIn;
+
+/*}}}  */
+/*{{{  other nodes*/
+rep k = 0 for PIPE_WORKERS[0] - 1
+{
+  connect SpMuxPipe0[k].NodeIn1  to Pov100Pipe0[k].HostOutput;
+  connect SpMuxPipe0[k].NodeOut1 to Pov100Pipe0[k].HostInput;
+
+  connect SpMuxPipe0[k].PixelIn  to Pov100Pipe0[k].PixelOut;
+
+  connect SpMuxPipe0[k].NodeIn0  to SpMuxPipe0[k+1].StdOut;
+  connect SpMuxPipe0[k].NodeOut0 to SpMuxPipe0[k+1].StdIn;
+}
+rep k = 0 for PIPE_WORKERS[1] - 1
+{
+  connect SpMuxPipe1[k].NodeIn1  to Pov100Pipe1[k].HostOutput;
+  connect SpMuxPipe1[k].NodeOut1 to Pov100Pipe1[k].HostInput;
+
+  connect SpMuxPipe1[k].PixelIn  to Pov100Pipe1[k].PixelOut;
+
+  connect SpMuxPipe1[k].NodeIn0  to SpMuxPipe1[k+1].StdOut;
+  connect SpMuxPipe1[k].NodeOut0 to SpMuxPipe1[k+1].StdIn;
+}
+rep k = 0 for PIPE_WORKERS[2] - 1
+{
+  connect SpMuxPipe2[k].NodeIn1  to Pov100Pipe2[k].HostOutput;
+  connect SpMuxPipe2[k].NodeOut1 to Pov100Pipe2[k].HostInput;
+
+  connect SpMuxPipe2[k].PixelIn  to Pov100Pipe2[k].PixelOut;
+
+  connect SpMuxPipe2[k].NodeIn0  to SpMuxPipe2[k+1].StdOut;
+  connect SpMuxPipe2[k].NodeOut0 to SpMuxPipe2[k+1].StdIn;
+}
+/*}}}  */
+/*{{{  last  node*/
+rep last = PIPE_WORKERS[0] - 1 for 1
+{
+  connect SpMuxPipe0[last].NodeIn1  to Pov100Pipe0[last].HostOutput;
+  connect SpMuxPipe0[last].NodeOut1 to Pov100Pipe0[last].HostInput;
+
+  connect SpMuxPipe0[last].PixelIn  to Pov100Pipe0[last].PixelOut;
+
+  connect SpMuxPipe0[last].NodeIn0  to Dummy[0].HostOutput;
+  connect SpMuxPipe0[last].NodeOut0 to Dummy[0].HostInput;
+}
+rep last = PIPE_WORKERS[1] - 1 for 1
+{
+  connect SpMuxPipe1[last].NodeIn1  to Pov100Pipe1[last].HostOutput;
+  connect SpMuxPipe1[last].NodeOut1 to Pov100Pipe1[last].HostInput;
+
+  connect SpMuxPipe1[last].PixelIn  to Pov100Pipe1[last].PixelOut;
+
+  connect SpMuxPipe1[last].NodeIn0  to Dummy[1].HostOutput;
+  connect SpMuxPipe1[last].NodeOut0 to Dummy[1].HostInput;
+}
+rep last = PIPE_WORKERS[2] - 1 for 1
+{
+  connect SpMuxPipe2[last].NodeIn1  to Pov100Pipe2[last].HostOutput;
+  connect SpMuxPipe2[last].NodeOut1 to Pov100Pipe2[last].HostInput;
+
+  connect SpMuxPipe2[last].PixelIn  to Pov100Pipe2[last].PixelOut;
+
+  connect SpMuxPipe2[last].NodeIn0  to Dummy[2].HostOutput;
+  connect SpMuxPipe2[last].NodeOut0 to Dummy[2].HostInput;
+}
+/*}}}  */
+/*}}}  */
+/*{{{  Mapping description*/
+/*{{{  first node*/
+use "muxdemux.c8x" for Cache;        place Cache    on Root;
+
+rep i = 0 for PIPES
+{
+  use "fread.c8x"  for FRead[i];     place FRead[i] on Root;
+}
+/*}}}  */
+/*{{{  other nodes*/
+rep k = 0 for PIPE_WORKERS[0] - 1
+{
+  use "povray.c8x" for Pov100Pipe0[k]; place Pov100Pipe0[k] on WorkerPipe0[k];
+  use "spmux.c8x"  for SpMuxPipe0[k];  place SpMuxPipe0[k]  on WorkerPipe0[k];
+}
+rep k = 0 for PIPE_WORKERS[1] - 1
+{
+  use "povray.c8x" for Pov100Pipe1[k]; place Pov100Pipe1[k] on WorkerPipe1[k];
+  use "spmux.c8x"  for SpMuxPipe1[k];  place SpMuxPipe1[k]  on WorkerPipe1[k];
+}
+rep k = 0 for PIPE_WORKERS[2] - 1
+{
+  use "povray.c8x" for Pov100Pipe2[k]; place Pov100Pipe2[k] on WorkerPipe2[k];
+  use "spmux.c8x"  for SpMuxPipe2[k];  place SpMuxPipe2[k]  on WorkerPipe2[k];
+}
+/*}}}  */
+/*{{{  last  node*/
+rep k = PIPE_WORKERS[0] - 1 for 1
+{
+  use "dummy.c8x"  for Dummy[0];     place Dummy[0]     on WorkerPipe0[k];
+  use "povray.c8x" for Pov100Pipe0[k]; place Pov100Pipe0[k] on WorkerPipe0[k];
+  use "spmux.c8x"  for SpMuxPipe0[k];  place SpMuxPipe0[k]  on WorkerPipe0[k];
+}
+rep k = PIPE_WORKERS[1] - 1 for 1
+{
+  use "dummy.c8x"  for Dummy[1];     place Dummy[1]     on WorkerPipe1[k];
+  use "povray.c8x" for Pov100Pipe1[k]; place Pov100Pipe1[k] on WorkerPipe1[k];
+  use "spmux.c8x"  for SpMuxPipe1[k];  place SpMuxPipe1[k]  on WorkerPipe1[k];
+}
+rep k = PIPE_WORKERS[2] - 1 for 1
+{
+  use "dummy.c8x"  for Dummy[2];     place Dummy[2]     on WorkerPipe2[k];
+  use "povray.c8x" for Pov100Pipe2[k]; place Pov100Pipe2[k] on WorkerPipe2[k];
+  use "spmux.c8x"  for SpMuxPipe2[k];  place SpMuxPipe2[k]  on WorkerPipe2[k];
+}
+/*}}}  */
+
+/*{{{  Channel Placements*/
+place HostMultHostInputToHostInput   on RootToHost;
+place HostMultHostOutputToHostOutput on RootToHost;
+/*}}}  */
+/*}}}  */
+

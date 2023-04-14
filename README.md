@@ -108,7 +108,7 @@ Values are in seconds.
 |2|T800/2MB|55.7|61.0|16.2|11.9|2x T4 emulator with SHM links
 |1|T800/2MB|109.4|119.5|31.8|23.3|1x T4 emulator
 
-Performance of the system compared on Model2 as in "INMOS Technical Note 7".
+Performance of the system compared on Model2 as in [Exploiting concurrency: a ray tracing example](http://transputer.net/tn/07/tn07.html#x1-100004).
 
 |transputers|speed|relative speed|linearity|
 |--|--|--|--|

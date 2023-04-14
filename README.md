@@ -108,6 +108,17 @@ Values are in seconds.
 |2|T800/2MB|55.7|61.0|16.2|11.9|2x T4 emulator with SHM links
 |1|T800/2MB|109.4|119.5|31.8|23.3|1x T4 emulator
 
+Performance of the system compared on Model2 as in "INMOS Technical Note 7".
+
+|transputers|speed|relative speed|linearity|
+|--|--|--|--|
+|1|548.4|1.00|100.0|
+|2|1074.4|1.96|98.0|
+|4|2048.0|3.73|93.4|
+|8|3971.9|7.24|90.5|
+|16|7281.8|13.28|83.0|
+
+
 
 Command line arguments
 ======================

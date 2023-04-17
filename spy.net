@@ -1,6 +1,9 @@
 -- network config example
 
 -- all nodes below will be on host network + node
+link SHM                        -- links in shared-memory
+link IPC                        -- links on IPC connections
+
 network 192.168.1.0
 port 2000
 scale 10
@@ -21,8 +24,6 @@ node 34-35                      -- host 192.168.1.1, ports 2340-2343/2350-1353
 node 36-37 tcp://1.2.3.4        -- host 1.2.3.4, ports 2360-2363/2370-2373
 node 38-39 tcp://1.2.3.4:1000   -- host 1.2.3.4, ports 1000-1003/1010-1013
 link 2-1 tcp://192.168.223.2:2001 -- place Node 2 Link 1 at the given URL
-
-shlinks                         -- links in shared memory
 
 -- all undefined nodes will use local IPC protocol
 -- the URL is: "ipc:///tmp/node<nodeid>-<link>.lnk"

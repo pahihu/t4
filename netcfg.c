@@ -10,6 +10,8 @@ extern int shlinks;
 #define NODE_HOST          -1
 #define NODE_NOTCONNECTED  -2
 #define NODE_INVALID       -3
+#define NODE_IPC           -4
+#define NODE_SHM           -5
 
 typedef struct _NETURL {
         int  node, link;
@@ -131,10 +133,23 @@ static char* read_link (char *ptr, int *node, int *link)
                 *node = NODE_NOTCONNECTED;
                 return ptr;
         }
-        else if (0 == strncmp (ptr, "HOST ", 5))
+        else if ((0 == strncmp (ptr, "HOST", 4)) ||
+                 (0 == strncmp (ptr, "host", 4)))
         {
                 *node = NODE_HOST;
-                return ptr + 5;
+                return ptr + 4;
+        }
+        else if ((0 == strncmp (ptr, "SHM", 3)) ||
+                 (0 == strncmp (ptr, "shm", 3)))
+        {
+                *node = NODE_SHM;
+                return ptr + 3;
+        }
+        else if ((0 == strncmp (ptr, "IPC", 3)) ||
+                 (0 == strncmp (ptr, "ipc", 3)))
+        {
+                *node = NODE_IPC;
+                return ptr + 3;
         }
         else if (0 == strncmp (ptr, "processor ", 10))
         {
@@ -157,11 +172,6 @@ static char* read_link (char *ptr, int *node, int *link)
                 if (NODE_INVALID == *link)
                         *node = NODE_INVALID;
                 return ptr;
-        }
-        else if (0 == strncmp (ptr, "host", 4))
-        {
-                *node = NODE_HOST;
-                return ptr + 4;
         }
         else if (0 == strncmp (ptr, "-", 1))
         {
@@ -256,10 +266,6 @@ int readNetConfig (FILE *fin)
                                 NetLinks[nNetLink++].otherlink = thelink;
                         }
                 }
-                else if (0 == strncmp (ptr, "shlinks", 7))
-                {
-                        shlinks = 1;
-                }
                 else if (0 == strncmp (ptr, "network", 7))
                 {
                         /* network <number> */
@@ -309,19 +315,35 @@ int readNetConfig (FILE *fin)
                 else if (0 == strncmp (ptr, "link", 4))
                 {
                         /* "link" <link> string */
+                        /* "link" "IPC"|"SHM", default "IPC" */
                         ptr = read_link (ptr + 4, &node, &link);
-                        if (node < 0)
+                        if (NODE_SHM == node)
+                        {
+                                shlinks = 1;
+                                if (verbose)
+                                        printf ("-I-EMU414: Default link protocol is SHM.\n");
+                        }
+                        else if (NODE_IPC == node)
+                        {
+                                shlinks = 0;
+                                if (verbose)
+                                        printf ("-I-EMU414: Default link protocol is IPC.\n");
+                        }
+                        else if (node < 0)
                         {
                                 printf ("-E-EMU414: Invalid link at line %d.\n", nline);
                                 return (-1);
                         }
-                        ptr = read_string (ptr, url);
-                        if (0 == url[0])
+                        else
                         {
-                                printf ("-E-EMU414: Missing URL at line %d.\n", nline);
-                                return (-1);
+                                ptr = read_string (ptr, url);
+                                if (0 == url[0])
+                                {
+                                        printf ("-E-EMU414: Missing URL at line %d.\n", nline);
+                                        return (-1);
+                                }
+                                add_url (node, link, url);
                         }
-                        add_url (node, link, url);
                 }
                 else if (0 == strncmp (ptr, "node", 4))
                 {
@@ -493,6 +515,7 @@ int maxNodeID (void)
 
 #if defined(NETCFG_TEST)
 int verbose = 1;
+int shlinks = 0;
 int main(int argc, char*argv[])
 {
         FILE *fin;

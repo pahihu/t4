@@ -18,7 +18,7 @@ COPT=
 ##### IMAKEF CUT #####
 
 raytraceT8.btl: raytraceT8.cfb 
-	$(COLLECT) raytraceT8.cfb -o raytraceT8.btl $(COLLECTOPT)
+	$(COLLECT) raytraceT8.cfb -o raytraceT8.btl -p raytraceT8.map $(COLLECTOPT)
 
 raytraceT8.cfb: raytraceT8.pgm /Users/pahi/d7205/libs/hostio.inc \
                 framebufT8.c8h cntlsysT8.c8h raytraceT8.c8h 

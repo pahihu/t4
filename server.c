@@ -361,7 +361,6 @@ int server (void)
 			}
 		}
 	}
-
         LinkWdesc = word (Link0In);
         if (msgdebug || emudebug)
         {
@@ -799,7 +798,7 @@ void sp_write (void)
 		        if (ToServerBuffer[pos] == 0x0d)
 			        ToServerBuffer[pos] = 0x00;
 
-        if (dbgtrigger && (strncmp ((char *) &ToServerBuffer[9], dbgtrigger, strlen (dbgtrigger)) == 0))
+        if (dbgtrigger && (NULL != strstr ((char *) &ToServerBuffer[9], dbgtrigger)))
         {
                 set_debug ();
                 dbgtrigger = NULL;

@@ -1,7 +1,7 @@
 # Choose a C compiler. (Must be ANSI C capable).
-# CC = cc -g
+CC = cc -g
 # CC = cc -flto -march=native
-CC = gcc-mp-12 -flto -ffloat-store -frounding-math -march=native
+# CC = gcc-mp-12 -flto -ffloat-store -frounding-math -march=native
 #
 # 64bit emulator on Linux-x64, 32bit emulator on  Linux-armhf
 # CC = gcc -ffloat-store -frounding-math
@@ -16,9 +16,9 @@ CC = gcc-mp-12 -flto -ffloat-store -frounding-math -march=native
 # For a well-optimised version compiled with gcc on a Sun use:
 # CFLAGS = -O2 -DSUN -finline -finline-functions -fexpensive-optimizations
 # For a reasonably optimised version for NetBSD.
-CFLAGS = -I. -O3 -Wall -DCURTERM=1 -I$(HOME)/include -DSPYNET=1 -DSHLINKS=1 -DNDEBUG=1
+# CFLAGS = -I. -O2 -Wall -DCURTERM=1 -I$(HOME)/include -DSPYNET=1 -DSHLINKS=1 -DNDEBUG=1
 # CFLAGS = -I. -O2 -Wall -DCURTERM=1 -I$(HOME)/include -DSPYNET=1
-# CFLAGS = -I. -O0 -Wall -DCURTERM=1 -I$(HOME)/include -DSPYNET=1 -DSHLINKS=1
+CFLAGS = -I. -O0 -Wall -DCURTERM=1 -I$(HOME)/include #-DSPYNET=1 -DSHLINKS=1
 # For a reasonably optimised version for SunOS 4.1.4.
 # CFLAGS = -O2 -Wall -DSUN
 

@@ -667,8 +667,6 @@ Exit:
         return 0;
 }
 
-#define MAX_DATA        255
-
 int channel_recvP (Channel *chan, unsigned char *data, int doWait)
 {
         int ret;
@@ -1089,12 +1087,10 @@ Channel *reset_channel (uint32_t addr)
         }
         else if (IsLinkOut(addr))
                 chan = &Link[theLink].Out;
-        
+
         if (!chan)
-        {
-                printf ("-E-EMU414: Invalid channel #%08X.\n", addr);
-                handler (-1);
-        }
+                return NULL;
+
         chan->Address = MostNeg;
         chan->Length  = 0;
 

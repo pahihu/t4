@@ -168,12 +168,10 @@ uint32_t TNextReg1;
 uint32_t TPtrLoc0;              /* XXX 0x80000024 */
 uint32_t TPtrLoc1;              /* XXX 0x80000028 */
 
-uint32_t FPtrReg0;
-uint32_t BPtrReg0;
-uint32_t FPtrReg1;
-uint32_t BPtrReg1;
+uint32_t FPtrReg[2];
+uint32_t BPtrReg[2];
 
-#define ProcessQEmpty           ((NotProcess_p == FPtrReg0) && (NotProcess_p == FPtrReg1))
+#define ProcessQEmpty           ((NotProcess_p == FPtrReg[0]) && (NotProcess_p == FPtrReg[1]))
 #define TimerQEmpty             ((NotProcess_p == TPtrLoc0) && (NotProcess_p == TPtrLoc1))
 
 uint32_t STATUSReg;             /* Processor flags: GotoSNPBit, HaltOnError, Error */
@@ -1281,10 +1279,10 @@ void processor_state (void)
                 fp_syncexcept ();
                 printf ("\tFP_Error       %s\n", FP_Error ? "Set" : "Clear");
         }
-        printf ("\tFPtr1 (Low     #%08X\n", FPtrReg1);
-        printf ("\tBPtr1  queue)  #%08X\n", BPtrReg1);
-        printf ("\tFPtr0 (High    #%08X\n", FPtrReg0);
-        printf ("\tBPtr0  queue)  #%08X\n", BPtrReg0);
+        printf ("\tFPtr1 (Low     #%08X\n", FPtrReg[1]);
+        printf ("\tBPtr1  queue)  #%08X\n", BPtrReg[1]);
+        printf ("\tFPtr0 (High    #%08X\n", FPtrReg[0]);
+        printf ("\tBPtr0  queue)  #%08X\n", BPtrReg[0]);
         printf ("\tTPtr1 (Timer   #%08X\n", TPtrLoc1);
         printf ("\tTPtr0  queues) #%08X\n", TPtrLoc0);
 }
@@ -2143,13 +2141,13 @@ DescheduleOutWord:
 			   IPtr++;
 			   break;
 		case 0x17: /* stlb        */
-			   BPtrReg1 = AReg;
+			   BPtrReg[1] = AReg;
 			   AReg = BReg;
 			   BReg = CReg;
 			   IPtr++;
 			   break;
 		case 0x18: /* sthf        */
-			   FPtrReg0 = AReg;
+			   FPtrReg[0] = AReg;
 			   AReg = BReg;
 			   BReg = CReg;
 			   IPtr++;
@@ -2188,7 +2186,7 @@ DescheduleOutWord:
 			   AReg = IPtr + AReg;
 			   break;
 		case 0x1c: /* stlf        */
-			   FPtrReg1 = AReg;
+			   FPtrReg[1] = AReg;
 			   AReg = BReg;
 			   BReg = CReg;
 			   IPtr++;
@@ -2556,15 +2554,15 @@ DescheduleOutWord:
 			   IPtr++;
 			   break;
 		case 0x3d: /* savel       */
-			   writeword (index (AReg, 0), FPtrReg1);
-			   writeword (index (AReg, 1), BPtrReg1);
+			   writeword (index (AReg, 0), FPtrReg[1]);
+			   writeword (index (AReg, 1), BPtrReg[1]);
 			   AReg = BReg;
 			   BReg = CReg;
 			   IPtr++;
 			   break;
 		case 0x3e: /* saveh       */
-			   writeword (index (AReg, 0), FPtrReg0);
-			   writeword (index (AReg, 1), BPtrReg0);
+			   writeword (index (AReg, 0), FPtrReg[0]);
+			   writeword (index (AReg, 1), BPtrReg[0]);
 			   AReg = BReg;
 			   BReg = CReg;
 			   IPtr++;
@@ -2809,7 +2807,7 @@ DescheduleOutWord:
 			   IPtr++;
 			   break;
 		case 0x50: /* sthb        */
-			   BPtrReg0 = AReg;
+			   BPtrReg[0] = AReg;
 			   AReg = BReg;
 			   BReg = CReg;
 			   IPtr++;
@@ -3879,31 +3877,16 @@ void schedule (uint32_t wdesc)
 		/* Get front of process list pointer. */
                 if (emudebug)
                         printf ("-I-EMUDBG: Schedule(2): Get front of process list pointer.\n");
-		if (pri == HiPriority)
-		{
-			ptr = FPtrReg0;
-		}
-		else
-		{
-			ptr = FPtrReg1;
-		}
 
+		ptr = FPtrReg[pri];
 		if (ptr == NotProcess_p)
 		{
                         if (emudebug)
                                 printf ("-I-EMUDBG: Schedule(3): Empty process list, create.\n");
 
 			/* Empty process list. Create. */
-			if (pri == HiPriority)
-			{
-				FPtrReg0 = wptr;
-				BPtrReg0 = wptr;
-			}
-			else
-			{
-				FPtrReg1 = wptr;
-				BPtrReg1 = wptr;
-			}
+			FPtrReg[pri] = wptr;
+			BPtrReg[pri] = wptr;
 		}
 		else
 		{
@@ -3912,27 +3895,13 @@ void schedule (uint32_t wdesc)
                                 printf ("-I-EMUDBG: Schedule(3): Update process list.\n");
 
 			/* Get workspace pointer of last process in list. */
-			if (pri == HiPriority)
-			{
-				ptr = BPtrReg0;
-			}
-			else
-			{
-				ptr = BPtrReg1;
-			}
+			ptr = BPtrReg[pri];
 
 			/* Link new process onto end of list. */
 			writeword (index (ptr, Link_s), wptr);
 
 			/* Update end-of-process-list pointer. */
-			if (pri == HiPriority)
-			{
-				BPtrReg0 = wptr;
-			}
-			else
-			{
-				BPtrReg1 = wptr;
-			}
+			BPtrReg[pri] = wptr;
 		}
 	}
 }
@@ -3948,7 +3917,7 @@ int run_process (void)
         ProcPriority = NotProcess_p;
 
 	/* Is the HiPriority process list non-empty? */
-	if (FPtrReg0 != NotProcess_p)
+	if (FPtrReg[0] != NotProcess_p)
 	{
                 if (emudebug)
 	                printf ("-I-EMUDBG: RunProcess: HiPriority process list non-empty.\n");
@@ -3962,7 +3931,7 @@ int run_process (void)
 	                printf ("-I-EMUDBG: RunProcess: There is an interrupted LoPriority process.\n");
                 ProcPriority = LoPriority;
         }
-	else if (FPtrReg1 != NotProcess_p)
+	else if (FPtrReg[1] != NotProcess_p)
 	{
                 if (emudebug)
 	                printf ("-I-EMUDBG: RunProcess: LoPriority process list non-empty.\n");
@@ -3982,21 +3951,13 @@ int run_process (void)
 
 
 	/* Get front of process list pointer. */
-	if (ProcPriority == HiPriority)
-	{
-		ptr = FPtrReg0;
-		lastptr = BPtrReg0;
-	}
-	else
-	{
-		ptr = FPtrReg1;
-		lastptr = BPtrReg1;
-	}
+	ptr = FPtrReg[ProcPriority];
+	lastptr = BPtrReg[ProcPriority];
 
         if (emudebug)
-	        printf ("-I-EMUDBG: RunProcess: ProcPriority = %s, ptr = #%08X. FPtrReg0 (Hi) = #%08X, FPtrReg1 (Lo) = #%08X.\n", 
+	        printf ("-I-EMUDBG: RunProcess: ProcPriority = %s, ptr = #%08X. FPtrReg[Hi] = #%08X, FPtrReg[Lo] = #%08X.\n",
                         ProcPriority ? "Lo" : "Hi",
-                        ptr, FPtrReg0, FPtrReg1);
+                        ptr, FPtrReg[0], FPtrReg[1]);
 
 	if ((ProcPriority == LoPriority) && (ReadInterrupt))
 	{
@@ -4035,14 +3996,7 @@ int run_process (void)
 			IPtr = word (index (WPtr, Iptr_s));
 
 			/* Empty list now. */
-			if (ProcPriority == HiPriority)
-			{
-				FPtrReg0 = NotProcess_p;
-			}
-			else
-			{
-				FPtrReg1 = NotProcess_p;
-			}
+			FPtrReg[ProcPriority] = NotProcess_p;
 		}
 		else
 		{
@@ -4054,14 +4008,7 @@ int run_process (void)
 			IPtr = word (index (WPtr, Iptr_s));
 
 			/* Point at second process in chain. */
-			if (ProcPriority == HiPriority)
-			{
-				FPtrReg0 = word (index (WPtr, Link_s));
-			}
-			else
-			{
-				FPtrReg1 = word (index (WPtr, Link_s));
-			}
+			FPtrReg[ProcPriority] = word (index (WPtr, Link_s));
 		}
 	}
 

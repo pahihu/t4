@@ -161,18 +161,15 @@ uint32_t m2dDestStride;         /* move2d destination stride */
 uint32_t m2dLength;             /* move2d length (no. of rows) */
 
 /* Other registers. */
-uint32_t ClockReg0;
-uint32_t ClockReg1;
-uint32_t TNextReg0;
-uint32_t TNextReg1;
-uint32_t TPtrLoc0;              /* XXX 0x80000024 */
-uint32_t TPtrLoc1;              /* XXX 0x80000028 */
+uint32_t ClockReg[2];
+uint32_t TNextReg[2];
+uint32_t TPtrLoc[2];            /* XXX 0x80000024 0x80000028 */
 
 uint32_t FPtrReg[2];
 uint32_t BPtrReg[2];
 
 #define ProcessQEmpty           ((NotProcess_p == FPtrReg[0]) && (NotProcess_p == FPtrReg[1]))
-#define TimerQEmpty             ((NotProcess_p == TPtrLoc0) && (NotProcess_p == TPtrLoc1))
+#define TimerQEmpty             ((NotProcess_p == TPtrLoc[0]) && (NotProcess_p == TPtrLoc[1]))
 
 uint32_t STATUSReg;             /* Processor flags: GotoSNPBit, HaltOnError, Error */
 
@@ -1283,8 +1280,8 @@ void processor_state (void)
         printf ("\tBPtr1  queue)  #%08X\n", BPtrReg[1]);
         printf ("\tFPtr0 (High    #%08X\n", FPtrReg[0]);
         printf ("\tBPtr0  queue)  #%08X\n", BPtrReg[0]);
-        printf ("\tTPtr1 (Timer   #%08X\n", TPtrLoc1);
-        printf ("\tTPtr0  queues) #%08X\n", TPtrLoc0);
+        printf ("\tTPtr1 (Timer   #%08X\n", TPtrLoc[1]);
+        printf ("\tTPtr0  queues) #%08X\n", TPtrLoc[0]);
 }
 
 void save_dump (void)
@@ -1386,8 +1383,8 @@ void init_processor (void)
 
         IPtr = MemStart;
         CReg = Link0In;
-        TPtrLoc0 = NotProcess_p;
-        TPtrLoc1 = NotProcess_p;
+        TPtrLoc[0] = NotProcess_p;
+        TPtrLoc[1] = NotProcess_p;
         ClearInterrupt; /* XXX not required ??? */
 
         IntEnabled = TRUE;
@@ -2254,14 +2251,7 @@ DescheduleOutWord:
 		case 0x22: /* ldtimer     */
 			   CReg = BReg;
 			   BReg = AReg;
-			   if (ProcPriority == HiPriority)
-			   {
-				AReg = ClockReg0;
-			   }
-			   else
-			   {
-				AReg = ClockReg1;
-			   }
+			   AReg = ClockReg[ProcPriority];
 			   IPtr++;
 			   break;
                 case 0x24: /* testlde     */
@@ -2310,25 +2300,12 @@ DescheduleOutWord:
 			   break;
 		case 0x2b: /* XXX: missing Waiting_p tin         */
 			   IPtr++;
-			   if (ProcPriority == HiPriority)
-			   {
-				if (INT32(ClockReg0 - AReg) > 0)
-					;
-				else
-				{
-					insert (AReg);
-                                        deschedule ();;
-				}
-			   }
+			   if (INT32(ClockReg[ProcPriority] - AReg) > 0)
+			        ;
 			   else
 			   {
-				if (INT32(ClockReg1 - AReg) > 0)
-					;
-				else
-				{
-					insert (AReg);
-                                        deschedule ();
-				}
+				insert (AReg);
+                                deschedule ();;
 			   }
 			   break;
 		case 0x2c: /* div         */
@@ -2352,10 +2329,7 @@ DescheduleOutWord:
 		case 0x2e: /* XXX dist        */
                            if (emudebug)
 			        printf ("-I-EMUDBG: dist(1): Time=%8X.\n", CReg);
-			   if (ProcPriority == HiPriority)
-				temp = ClockReg0;
-			   else
-				temp = ClockReg1;
+			   temp = ClockReg[ProcPriority];
 			   if ((BReg == true_t) &&
                                (INT32(temp - CReg)>=0) &&
                                (word (index (WPtr, Temp_s)) == NoneSelected_o))
@@ -2851,8 +2825,8 @@ DescheduleOutWord:
 			   IPtr++;
 			   break;
 		case 0x54: /* sttimer     */
-			   ClockReg0 = AReg;
-			   ClockReg1 = AReg;
+			   ClockReg[0] = AReg;
+			   ClockReg[1] = AReg;
 			   Timers = TimersGo;
 			   AReg = BReg;
 			   BReg = CReg;
@@ -4051,8 +4025,8 @@ void start_process (void)
 
 		/* Update timers, check timer queues. */
                 active = active ||
-                        (TPtrLoc0 != NotProcess_p) ||
-                        (TPtrLoc1 != NotProcess_p);
+                        (TPtrLoc[0] != NotProcess_p) ||
+                        (TPtrLoc[1] != NotProcess_p);
 		update_time ();
         } while (active);
 
@@ -4187,20 +4161,13 @@ void insert (uint32_t time)
 
 	writeword (index (WPtr, Time_s), (time + 1));
 
-	if (ProcPriority == HiPriority)
-		ptr = TPtrLoc0;
-	else
-		ptr = TPtrLoc1;
-
+        ptr = TPtrLoc[ProcPriority];
 	if (ptr == NotProcess_p)
 	{
 		/* Empty list. */
 		/*writeword (ptr, WPtr); Strange! */
 		writeword (index (WPtr, TLink_s), NotProcess_p);
-		if (ProcPriority == HiPriority)
-			TPtrLoc0 = WPtr;
-		else
-			TPtrLoc1 = WPtr;
+                TPtrLoc[ProcPriority] = WPtr;
 	}
 	else
 	{
@@ -4210,10 +4177,7 @@ void insert (uint32_t time)
 		{
 			/* Put in front of first entry. */
 			writeword (index (WPtr, TLink_s), ptr);
-			if (ProcPriority == HiPriority)
-				TPtrLoc0 = WPtr;
-			else
-				TPtrLoc1 = WPtr;
+                        TPtrLoc[ProcPriority] = WPtr;
 		}
 		else
 		{
@@ -4242,28 +4206,18 @@ void purge_timer (void)
 {
         uint32_t ptr;
 	uint32_t oldptr;
+        int prio;
+
+        prio = ProcPriority == HiPriority ? HiPriority : LoPriority;
 
 	/* Delete any entries at the beginning of the list. */
-	if (ProcPriority == HiPriority)
-	{
-		while (TPtrLoc0 == WPtr)
+		while (TPtrLoc[prio] == WPtr)
 		{
-			TPtrLoc0 = word (index (WPtr, TLink_s));
+			TPtrLoc[prio] = word (index (WPtr, TLink_s));
 		}
 
-		ptr = TPtrLoc0;
+		ptr = TPtrLoc[prio];
 		oldptr = ptr;
-	}
-	else
-	{
-		while (TPtrLoc1 == WPtr)
-		{
-			TPtrLoc1 = word (index (WPtr, TLink_s));
-		}
-
-		ptr = TPtrLoc1;
-		oldptr = ptr;
-	}
 
 	/* List exists. */
 	while (ptr != NotProcess_p)
@@ -4282,10 +4236,28 @@ void purge_timer (void)
 }
 
 
+void schedule_timerq (int prio)
+{
+        uint32_t temp3;
+
+        if ((TPtrLoc[prio] != NotProcess_p) &&
+                ((ProcPriority == HiPriority) || IntEnabled))
+        {
+	        temp3 = word (index (TPtrLoc[prio], Time_s));
+		while ((INT32(ClockReg[prio] - temp3) > 0) && (TPtrLoc[prio] != NotProcess_p))
+		{
+		        schedule (TPtrLoc[prio] | prio);
+
+			TPtrLoc[prio] = word (index (TPtrLoc[prio], TLink_s));
+                        if (TPtrLoc[prio] != NotProcess_p)
+			        temp3 = word (index (TPtrLoc[prio], Time_s));
+		}
+        }
+}
+
 /* XXX Update time, check timer queues. */
 INLINE void update_time (void)
 {
-        uint32_t temp3;
         struct timeval tv;
         unsigned long elapsed_usec;
 
@@ -4312,47 +4284,23 @@ INLINE void update_time (void)
                 LastTOD = tv;
 
 		if (Timers == TimersGo)
-                        ClockReg0 += elapsed_usec;
+                        ClockReg[0] += elapsed_usec;
 
 		count2 += elapsed_usec;
 
 		/* Check high priority timer queue if HiPriority or interrupts enabled. */
                 /* ??? Timers may be not enabled. */
-                if ((TPtrLoc0 != NotProcess_p) &&
-                    ((ProcPriority == HiPriority) || IntEnabled))
-                {
-		        temp3 = word (index (TPtrLoc0, Time_s));
-		        while ((INT32(ClockReg0 - temp3) > 0) && (TPtrLoc0 != NotProcess_p))
-		        {
-			        schedule (TPtrLoc0 | HiPriority);
-
-			        TPtrLoc0 = word (index (TPtrLoc0, TLink_s));
-                                if (TPtrLoc0 != NotProcess_p)
-			                temp3 = word (index (TPtrLoc0, Time_s));
-		        }
-                }
+                schedule_timerq (HiPriority);
 
 		if (count2 > 64) /* ~ 64us */
 		{
 			if (Timers == TimersGo)
-                                ClockReg1 += (count2 / 64);
+                                ClockReg[1] += (count2 / 64);
 			count3 += (count2 / 64);
 			count2  =  count2 & 63;
 
 			/* Check low priority timer queue if HiPriority or interrupts enabled. */
-                        if ((TPtrLoc1 != NotProcess_p) &&
-                            ((ProcPriority == HiPriority) || IntEnabled))
-                        {
-			        temp3 = word (index (TPtrLoc1, Time_s));
-			        while ((INT32(ClockReg1 - temp3) > 0) && (TPtrLoc1 != NotProcess_p))
-			        {
-                                        schedule (TPtrLoc1 | LoPriority);
-
-				        TPtrLoc1 = word (index (TPtrLoc1, TLink_s));
-                                        if (TPtrLoc1 != NotProcess_p)
-				                temp3 = word (index (TPtrLoc1, Time_s));
-			        }
-                        }
+                        schedule_timerq (LoPriority);
 
 			if (count3 > 16) /* ~ 1024us */
 			{

@@ -239,19 +239,28 @@ int32_t quit = FALSE;
 int32_t quitstatus;
 int Idle;
 
+/* Signal handler. */
+void handler (int);
+
 unsigned char *SharedLinks;
 
-// #define Wdesc   (WPtr | ProcPriority)
+#define Wdesc   (WPtr | ProcPriority)
 
-#define IdleProcess_p   (MostNeg | 1)
+#define IdleProcess_p   (NotProcess_p | LoPriority)
 
-/* XXX Wdesc contains MostNeg + 1 in idle state */
-uint32_t getWdesc (void)
+/* XXX Wdesc contains NotProcess_p + 1 in idle state */
+uint32_t getWdesc (const char *fn, int lno)
 {
-        return Idle ? IdleProcess_p : (WPtr | ProcPriority);
+        if (Idle)
+        {
+                //  printf ("-E-EMU414: Wdesc access when processor is IDLE.\n");
+                printf ("%s:%d Wdesc access when processor is IDLE.\n", fn, lno);
+                handler (-1);
+        }
+        return (WPtr | ProcPriority);
 }
 
-#define Wdesc   (getWdesc())
+// #define Wdesc   (getWdesc(__FUNCTION__,__LINE__))
 
 /* External variables. */
 extern int analyse;
@@ -280,9 +289,6 @@ uint32_t instrprof[0x400];
         #100 - #2FF     secondary instr. OReg
         #300 - #3FF     fpentry
 */
-
-/* Signal handler. */
-void handler (int);
 
 /* Support functions. */
 
@@ -1030,7 +1036,7 @@ int linkcomms (char *where, int doBoot, int timeOut)
                 else
                 {
                         reset_channel (channels[i]->LinkAddress);
-                        if (Wdesc == linkWdesc)
+                        if ((!Idle) && (Wdesc == linkWdesc))
                         {
                                 printf ("-E-EMU414: schedule Wdesc=#%08X is running.\n", Wdesc);
                                 handler (-1);
@@ -3867,7 +3873,6 @@ void schedule (uint32_t wdesc)
 		IPtr = word (index (WPtr, Iptr_s));
 
                 set_idle (FALSE);
-
 	}
 	else
 	{
@@ -3971,6 +3976,7 @@ int run_process (void)
                 if (emudebug)
                         printf ("-I-EMUDBG: RunProcess: Empty process list. Cannot start!\n");
 		/* Empty process list. Cannot start! */
+                set_idle (TRUE);
                 return (-1);
         }
 
@@ -4123,7 +4129,7 @@ void set_idle (int flag)
         {
                 if (emudebug)
                         printf ("-I-EMU414: Processor IDLE.\n");
-                Idle = TRUE; ProcPriority = NotProcess_p;
+                Idle = TRUE;
         }
         else
         {
@@ -4143,8 +4149,6 @@ void deschedule (void)
 
         /* Set StartNewProcess flag. */
         SetGotoSNP;
-
-        set_idle (TRUE);
 }
 
 /* Save the current process and place it on the relevant priority process queue. */
@@ -4155,8 +4159,6 @@ void reschedule (void)
 
 	/* Put on process list. */
 	schedule (WPtr | ProcPriority);
-
-        set_idle (TRUE);
 }
 
 /* Check whether the current process needs rescheduling,  */
@@ -4210,20 +4212,22 @@ void interrupt (void)
 
 	/* Store the registers. */
 	writeword (index (MostNeg, 11), Wdesc);
-	writeword (index (MostNeg, 12), IPtr);
-	writeword (index (MostNeg, 13), AReg);
-	writeword (index (MostNeg, 14), BReg);
-	writeword (index (MostNeg, 15), CReg);
-	writeword (index (MostNeg, 16), STATUSReg);
-	/*writeword (index (MostNeg, 17), EReg);*/
-
-        if (IsT800 || IsTVS)
+        if (IdleProcess_p != Wdesc)
         {
-                FARegSave = FAReg;
-                FBRegSave = FBReg;
-                FCRegSave = FCReg;
-        }
+	        writeword (index (MostNeg, 12), IPtr);
+	        writeword (index (MostNeg, 13), AReg);
+	        writeword (index (MostNeg, 14), BReg);
+	        writeword (index (MostNeg, 15), CReg);
+	        writeword (index (MostNeg, 16), STATUSReg);
+	        /*writeword (index (MostNeg, 17), EReg);*/
 
+                if (IsT800 || IsTVS)
+                {
+                        FARegSave = FAReg;
+                        FBRegSave = FBReg;
+                        FCRegSave = FCReg;
+                }
+        }
         /* Note: that an interrupted process is not placed onto the scheduling lists. */
 }
 

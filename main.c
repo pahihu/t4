@@ -644,6 +644,7 @@ int main (int argc, char **argv)
 	while ((WPtr & 0x00000003) != 0x00000000)
 		WPtr++;
 	ProcPriority = LoPriority;
+        set_idle (FALSE);
 
 #ifdef CURTERM
         /* Initialise terminal settings. */
@@ -763,6 +764,8 @@ void handler (int signal)
 	DialogPtr dialog;
 	short itemHit = 0;
 #endif
+
+        fflush (stdout);
 
 	if (profiling)
 		fclose (ProfileFile);

@@ -4074,30 +4074,32 @@ void start_process (void)
                 if (serve)
                 {
 		        active = 0 != server ();
-                        /* server could schedule a process */
-                        if (NotProcess_p != WPtr)
+                        if (!Idle)
                         {
                                 active = TRUE;
                                 break;
                         }
                 }
 
-                if (ProcessQEmpty && TimerQEmpty)
+                if (Idle && ProcessQEmpty && TimerQEmpty)
                         links_active = (0 != linkcomms ("idle", FALSE, LTO_BOOT));
                 else
                         links_active = (0 != linkcomms ("running", FALSE, LTO_COMM));
-
-                /* linkcomms can schedule a process */
-                if (NotProcess_p != WPtr)
+                active = active || links_active;
+                if (!Idle)
                 {
                         active = TRUE;
                         break;
                 }
-                active = active || links_active;
 
 		/* Check timer queue, update timers. */
                 active = active || (!TimerQEmpty);
 		update_time ();
+                if (!Idle)
+                {
+                        active = TRUE;
+                        break;
+                }
         } while (active);
 
         if (!active)

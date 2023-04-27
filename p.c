@@ -28,7 +28,11 @@
  */
 
 #define INLINE
-
+#ifdef NDEBUG
+#define T4DEBUG(x)
+#else
+#define T4DEBUG(x)      x
+#endif
 
 /*
  * p.c - hand inlined processor.c!
@@ -234,15 +238,13 @@ int count3;
 int timeslice;
 int32_t quit = FALSE;
 int32_t quitstatus;
-int Idle;
 
 /* Signal handler. */
 void handler (int);
 
 unsigned char *SharedLinks;
 
-// #define Wdesc   (WPtr | ProcPriority)
-#define Wdesc   WdescReg
+#define StrPrio(p)      ((p) ? "Lo" : "Hi")
 
 void UpdateWdescReg (uint32_t wdesc)
 {
@@ -251,21 +253,9 @@ void UpdateWdescReg (uint32_t wdesc)
         ProcPriority = GetDescPriority(wdesc);
 }
 
+#define Wdesc           WdescReg
+#define Idle            (NotProcess_p == WPtr)
 #define IdleProcess_p   (NotProcess_p | LoPriority)
-
-/* XXX Wdesc contains NotProcess_p + 1 in idle state */
-uint32_t getWdesc (const char *fn, int lno)
-{
-        if (Idle)
-        {
-                //  printf ("-E-EMU414: Wdesc access when processor is IDLE.\n");
-                printf ("%s:%d Wdesc access when processor is IDLE.\n", fn, lno);
-                handler (-1);
-        }
-        return (WPtr | ProcPriority);
-}
-
-// #define Wdesc   (getWdesc(__FUNCTION__,__LINE__))
 
 /* External variables. */
 extern int analyse;
@@ -354,13 +344,17 @@ void fp_drop2 (void)
 /* Pop a REAL64 from the floating point stack. */
 void fp_popdb (fpreal64_t *fp)
 {
+#ifndef NDEBUG
         if (FAReg.length == FP_REAL64)
+#endif
                 *fp = DB(FAReg);
+#ifndef NDEBUG
         else
         {
                 printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fp_popdb)\n");
                 *fp = DUndefined;
         }
+#endif
         fp_drop ();
 }
 
@@ -368,10 +362,13 @@ void fp_popdb (fpreal64_t *fp)
 /* Peek two REAL64s on the floating point stack. */
 void fp_peek2db (fpreal64_t *fb, fpreal64_t *fa)
 {
+#ifndef NDEBUG
         if (FBReg.length == FP_REAL64 && FAReg.length == FP_REAL64)
         {
+#endif
                 *fb = DB(FBReg);
                 *fa = DB(FAReg);
+#ifndef NDEBUG
         }
         else
         {
@@ -379,6 +376,7 @@ void fp_peek2db (fpreal64_t *fb, fpreal64_t *fa)
                 *fb = DUndefined;
                 *fa = DUndefined;
         }
+#endif
 }
 
 
@@ -403,13 +401,17 @@ void fp_pushdb (fpreal64_t fp)
 /* Pop a REAL32 from the floating point stack. */
 void fp_popsn (fpreal32_t *fp)
 {
+#ifndef NDEBUG
         if (FP_REAL32 == FAReg.length)
+#endif
                 *fp = SN(FAReg);
+#ifndef NDEBUG
         else
         {
                 printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fp_popsn)\n");
                 *fp = RUndefined;
         }
+#endif
         fp_drop ();
 }
 
@@ -417,10 +419,13 @@ void fp_popsn (fpreal32_t *fp)
 /* Peek two REAL32s on the floating point stack. */
 void fp_peek2sn (fpreal32_t *fb, fpreal32_t *fa)
 {
+#ifndef NDEBUG
         if (FBReg.length == FP_REAL32 && FAReg.length == FP_REAL32)
         {
+#endif
                 *fb = SN(FBReg);
                 *fa = SN(FAReg);
+#ifndef NDEBUG
         }
         else
         {
@@ -428,6 +433,7 @@ void fp_peek2sn (fpreal32_t *fb, fpreal32_t *fa)
                 *fb = RUndefined;
                 *fa = RUndefined;
         }
+#endif
 }
 
 
@@ -905,7 +911,7 @@ int linkcomms (char *where, int doBoot, int timeOut)
                         continue;
 
                 linkWdesc = word (Link[i].In.LinkAddress);
-                if (doBoot || ((linkWdesc != NotProcess_p) /*&& Link[i].In.Length*/))
+                if (doBoot || (linkWdesc != NotProcess_p))
                 {
                         /* Select only BootLink */
                         if (doBoot && BootLink)
@@ -974,6 +980,8 @@ int linkcomms (char *where, int doBoot, int timeOut)
                                         ret++;
                                 }
                         }
+                        if (ret)
+                                break;
                         if (timeOut)
                         {
                                 usleep (SCH_POLL); timeOut -= SCH_POLL;
@@ -1041,7 +1049,7 @@ int linkcomms (char *where, int doBoot, int timeOut)
                 else
                 {
                         reset_channel (channels[i]->LinkAddress);
-                        if ((!Idle) && (Wdesc == linkWdesc))
+                        if (Wdesc == linkWdesc)
                         {
                                 printf ("-E-EMU414: schedule Wdesc=#%08X is running.\n", Wdesc);
                                 handler (-1);
@@ -1433,6 +1441,11 @@ void checkWPtr (char *where, uint32_t wptr)
                         // handler (-1);
                 }
         }
+        if (NotProcess_p == wptr)
+        {
+                printf ("-E-EMU414: WPtr = NotProcess_p.\n");
+                handler (-1);
+        }
 }
 
 void checkWordAligned (char *where, uint32_t ptr)
@@ -1562,6 +1575,7 @@ void mainloop (void)
                         }
                         printIPtr = TRUE;
                 }
+                fflush (stdout);
         }
 
 	if (profiling)
@@ -1587,7 +1601,7 @@ void mainloop (void)
 			   IPtr++;
 			   break;
 		case 0x30: /* ldnl  */
-                           checkWordAligned ("LDNL", AReg);
+                           T4DEBUG(checkWordAligned ("LDNL", AReg));
 			   AReg = word (index (AReg, OReg));
 			   IPtr++;
 			   OReg = 0; IntEnabled = TRUE;
@@ -1601,7 +1615,7 @@ void mainloop (void)
 			   break;
 		case 0x50: /* ldnlp */
                            /* NB. Minix demo uses unaligned AReg! */
-                           checkWordAligned ("LDNLP", AReg);
+                           T4DEBUG(checkWordAligned ("LDNLP", AReg));
 			   AReg = index (AReg, OReg);
 			   IPtr++;
 			   OReg = 0; IntEnabled = TRUE;
@@ -1633,6 +1647,7 @@ void mainloop (void)
 			   writeword (index (WPtr, -3), AReg);
 			   writeword (index (WPtr, -4), IPtr);
                            UpdateWdescReg (index ( WPtr, -4) | ProcPriority);
+                           T4DEBUG(checkWPtr ("CALL", WPtr));
 			   AReg = IPtr;
                            /* Pop BReg. */
                            BReg = CReg;
@@ -1654,6 +1669,7 @@ void mainloop (void)
 			   break;
 		case 0xb0: /* ajw   */
                            UpdateWdescReg (index (WPtr, OReg) | ProcPriority);
+                           T4DEBUG(checkWPtr ("AJW", WPtr));
 			   IPtr++;
 			   OReg = 0; IntEnabled = TRUE;
 			   break;
@@ -1677,7 +1693,7 @@ void mainloop (void)
 			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0xe0: /* XXX stnl  */
-                           checkWordAligned ("STNL", AReg);
+                           T4DEBUG(checkWordAligned ("STNL", AReg));
 			   writeword (index (AReg, OReg), BReg);
 			   AReg = CReg;
 			   IPtr++;
@@ -1716,7 +1732,7 @@ void mainloop (void)
 
 				/* Do successor process. */
 				UpdateWdescReg (AReg | ProcPriority);
-                                checkWPtr ("ENDP", WPtr);
+                                T4DEBUG(checkWPtr ("ENDP", WPtr));
 				IPtr = word (index (AReg, 0));
 			   }
 			   else
@@ -1780,7 +1796,7 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 				{
 					/* Ready. */
                                         otherWPtr = GetDescWPtr(otherWdesc);
-                                        checkWPtr ("IN", otherWPtr);
+                                        T4DEBUG(checkWPtr ("IN", otherWPtr));
 					otherPtr = word (index (otherWPtr, Pointer_s));
                                         if (msgdebug || emudebug)
 					        printf ("-I-EMUDBG: in(3): Transferring message from #%08X.\n", otherPtr);
@@ -1976,7 +1992,7 @@ DescheduleOut:
 				{
 					/* Ready. */
                                         otherWPtr = GetDescWPtr(otherWdesc);
-                                        checkWPtr ("OUTBYTE", otherWPtr);
+                                        T4DEBUG(checkWPtr ("OUTBYTE", otherWPtr));
 					altState = otherPtr = word (index (otherWPtr, Pointer_s));
 					if ((altState & 0xfffffffc) == MostNeg)
 					{
@@ -2058,7 +2074,7 @@ DescheduleOutByte:
 				{
 					/* Ready. */
                                         otherWPtr = GetDescWPtr(otherWdesc);
-                                        checkWPtr ("OUTWORD", otherWPtr);
+                                        T4DEBUG(checkWPtr ("OUTWORD", otherWPtr));
 					altState = otherPtr =  word (index (otherWPtr, State_s));
 					if ((altState & 0xfffffffc) == MostNeg)
 					{
@@ -2240,6 +2256,7 @@ DescheduleOutWord:
 		case 0x20: /* ret         */
 			   IPtr = word (WPtr);
 			   UpdateWdescReg (index (WPtr, 4) | ProcPriority);
+                           T4DEBUG(checkWPtr ("RET", WPtr));
 			   break;
 		case 0x21: /* lend        */ /****/
 			   temp = word (index (BReg, 1));
@@ -2531,10 +2548,11 @@ DescheduleOutWord:
 			   break;
 		case 0x3c: /* gajw        */
                            /* XXX: proc prio toggle trick of AReg lsb=1       */
-                           checkWordAligned ("GAJW", AReg);
+                           T4DEBUG(checkWordAligned ("GAJW", AReg));
 			   temp = AReg;
 			   AReg = WPtr;
 			   UpdateWdescReg (temp | ProcPriority);
+                           T4DEBUG(checkWPtr ("GAJW", WPtr));
 			   IPtr++;
 			   break;
 		case 0x3d: /* savel       */
@@ -3192,7 +3210,7 @@ DescheduleOutWord:
 		case 0x82: /* XXX fpldnldbi    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("FPLDNLDBI", AReg);
+                           T4DEBUG(checkWordAligned ("FPLDNLDBI", AReg));
                            fp_pushdb (real64 (index (AReg, 2*BReg)));
                            AReg = CReg;
                            BReg = CReg;
@@ -3212,7 +3230,7 @@ DescheduleOutWord:
 		case 0x84: /* fpstnldb    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("FPSTNLDB", AReg);
+                           T4DEBUG(checkWordAligned ("FPSTNLDB", AReg));
                            if (FAReg.length == FP_REAL64)
                                 fp_popdb (&dbtemp1);
                            else
@@ -3238,7 +3256,7 @@ DescheduleOutWord:
 		case 0x86: /* XXX fpldnlsni    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("FPLDNLSNI", AReg);
+                           T4DEBUG(checkWordAligned ("FPLDNLSNI", AReg));
                            fp_pushsn (real32 (index (AReg, BReg)));
                            AReg = CReg;
                            BReg = CReg;
@@ -3254,7 +3272,7 @@ DescheduleOutWord:
 		case 0x88: /* fpstnlsn    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("FPSTNLSN", AReg);
+                           T4DEBUG(checkWordAligned ("FPSTNLSN", AReg));
                            if (FAReg.length == FP_REAL32)
                                 fp_popsn (&sntemp1);
                            else
@@ -3277,7 +3295,7 @@ DescheduleOutWord:
 		case 0x8a: /* fpldnldb    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("FPLDNLDB", AReg);
+                           T4DEBUG(checkWordAligned ("FPLDNLDB", AReg));
                            fp_pushdb (real64 (AReg));
                            AReg = BReg;
                            BReg = CReg;
@@ -3298,7 +3316,7 @@ DescheduleOutWord:
 		case 0x8e: /* fpldnlsn    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("FPLDNLSN", AReg);
+                           T4DEBUG(checkWordAligned ("FPLDNLSN", AReg));
                            fp_pushsn (real32 (AReg));
                            AReg = BReg;
                            BReg = CReg;
@@ -3533,7 +3551,7 @@ DescheduleOutWord:
 		case 0xa6: /* fpldnladddb    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("FPLDNLADDDB", AReg);
+                           T4DEBUG(checkWordAligned ("FPLDNLADDDB", AReg));
                            fp_pushdb (real64 (AReg));
                            if (FAReg.length == FP_REAL64)
                            {
@@ -3554,7 +3572,7 @@ DescheduleOutWord:
 		case 0xa8: /* fpldnlmuldb    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("FPLDNLMULDB", AReg);
+                           T4DEBUG(checkWordAligned ("FPLDNLMULDB", AReg));
                            fp_pushdb (real64 (AReg));
                            if (FAReg.length == FP_REAL64)
                            {
@@ -3575,7 +3593,7 @@ DescheduleOutWord:
 		case 0xaa: /* fpldnladdsn    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("FPLDNLADDSN", AReg);
+                           T4DEBUG(checkWordAligned ("FPLDNLADDSN", AReg));
                            fp_pushsn (real32 (AReg));
                            if (FAReg.length == FP_REAL32)
                            {
@@ -3738,7 +3756,7 @@ DescheduleOutWord:
 		case 0xac: /* fpldnlmulsn    */
 		           if (IsT414)
 		               goto BadCode;
-                           checkWordAligned ("FPLDNLMULSN", AReg);
+                           T4DEBUG(checkWordAligned ("FPLDNLMULSN", AReg));
                            fp_pushsn (real32 (AReg));
                            if (FAReg.length == FP_REAL32)
                            {
@@ -3815,18 +3833,64 @@ BadCode:
 }
 
 
+void Enqueue (uint32_t wptr, uint32_t pri)
+{
+	uint32_t ptr;
+
+        /* Get front of process list pointer. */
+        if (emudebug)
+                printf ("-I-EMUDBG: Enqueue(1): Get front of %s priority process list pointer.\n",
+                        StrPrio(pri));
+
+        ptr = FPtrReg[pri];
+	if (ptr == NotProcess_p)
+	{
+                if (emudebug)
+                        printf ("-I-EMUDBG: Enqueue(2): Empty process list, create.\n");
+
+	        /* Empty process list. Create. */
+	        FPtrReg[pri] = wptr;
+	        BPtrReg[pri] = wptr;
+	}
+	else
+	{
+	        /* Process list already exists. Update. */
+                if (emudebug)
+                        printf ("-I-EMUDBG: Enqueue(2): Update process list.\n");
+
+		/* Get workspace pointer of last process in list. */
+		ptr = BPtrReg[pri];
+
+		/* Link new process onto end of list. */
+		writeword (index (ptr, Link_s), wptr);
+
+		/* Update end-of-process-list pointer. */
+		BPtrReg[pri] = wptr;
+	}
+}
+
 /* Add a process to the relevant priority process queue. */
 void schedule (uint32_t wdesc)
 {
         uint32_t wptr, pri;
-	uint32_t ptr;
 	uint32_t temp;
 
         wptr = GetDescWPtr(wdesc);
+#ifndef NDEBUG
+        if (NotProcess_p == wptr)
+        {
+                printf ("-E-EMU414: Wdesc = #%08X. Cannot schedule NotProcess_p.\n", wdesc);
+                handler (-1);
+        }
+#endif
         pri  = GetDescPriority(wdesc);
 
         if (emudebug)
-                printf ("-I-EMUDBG: Schedule(1): Process = #%08X at priority = %s\n", wptr, pri ? "Lo" : "Hi");
+        {
+                printf ("-I-EMUDBG: Schedule(1): Process = #%08X at priority %s\n", wptr, StrPrio(pri));
+                printf ("-I-EMUDBG: Schedule(1): %s Idle=%d FPtrReg[Hi]=#%08X FPtrReg[Lo]=#%08X Int=#%08X\n",
+                        StrPrio(ProcPriority), Idle, FPtrReg[0], FPtrReg[1], word (0x8000002C));
+        }
 
 	/* Remove from timer queue if a ready alt. */
         /* !!! XXX - READ OF NOT INITIALIZED MEMORY !!! */
@@ -3834,59 +3898,50 @@ void schedule (uint32_t wdesc)
 	if (temp == Ready_p)
 		purge_timer ();
 
-	/* If a high priority process is being scheduled */
-	/* while a low priority process runs, interrupt! */
-	if ((pri == HiPriority) && (ProcPriority == LoPriority))
-	{
+        if (HiPriority == ProcPriority)
+        {
                 if (emudebug)
-                        printf ("-I-EMUDBG: Schedule(2): Interrupt LoPriority process.\n");
-
-		interrupt ();
-
-                /* Preserve Error and HaltOnError flags only. */
-                STATUSReg &= (ErrorFlag | HaltOnErrorFlag);
-
-                /* ??? HaltOnErrorFlag is cleared before the process starts. */
-                ClearHaltOnError;
-
-                UpdateWdescReg (wptr | HiPriority);
-                checkWPtr ("Schedule", WPtr);
-		IPtr = word (index (WPtr, Iptr_s));
-
-                set_idle (FALSE);
-	}
-	else
-	{
-		/* Get front of process list pointer. */
-                if (emudebug)
-                        printf ("-I-EMUDBG: Schedule(2): Get front of process list pointer.\n");
-
-		ptr = FPtrReg[pri];
-		if (ptr == NotProcess_p)
-		{
+                        printf ("-I-EMUDBG: Processor at Hi priority. Enqueue\n");
+                Enqueue (wptr, pri);
+        }
+        else if (LoPriority == ProcPriority)
+        {
+                if (HiPriority == pri)
+                {
                         if (emudebug)
-                                printf ("-I-EMUDBG: Schedule(3): Empty process list, create.\n");
+                                printf ("-I-EMUDBG: Processor at Lo priority. Activate Hi priority process\n");
 
-			/* Empty process list. Create. */
-			FPtrReg[pri] = wptr;
-			BPtrReg[pri] = wptr;
-		}
-		else
-		{
-			/* Process list already exists. Update. */
+		        interrupt ();
+
+                        /* Preserve Error and HaltOnError flags only. */
+                        STATUSReg &= (ErrorFlag | HaltOnErrorFlag);
+
+                        /* ??? HaltOnErrorFlag is cleared before the process starts. */
+                        /* ClearHaltOnError; */
+
                         if (emudebug)
-                                printf ("-I-EMUDBG: Schedule(3): Update process list.\n");
+                                printf ("-I-EMU414: Activate Hi priority process Wdesc=#%08X\n", wdesc);
 
-			/* Get workspace pointer of last process in list. */
-			ptr = BPtrReg[pri];
-
-			/* Link new process onto end of list. */
-			writeword (index (ptr, Link_s), wptr);
-
-			/* Update end-of-process-list pointer. */
-			BPtrReg[pri] = wptr;
-		}
-	}
+                        UpdateWdescReg (wdesc);
+                        T4DEBUG(checkWPtr ("Schedule", WPtr));
+		        IPtr = word (index (WPtr, Iptr_s));
+                }
+                else if (LoPriority == pri)
+                {
+                        if (emudebug)
+                                printf ("-I-EMUDBG: Processor at Lo priority. Idle=%d WPtr=#%08X\n", Idle, WPtr);
+                        if (Idle)
+                        {
+                                if (emudebug)
+                                        printf ("-I-EMU414: Lo priority process list empty. Activate process Wdesc=#%08X\n", wdesc);
+                                UpdateWdescReg (wdesc);
+                                T4DEBUG(checkWPtr ("Schedule", WPtr));
+		                IPtr = word (index (WPtr, Iptr_s));
+                        }
+                        else
+                                Enqueue (wptr, LoPriority);
+                }
+        }
 }
 
 /* Run a process, HiPriority if available. */
@@ -3894,10 +3949,6 @@ int run_process (void)
 {
 	uint32_t ptr;
 	uint32_t lastptr;
-
-
-        /* Let the current priority be unknown. */
-        ProcPriority = NotProcess_p;
 
 	/* Is the HiPriority process list non-empty? */
 	if (NotProcess_p != FPtrReg[0])
@@ -3921,32 +3972,27 @@ int run_process (void)
 		/* There are only LoPriority processes available. */
 		ProcPriority = LoPriority;
 	}
-
-        /* Check current priority. */
-        if (NotProcess_p == ProcPriority)
+        else
         {
                 if (emudebug)
                         printf ("-I-EMUDBG: RunProcess: Empty process list. Cannot start!\n");
+
 		/* Empty process list. Cannot start! */
-                set_idle (TRUE);
+                UpdateWdescReg (IdleProcess_p);
                 return (-1);
         }
 
-
 	/* Get front of process list pointer. */
 	ptr = FPtrReg[ProcPriority];
-	lastptr = BPtrReg[ProcPriority];
-
-        if (emudebug)
-	        printf ("-I-EMUDBG: RunProcess: ProcPriority = %s, ptr = #%08X. FPtrReg[Hi] = #%08X, FPtrReg[Lo] = #%08X.\n",
-                        ProcPriority ? "Lo" : "Hi",
-                        ptr, FPtrReg[0], FPtrReg[1]);
-
 	if ((ProcPriority == LoPriority) && (ReadInterrupt))
 	{
 		/* Return to interrupted LoPriority process. */
 		UpdateWdescReg (GetDescWPtr(word (index (MostNeg, 11))) | LoPriority);
-                checkWPtr ("RunProcess(1)", WPtr);
+                T4DEBUG(checkWPtr ("RunProcess(1)", WPtr));
+                if (emudebug)
+	                printf ("-I-EMUDBG: RunProcess: ProcPriority = %s, WPtr = #%08X.\n",
+                                StrPrio(ProcPriority), WPtr);
+
 		IPtr = word (index (MostNeg, 12));
 		AReg = word (index (MostNeg, 13));
 		BReg = word (index (MostNeg, 14));
@@ -3962,18 +4008,19 @@ int run_process (void)
                 }
                 ClearInterrupt; /* XXX Not necessary ??? */
 	}  
-	else if (ptr == NotProcess_p)
-	{
-		/* Empty process list. Cannot start! */
-		return (-1);
-	}
 	else
 	{
+	        lastptr = BPtrReg[ProcPriority];
+
+                if (emudebug)
+	                printf ("-I-EMUDBG: RunProcess: ProcPriority = %s, ptr = #%08X. FPtrReg[Hi] = #%08X, FPtrReg[Lo] = #%08X.\n",
+                                StrPrio(ProcPriority), ptr, FPtrReg[0], FPtrReg[1]);
+
 		if (ptr == lastptr)
 		{
 			/* Only one process in list. */
 			UpdateWdescReg (ptr | ProcPriority);
-                        checkWPtr ("RunProcess(2)", WPtr);
+                        T4DEBUG(checkWPtr ("RunProcess(2)", WPtr));
 
 			/* Get Iptr. */
 			IPtr = word (index (WPtr, Iptr_s));
@@ -3985,7 +4032,7 @@ int run_process (void)
 		{
 			/* List. */
 			UpdateWdescReg (ptr | ProcPriority);
-                        checkWPtr ("RunProcess(3)", WPtr);
+                        T4DEBUG(checkWPtr ("RunProcess(3)", WPtr));
 
 			/* Get Iptr. */
 			IPtr = word (index (WPtr, Iptr_s));
@@ -3995,7 +4042,6 @@ int run_process (void)
 		}
 	}
 
-        set_idle (FALSE);
 	return (0);
 }
 
@@ -4018,24 +4064,39 @@ void start_process (void)
                         break;
 
                 if (emudebug)
+                {
 		        printf ("-I-EMUDBG: StartProcess: Empty process list. Update comms.\n");
+                        fflush (stdout);
+                }
 
                 /* Update host comms. */
                 active = FALSE;
                 if (serve)
+                {
 		        active = 0 != server ();
+                        /* server could schedule a process */
+                        if (NotProcess_p != WPtr)
+                        {
+                                active = TRUE;
+                                break;
+                        }
+                }
 
-                /* XXX causes no activity */
                 if (ProcessQEmpty && TimerQEmpty)
                         links_active = (0 != linkcomms ("idle", FALSE, LTO_BOOT));
                 else
                         links_active = (0 != linkcomms ("running", FALSE, LTO_COMM));
+
+                /* linkcomms can schedule a process */
+                if (NotProcess_p != WPtr)
+                {
+                        active = TRUE;
+                        break;
+                }
                 active = active || links_active;
 
-		/* Update timers, check timer queues. */
-                active = active ||
-                        (TPtrLoc[0] != NotProcess_p) ||
-                        (TPtrLoc[1] != NotProcess_p);
+		/* Check timer queue, update timers. */
+                active = active || (!TimerQEmpty);
 		update_time ();
         } while (active);
 
@@ -4053,25 +4114,16 @@ void start_process (void)
 		profile[3]++;
 }
 
-void set_idle (int flag)
-{
-        if (flag)
-        {
-                if (emudebug)
-                        printf ("-I-EMU414: Processor IDLE.\n");
-                Idle = TRUE;
-        }
-        else
-        {
-                if (emudebug)
-                        printf ("-I-EMU414: Processor RUNNING.\n");
-                Idle = FALSE;
-        }
-}
-
 /* Save the current process and start a new process. */
 void deschedule (void)
 {
+#ifndef NDEBUG
+        if (NotProcess_p == WPtr)
+        {
+                printf ("-E-EMU414: Cannot deschedule NotProcess_p.\n");
+                handler (-1);
+        }
+#endif
         if (emudebug)
                 printf ("-I-EMUDBG: Deschedule process #%08X.\n", Wdesc);
         /* Write Iptr into workspace */
@@ -4084,6 +4136,13 @@ void deschedule (void)
 /* Save the current process and place it on the relevant priority process queue. */
 void reschedule (void)
 {
+#ifndef NDEBUG
+        if (NotProcess_p == WPtr)
+        {
+                printf ("-E-EMU414: Cannot reschedule NotProcess_p.\n");
+                handler (-1);
+        }
+#endif
 	/* Write Iptr into worksapce. */
 	writeword (index (WPtr, Iptr_s), IPtr);
 
@@ -4144,6 +4203,9 @@ void interrupt (void)
 	writeword (index (MostNeg, 11), Wdesc);
         if (IdleProcess_p != Wdesc)
         {
+                if (emudebug)
+                        printf ("-I-EMUDBG: Interrupt LoPriority process.\n");
+
 	        writeword (index (MostNeg, 12), IPtr);
 	        writeword (index (MostNeg, 13), AReg);
 	        writeword (index (MostNeg, 14), BReg);
@@ -4215,18 +4277,18 @@ void purge_timer (void)
 {
         uint32_t ptr;
 	uint32_t oldptr;
-        int prio;
 
-        prio = ProcPriority == HiPriority ? HiPriority : LoPriority;
+        if (Idle)
+                return;
 
 	/* Delete any entries at the beginning of the list. */
-		while (TPtrLoc[prio] == WPtr)
-		{
-			TPtrLoc[prio] = word (index (WPtr, TLink_s));
-		}
+	while (TPtrLoc[ProcPriority] == WPtr)
+	{
+	        TPtrLoc[ProcPriority] = word (index (WPtr, TLink_s));
+	}
 
-		ptr = TPtrLoc[prio];
-		oldptr = ptr;
+	ptr = TPtrLoc[ProcPriority];
+	oldptr = ptr;
 
 	/* List exists. */
 	while (ptr != NotProcess_p)

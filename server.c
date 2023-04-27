@@ -274,7 +274,8 @@ int server (void)
         {
                 if (ToServerLen + FromServerLen)
 	                printf ("-I-EMUSRV: To server buffer %d; From server buffer %d.\n", ToServerLen, FromServerLen);
-                printf ("-I-EMUSRV: linkWdesc = #%08X Link0OutLength = #%x.\n", LinkWdesc, Link0OutLength);
+                if (NotProcess_p != LinkWdesc)
+                        printf ("-I-EMUSRV: linkWdesc = #%08X Link0OutLength = #%x.\n", LinkWdesc, Link0OutLength);
         }
 	if ((!usetvs && ((LinkWdesc != NotProcess_p) && Link0OutLength)) ||
             ( usetvs && (Link0InLength == 0)))
@@ -364,7 +365,8 @@ int server (void)
         LinkWdesc = word (Link0In);
         if (msgdebug || emudebug)
         {
-                printf ("-I-EMUSRV: linkWdesc = #%08X Link0InLength = #%x.\n", LinkWdesc, Link0InLength);
+                if (NotProcess_p != LinkWdesc)
+                        printf ("-I-EMUSRV: linkWdesc = #%08X Link0InLength = #%x.\n", LinkWdesc, Link0InLength);
         }
 	if (LinkWdesc != NotProcess_p)
 	{

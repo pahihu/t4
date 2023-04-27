@@ -644,7 +644,6 @@ int main (int argc, char **argv)
 	while ((WPtr & 0x00000003) != 0x00000000)
 		WPtr++;
         UpdateWdescReg (WPtr | LoPriority);
-        set_idle (FALSE);
 
 #ifdef CURTERM
         /* Initialise terminal settings. */

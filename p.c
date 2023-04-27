@@ -127,6 +127,8 @@ uint32_t BReg;
 uint32_t CReg;
 uint32_t OReg;
 
+uint32_t WdescReg;
+
 uint32_t DReg;                  /* undocumented DReg/EReg */
 uint32_t EReg;
 
@@ -239,7 +241,15 @@ void handler (int);
 
 unsigned char *SharedLinks;
 
-#define Wdesc   (WPtr | ProcPriority)
+// #define Wdesc   (WPtr | ProcPriority)
+#define Wdesc   WdescReg
+
+void UpdateWdescReg (uint32_t wdesc)
+{
+        WdescReg     = wdesc;
+        WPtr         = GetDescWPtr(wdesc);
+        ProcPriority = GetDescPriority(wdesc);
+}
 
 #define IdleProcess_p   (NotProcess_p | LoPriority)
 
@@ -622,7 +632,7 @@ int handleboot (Channel *chan, unsigned char *data, int ndata)
                                 CtrlByte = C_UNKNOWN;
                                 break;
                         case C_BOOT:
-                                WPtr = chan->Address;
+                                UpdateWdescReg (chan->Address | ProcPriority);
                                 CtrlByte = C_UNKNOWN;
                                 return 0;
                 }
@@ -1622,7 +1632,7 @@ void mainloop (void)
 			   writeword (index (WPtr, -2), BReg);
 			   writeword (index (WPtr, -3), AReg);
 			   writeword (index (WPtr, -4), IPtr);
-			   WPtr = index ( WPtr, -4);
+                           UpdateWdescReg (index ( WPtr, -4) | ProcPriority);
 			   AReg = IPtr;
                            /* Pop BReg. */
                            BReg = CReg;
@@ -1643,7 +1653,7 @@ void mainloop (void)
 			   OReg = 0; IntEnabled = TRUE;
 			   break;
 		case 0xb0: /* ajw   */
-			   WPtr = index (WPtr, OReg);
+                           UpdateWdescReg (index (WPtr, OReg) | ProcPriority);
 			   IPtr++;
 			   OReg = 0; IntEnabled = TRUE;
 			   break;
@@ -1705,7 +1715,7 @@ void mainloop (void)
                                         printf ("-I-EMUDBG: endp: Do successor process.\n");
 
 				/* Do successor process. */
-				WPtr = AReg;
+				UpdateWdescReg (AReg | ProcPriority);
                                 checkWPtr ("ENDP", WPtr);
 				IPtr = word (index (AReg, 0));
 			   }
@@ -2229,7 +2239,7 @@ DescheduleOutWord:
 			   break;
 		case 0x20: /* ret         */
 			   IPtr = word (WPtr);
-			   WPtr = index (WPtr, 4);
+			   UpdateWdescReg (index (WPtr, 4) | ProcPriority);
 			   break;
 		case 0x21: /* lend        */ /****/
 			   temp = word (index (BReg, 1));
@@ -2524,7 +2534,7 @@ DescheduleOutWord:
                            checkWordAligned ("GAJW", AReg);
 			   temp = AReg;
 			   AReg = WPtr;
-			   WPtr = temp;
+			   UpdateWdescReg (temp | ProcPriority);
 			   IPtr++;
 			   break;
 		case 0x3d: /* savel       */
@@ -3839,8 +3849,7 @@ void schedule (uint32_t wdesc)
                 /* ??? HaltOnErrorFlag is cleared before the process starts. */
                 ClearHaltOnError;
 
-		ProcPriority = HiPriority;
-		WPtr = wptr;
+                UpdateWdescReg (wptr | HiPriority);
                 checkWPtr ("Schedule", WPtr);
 		IPtr = word (index (WPtr, Iptr_s));
 
@@ -3891,7 +3900,7 @@ int run_process (void)
         ProcPriority = NotProcess_p;
 
 	/* Is the HiPriority process list non-empty? */
-	if (FPtrReg[0] != NotProcess_p)
+	if (NotProcess_p != FPtrReg[0])
 	{
                 if (emudebug)
 	                printf ("-I-EMUDBG: RunProcess: HiPriority process list non-empty.\n");
@@ -3905,7 +3914,7 @@ int run_process (void)
 	                printf ("-I-EMUDBG: RunProcess: There is an interrupted LoPriority process.\n");
                 ProcPriority = LoPriority;
         }
-	else if (FPtrReg[1] != NotProcess_p)
+	else if (NotProcess_p != FPtrReg[1])
 	{
                 if (emudebug)
 	                printf ("-I-EMUDBG: RunProcess: LoPriority process list non-empty.\n");
@@ -3914,7 +3923,7 @@ int run_process (void)
 	}
 
         /* Check current priority. */
-        if (ProcPriority == NotProcess_p)
+        if (NotProcess_p == ProcPriority)
         {
                 if (emudebug)
                         printf ("-I-EMUDBG: RunProcess: Empty process list. Cannot start!\n");
@@ -3936,7 +3945,7 @@ int run_process (void)
 	if ((ProcPriority == LoPriority) && (ReadInterrupt))
 	{
 		/* Return to interrupted LoPriority process. */
-		WPtr = GetDescWPtr(word (index (MostNeg, 11)));
+		UpdateWdescReg (GetDescWPtr(word (index (MostNeg, 11))) | LoPriority);
                 checkWPtr ("RunProcess(1)", WPtr);
 		IPtr = word (index (MostNeg, 12));
 		AReg = word (index (MostNeg, 13));
@@ -3963,7 +3972,7 @@ int run_process (void)
 		if (ptr == lastptr)
 		{
 			/* Only one process in list. */
-			WPtr = ptr;
+			UpdateWdescReg (ptr | ProcPriority);
                         checkWPtr ("RunProcess(2)", WPtr);
 
 			/* Get Iptr. */
@@ -3975,7 +3984,7 @@ int run_process (void)
 		else
 		{
 			/* List. */
-			WPtr = ptr;
+			UpdateWdescReg (ptr | ProcPriority);
                         checkWPtr ("RunProcess(3)", WPtr);
 
 			/* Get Iptr. */

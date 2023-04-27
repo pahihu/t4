@@ -643,7 +643,7 @@ int main (int argc, char **argv)
 
 	while ((WPtr & 0x00000003) != 0x00000000)
 		WPtr++;
-	ProcPriority = LoPriority;
+        UpdateWdescReg (WPtr | LoPriority);
         set_idle (FALSE);
 
 #ifdef CURTERM

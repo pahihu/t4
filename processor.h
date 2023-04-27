@@ -128,6 +128,7 @@ void execute       (void);
 void operate       (void);
 void schedule      (uint32_t);
 void set_idle      (int flag);
+void UpdateWdescReg (uint32_t);
 int  run_process   (void);
 void start_process (void);
 void deschedule    (void);

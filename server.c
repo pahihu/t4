@@ -122,6 +122,10 @@ extern struct termios t_getk;
 extern struct termios t_poll;
 extern enum {INIT, GETK, POLL} t_state;
 
+#ifdef NDEBUG
+#define word(a) word_int(a)
+#endif
+
 static
 void init_server (void)
 {

@@ -219,6 +219,13 @@ uint32_t IntEnabled;            /* Interrupt enabled */
 #define WordsRead(addr,len)     (((addr&(BytesPerWord-1))?1:0)+(len+(BytesPerWord-1))/BytesPerWord)
 #define BytesRead(addr,len)     (WordsRead(addr,len)*BytesPerWord)
 
+#ifdef NDEBUG
+#define writeword(a,x)  writeword_int(a,x)
+#define writebyte(a,x)  writebyte_int(a,x)
+#define byte(a)         byte_int(a)
+#define word(a)         word_int(a)
+#endif
+
 /* Internal variables. */
 unsigned char Instruction;
 unsigned char Icode;
@@ -236,6 +243,7 @@ int count1;
 int count2;
 int count3;
 int timeslice;
+int delayCount1 = 5;
 int32_t quit = FALSE;
 int32_t quitstatus;
 
@@ -1502,7 +1510,8 @@ void mainloop (void)
                 PrevError = ReadError;
 
 		/* Move timers on if necessary, and increment timeslice counter. */
-		update_time ();
+                if (++count1 > delayCount1)
+		        update_time ();
 
                 if (ReadGotoSNP)
                         start_process ();
@@ -1802,12 +1811,6 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
 					        printf ("-I-EMUDBG: in(3): Transferring message from #%08X.\n", otherPtr);
 
                                         movebytes_int (CReg, otherPtr, AReg);
-#if 0
-					for (loop=0;loop<AReg;loop++)
-					{
-					        writebyte ((CReg + loop), byte_int (otherPtr + loop));
-					}
-#endif
                                         CReg = CReg + BytesRead(CReg, AReg);
 					writeword (BReg, NotProcess_p);
 					schedule (otherWdesc);
@@ -1915,12 +1918,6 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                                 if (msgdebug || emudebug)
                                                         printf ("-I-EMUDBG: out(4): Ready, communicate.\n");
                                                 movebytes_int (otherPtr, CReg, AReg);
-#if 0
-						for (loop = 0;loop < AReg; loop++)
-						{
-							writebyte ((otherPtr + loop), byte_int (CReg + loop));
-						}
-#endif
                                                 CReg = CReg + BytesRead(CReg, AReg);
 						writeword (BReg, NotProcess_p);
 						schedule (otherWdesc);
@@ -2755,12 +2752,6 @@ DescheduleOutWord:
                            if (INT32(AReg) > 0)
                            {
                                 movebytes_int (BReg, CReg, AReg);
-#if 0
-			        for (temp=0;temp<AReg;temp++)
-			        {
-				        writebyte_int ((BReg+temp), byte_int (CReg+temp));
-			        }
-#endif
                                 CReg = CReg + WordsRead(CReg, AReg) * BytesPerWord;
                            }
                            else
@@ -2930,13 +2921,6 @@ DescheduleOutWord:
                                 for (temp = 0; temp < m2dLength; temp++)
                                 {
                                         movebytes_int (m2dDestAddress, m2dSourceAddress, m2dWidth);
-#if 0
-                                        for (temp2 = 0; temp2 < m2dWidth; temp2++)
-                                        {
-                                                pixel = byte_int (m2dSourceAddress + temp2);
-                                                writebyte_int (m2dDestAddress + temp2, pixel);
-                                        }
-#endif
                                         m2dSourceAddress += m2dSourceStride;
                                         m2dDestAddress   += m2dDestStride;
                                 }
@@ -4094,7 +4078,8 @@ void start_process (void)
 
 		/* Check timer queue, update timers. */
                 active = active || (!TimerQEmpty);
-		update_time ();
+                if (++count1 > delayCount1)
+		        update_time ();
                 if (!Idle)
                 {
                         active = TRUE;
@@ -4335,59 +4320,63 @@ INLINE void update_time (void)
         unsigned long elapsed_usec;
 
 	/* Move timers on if necessary, and increment timeslice counter. */
-	count1++;
-	if (count1 > 10)
-	{
-		count1 = 0;
+	count1 = 0;
 
-                /* Check TOD clock, on UNIX ~ 1us resolution. */
-                update_tod (&tv);
+        /* Check TOD clock, on UNIX ~ 1us resolution. */
+        update_tod (&tv);
 
-                /* Calculate elapsed usecs. */
-                elapsed_usec = (tv.tv_sec  - LastTOD.tv_sec) * 1000000 +
-                               (tv.tv_usec - LastTOD.tv_usec);
+        /* Calculate elapsed usecs. */
+        elapsed_usec = (tv.tv_sec  - LastTOD.tv_sec) * 1000000 +
+                       (tv.tv_usec - LastTOD.tv_usec);
                 
-                /* Time not lapsed ? Return. */
-                if (0 == elapsed_usec)
-                        return;
+        /* Time not lapsed ? Return. */
+        if (0 == elapsed_usec)
+        {
+                delayCount1++;
+                return;
+        }
+        else if (elapsed_usec > 1)
+        {
+                delayCount1--;
+                if (delayCount1 < 5)
+                        delayCount1 = 5;
+        }
 
-                /* printf ("-I-EMUDBG: Elapsed time %lu.\n", elapsed_usec); */
+        /* printf ("-I-EMUDBG: Elapsed time %lu.\n", elapsed_usec); */
 
-                /* Update last known TOD clock. */
-                LastTOD = tv;
+        /* Update last known TOD clock. */
+        LastTOD = tv;
 
-		if (Timers == TimersGo)
-                        ClockReg[0] += elapsed_usec;
+	if (Timers == TimersGo)
+                ClockReg[0] += elapsed_usec;
 
-		count2 += elapsed_usec;
+	count2 += elapsed_usec;
 
-		/* Check high priority timer queue if HiPriority or interrupts enabled. */
-                /* ??? Timers may be not enabled. */
-                schedule_timerq (HiPriority);
+	/* Check high priority timer queue if HiPriority or interrupts enabled. */
+        /* ??? Timers may be not enabled. */
+        schedule_timerq (HiPriority);
 
-		if (count2 > 64) /* ~ 64us */
+	if (count2 > 64) /* ~ 64us */
+	{
+	        if (Timers == TimersGo)
+                        ClockReg[1] += (count2 / 64);
+		count3 += (count2 / 64);
+		count2  =  count2 & 63;
+
+		/* Check low priority timer queue if HiPriority or interrupts enabled. */
+                schedule_timerq (LoPriority);
+
+		if (count3 > 16) /* ~ 1024us */
 		{
-			if (Timers == TimersGo)
-                                ClockReg[1] += (count2 / 64);
-			count3 += (count2 / 64);
-			count2  =  count2 & 63;
-
-			/* Check low priority timer queue if HiPriority or interrupts enabled. */
-                        schedule_timerq (LoPriority);
-
-			if (count3 > 16) /* ~ 1024us */
-			{
-				timeslice += (count3 / 16);
-				count3     = count3 & 15;
-			}
+		        timeslice += (count3 / 16);
+		        count3     = count3 & 15;
+		}
 				
 #ifdef __MWERKS__
-			/* Check for events. */
-			check_input();
+		/* Check for events. */
+		check_input();
 #endif
-		}
 	}
-
 }
 
 #define CoreAddr(a)     (INT32(a) < INT32(ExtMemStart))
@@ -4408,10 +4397,7 @@ uint32_t word_int (uint32_t ptr)
         if (CoreAddr(ptr))
                 wptr = (uint32_t *)(core + (MemWordMask & ptr));
         else
-        {
-                ptr -= CoreSize;
                 wptr = (uint32_t *)(mem + (MemWordMask & ptr));
-        }
         result = *wptr;
 #else
 	unsigned char val[4];
@@ -4426,7 +4412,6 @@ uint32_t word_int (uint32_t ptr)
         }
         else
         {
-                ptr -= CoreSize;
 	        val[0] = mem[(ptr & MemWordMask)];
 	        val[1] = mem[(ptr & MemWordMask)+1];
 	        val[2] = mem[(ptr & MemWordMask)+2];
@@ -4445,6 +4430,7 @@ void word_notinit (void)
         handler (-1);
 }
 
+#ifndef NDEBUG
 uint32_t word (uint32_t ptr)
 {
         uint32_t result;
@@ -4454,12 +4440,12 @@ uint32_t word (uint32_t ptr)
         if (memdebug)
                 printf ("-I-EMUMEM: RW: Mem[%08X] ? %08X\n", ptr, result);
 
-#ifndef NDEBUG
         if ((memnotinit) && (result == InvalidInstr_p))
                 word_notinit ();
-#endif
+
 	return (result);
 }
+#endif
 
 
 /* Write a word to memory. */
@@ -4475,10 +4461,7 @@ void writeword_int (uint32_t ptr, uint32_t value)
         if (CoreAddr(ptr))
                 wptr = (uint32_t *) (core + (MemWordMask & ptr));
         else
-        {
-                ptr -= CoreSize;
                 wptr = (uint32_t *) (mem + (MemWordMask & ptr));
-        }
         *wptr = value;
 #else
 	unsigned char val[4];
@@ -4498,7 +4481,6 @@ void writeword_int (uint32_t ptr, uint32_t value)
         }
         else
         {
-                ptr -= CoreSize;
 	        mem[(ptr & MemWordMask)]   = val[0];
 	        mem[(ptr & MemWordMask)+1] = val[1];
 	        mem[(ptr & MemWordMask)+2] = val[2];
@@ -4509,6 +4491,7 @@ void writeword_int (uint32_t ptr, uint32_t value)
 }
 
 
+#ifndef NDEBUG
 void writeword (uint32_t ptr, uint32_t value)
 {
         writeword_int (ptr, value);
@@ -4516,6 +4499,7 @@ void writeword (uint32_t ptr, uint32_t value)
         if (memdebug)
                 printf ("-I-EMUMEM: WW: Mem[%08X] ! %08X\n", ptr, value);
 }
+#endif
 
 
 /* Read a byte from memory. */
@@ -4527,14 +4511,12 @@ unsigned char byte_int (uint32_t ptr)
         if (CoreAddr(ptr))
 	        result = core[(ptr & MemByteMask)];
         else
-        {
-                ptr -= CoreSize;
 	        result = mem[(ptr & MemByteMask)];
-        }
 
 	return (result);
 }
 
+#ifndef NDEBUG
 unsigned char byte (uint32_t ptr)
 {
         unsigned char result;
@@ -4545,6 +4527,7 @@ unsigned char byte (uint32_t ptr)
 
         return result;
 }
+#endif
 
 /* Write a byte to memory. */
 INLINE void writebyte_int (uint32_t ptr, unsigned char value)
@@ -4553,10 +4536,7 @@ INLINE void writebyte_int (uint32_t ptr, unsigned char value)
         if (CoreAddr(ptr))
                 core[(ptr & MemByteMask)] = value;
         else
-        {
-                ptr -= CoreSize;
 	        mem[(ptr & MemByteMask)] = value;
-        }
 }
 
 /* Write bytes to memory. */
@@ -4571,7 +4551,6 @@ INLINE void writebytes_int (uint32_t ptr, unsigned char *data, uint32_t len)
         }
         else if (ExtMemAddr(ptr))
         {
-                ptr -= CoreSize;
                 dst = mem + (ptr & MemByteMask);
                 memcpy (dst, data, len);
         }
@@ -4597,7 +4576,6 @@ INLINE void movebytes_int (uint32_t dst, uint32_t src, uint32_t len)
         }
         else if (ExtMemAddr(src) && ExtMemAddr(dst))
         {
-                dst -= CoreSize; src -= CoreSize;
                 p = mem + (dst & MemByteMask);
                 q = mem + (src & MemByteMask);
                 memmove (p, q, len);
@@ -4622,7 +4600,6 @@ INLINE void bytes_int (uint32_t ptr, unsigned char *data, uint32_t len)
         }
         else if (ExtMemAddr(ptr))
         {
-                ptr -= CoreSize;
                 dst = mem + (ptr & MemByteMask);
                 memcpy (data, dst, len);
         }
@@ -4634,6 +4611,7 @@ INLINE void bytes_int (uint32_t ptr, unsigned char *data, uint32_t len)
         }
 }
 
+#ifndef NDEBUG
 void writebyte (uint32_t ptr, unsigned char value)
 {
         if (memdebug)
@@ -4641,6 +4619,7 @@ void writebyte (uint32_t ptr, unsigned char value)
 
         writebyte_int (ptr, value);
 }
+#endif
 
 /* Read a REAL32 from memory. */
 fpreal32_t real32 (uint32_t ptr)

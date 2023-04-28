@@ -19,7 +19,7 @@ CFLAGS = -I. -O3 -Wall -DCURTERM=1 -DSPYNET=1 -DSHLINKS=1 -DNN_STATIC_LIB=ON -DN
 # CFLAGS = -O2 -Wall -DSUN
 
 # Put any additional libraries here.
-LFLAGS	= -lnanomsg -lanl -lpthread -lm
+LFLAGS	= /usr/local/lib/libnanomsg.a -lanl -lpthread -lm
 
 #
 # https://github.com/JuliaMath/openlibm

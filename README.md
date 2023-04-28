@@ -43,6 +43,7 @@ The compiled binaries are in the `bin/` directory.
 Changes
 =======
 
+* Minix demo runs again, implemented idle mode, adaptive timer updates, updated networking binaries
 * added POV-Ray 1.0 sources and boot loader file (see examples/povray/pictures.zip for the generated images)
 * added COMSTIME benchmark
 * updated Windows and Linux binaries, they support both nework and shared-memory links

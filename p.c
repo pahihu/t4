@@ -248,6 +248,13 @@ int32_t quit = FALSE;
 int32_t quitstatus;
 uint64_t InBytes;              /* bytes received */
 uint64_t OutBytes;             /* bytes sent     */
+uint64_t Schedules;            /* schedule () calls     */
+uint64_t Instructions;         /* Instructions executed */
+#ifdef T4STATS
+#define DOSTAT(x)       x
+#else
+#define DOSTAT(x)
+#endif
 
 /* Signal handler. */
 void handler (int);
@@ -1473,6 +1480,11 @@ void checkWordAligned (char *where, uint32_t ptr)
         }
 }
 
+#ifdef T4STATS
+static struct timeval StartTOD, EndTOD;
+double ElapsedSecs;
+#endif
+
 void mainloop (void)
 {
         uint32_t temp, temp2;
@@ -1502,6 +1514,7 @@ void mainloop (void)
 	Timers = TimersStop;
 
 
+        DOSTAT(update_tod (&StartTOD));
 	while (1)
 	{
 #ifndef NDEBUG
@@ -1595,6 +1608,7 @@ void mainloop (void)
 	if (profiling)
 		add_profile (Icode);
 
+        DOSTAT(Instructions++);
 	switch (Icode)
 	{
 		case 0x00: /* j     */
@@ -1788,7 +1802,7 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
                                         printf ("-W-EMUDBG: Warning - doing IN on Link0Out.\n");
                                 goto OprOut;
                            }
-                           InBytes += AReg;
+                           DOSTAT(InBytes += AReg);
                            if (msgdebug || emudebug)
 			        printf ("-I-EMUDBG: in(1): Channel=#%08X, to memory at #%08X, length #%X.\n", BReg, CReg, AReg);
 			   IPtr++;
@@ -1870,7 +1884,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                         printf ("-W-EMUDBG: Warning - doing OUT on Link0In.\n");
                                 goto OprIn;
                            }
-                           OutBytes += AReg;
+                           DOSTAT(OutBytes += AReg);
                            if (msgdebug || emudebug)
 			        printf ("-I-EMUDBG: out(1): Channel=#%08X, length #%X, from memory at #%08X.\n", BReg, AReg, CReg);
 			   IPtr++;
@@ -1968,7 +1982,7 @@ DescheduleOut:
 			   schedule (temp | ProcPriority);
 			   break;
 		case 0x0e: /* outbyte     */
-                           OutBytes++;
+                           DOSTAT(OutBytes++);
                            if (msgdebug || emudebug)
 			        printf ("-I-EMUDBG: outbyte: Channel=#%08X.\n", BReg);
 			   IPtr++;
@@ -2049,7 +2063,7 @@ DescheduleOutByte:
 			   }
 			   break;
 		case 0x0f: /* outword     */
-                           OutBytes += 4;
+                           DOSTAT(OutBytes += 4);
                            if (msgdebug || emudebug)
 			        printf ("-I-EMUDBG: outword(1): Channel=#%08X.\n", BReg);
 			   IPtr++;
@@ -3815,6 +3829,12 @@ BadCode:
                 fp_chkexcept ("mainloop");
 #endif
 	}
+#ifdef T4STATS
+        update_tod (&EndTOD);
+        ElapsedSecs = (EndTOD.tv_sec - StartTOD.tv_sec) * 1000 +
+                      (EndTOD.tv_usec - StartTOD.tv_usec) / 1000;
+        ElapsedSecs /= 1000;
+#endif
 
 	if (ReadError)
 	{
@@ -3874,6 +3894,7 @@ void schedule (uint32_t wdesc)
         uint32_t wptr, pri;
 	uint32_t temp;
 
+        DOSTAT(Schedules++);
         wptr = GetDescWPtr(wdesc);
 #ifndef NDEBUG
         if (NotProcess_p == wptr)

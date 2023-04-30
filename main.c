@@ -729,19 +729,26 @@ int main (int argc, char **argv)
 	/* Now start the emulator. */
 	mainloop ();
 
+#ifdef T4STATS
         if (verbose)
         {
-                printf ("\n---IOStats---\n");
-                printf ("ChanIn  : %s\n", Humanoid (InBytes));
-                printf ("ChanOut : %s\n", Humanoid (OutBytes));
+                printf ("\n---Statistics---\n");
+                printf ("   Schedules: %lld\n", Schedules);
+                printf ("Instructions: %lld\n", Instructions);
+                printf ("Elapsed time: %.3fs\n", ElapsedSecs);
+                printf ("        MIPS: %.1f\n", (Instructions / ElapsedSecs) / 1000000);
+                printf ("---Channels---\n");
+                printf ("ChanIn : %s\n", Humanoid (InBytes));
+                printf ("ChanOut: %s\n", Humanoid (OutBytes));
                 for (temp = 0; temp < 4; temp++)
                 {
                         if (Link[temp].In.IOBytes)
-                                printf ("Link%dIn : %s\n", temp, Humanoid (Link[temp].In.IOBytes));
+                                printf ("Lnk%dIn : %s\n", temp, Humanoid (Link[temp].In.IOBytes));
                         if (Link[temp].Out.IOBytes)
-                                printf ("Link%dOut: %s\n", temp, Humanoid (Link[temp].Out.IOBytes));
+                                printf ("Lnk%dOut: %s\n", temp, Humanoid (Link[temp].Out.IOBytes));
                 }
         }
+#endif
                 
 
 #if __profile__

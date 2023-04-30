@@ -117,6 +117,9 @@ typedef struct _LinkIface_ {
 extern LinkIface Link[4];
 extern uint64_t InBytes;
 extern uint64_t OutBytes;
+extern uint64_t Schedules;
+extern uint64_t Instructions;
+extern double ElapsedSecs;
 
 /* Link 0 registers. */
 #define Link0OutSource  Link[0].Out.Address

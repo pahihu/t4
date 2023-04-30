@@ -1,4 +1,5 @@
 @echo off
+set SHLINK=
 if "%1"=="" goto :noargs
 
 set N=%1

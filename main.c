@@ -146,6 +146,29 @@ void set_debug (void)
         memdebug = (tracing & 4) ? TRUE : FALSE;
 }
 
+const char* Humanoid (uint64_t bytes)
+{
+        static const char *units = " kMGT";
+        static char buf[32];
+        int i;
+        uint64_t lot;
+
+        lot = 1;
+        buf[0] = '\0';
+        for (i = 0; units[i]; i++)
+        {
+                if (bytes < 1024 * lot)
+                {
+                        sprintf (buf, "%5.1f%cB", (double)bytes / lot, units[i]);
+                        break;
+                }
+                lot *= 1024;
+        }
+        if (*buf == '\0')
+                sprintf (buf, "%5.1fPB", (double)bytes / lot);
+        return buf;
+}
+
 #ifdef __MWERKS__
 void main(void)
 #else
@@ -705,6 +728,21 @@ int main (int argc, char **argv)
 
 	/* Now start the emulator. */
 	mainloop ();
+
+        if (verbose)
+        {
+                printf ("\n---IOStats---\n");
+                printf ("ChanIn  : %s\n", Humanoid (InBytes));
+                printf ("ChanOut : %s\n", Humanoid (OutBytes));
+                for (temp = 0; temp < 4; temp++)
+                {
+                        if (Link[temp].In.IOBytes)
+                                printf ("Link%dIn : %s\n", temp, Humanoid (Link[temp].In.IOBytes));
+                        if (Link[temp].Out.IOBytes)
+                                printf ("Link%dOut: %s\n", temp, Humanoid (Link[temp].Out.IOBytes));
+                }
+        }
+                
 
 #if __profile__
 	/* METROWERKS PROFILER. */

@@ -106,6 +106,7 @@ typedef struct _Channel_ {
         int  sock;
         char url[MAX_CHANNEL_URL];
         unsigned char *schbuf;
+        uint64_t IOBytes;
 } Channel;
 
 typedef struct _LinkIface_ {
@@ -114,6 +115,8 @@ typedef struct _LinkIface_ {
 } LinkIface;
 
 extern LinkIface Link[4];
+extern uint64_t InBytes;
+extern uint64_t OutBytes;
 
 /* Link 0 registers. */
 #define Link0OutSource  Link[0].Out.Address

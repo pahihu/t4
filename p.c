@@ -246,6 +246,8 @@ int timeslice;
 int delayCount1 = 5;
 int32_t quit = FALSE;
 int32_t quitstatus;
+uint64_t InBytes;              /* bytes received */
+uint64_t OutBytes;             /* bytes sent     */
 
 /* Signal handler. */
 void handler (int);
@@ -823,6 +825,7 @@ int Precv_channel (Channel *chan, uint32_t address, uint32_t len)
 
         chan->Address = address;
         chan->Length  = len;
+        chan->IOBytes += len;
         return channel_recvmemP (chan, data, TRUE, FALSE) < 0;
 }
 
@@ -834,6 +837,7 @@ int Psend_channel (Channel *chan, uint32_t address, uint32_t len)
 
         chan->Address = address;
         chan->Length  = len;
+        chan->IOBytes += len;
         return channel_sendmemP (chan, FALSE) < 0;
 }
 
@@ -1142,6 +1146,7 @@ void open_channel (uint32_t addr)
         chan->url[0] = '\0';
         chan->sock = -1;
         chan->schbuf = NULL;
+        chan->IOBytes = 0;
 
         if (serve && 0 == theLink) /* host link */
                 return;
@@ -1783,6 +1788,7 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
                                         printf ("-W-EMUDBG: Warning - doing IN on Link0Out.\n");
                                 goto OprOut;
                            }
+                           InBytes += AReg;
                            if (msgdebug || emudebug)
 			        printf ("-I-EMUDBG: in(1): Channel=#%08X, to memory at #%08X, length #%X.\n", BReg, CReg, AReg);
 			   IPtr++;
@@ -1830,6 +1836,7 @@ DescheduleIn:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].In.Address = CReg;
                                         Link[TheLink(BReg)].In.Length  = AReg;
+                                        Link[TheLink(BReg)].In.IOBytes += AReg;
                                         deschedule ();
                                 }
 			   }
@@ -1863,6 +1870,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                         printf ("-W-EMUDBG: Warning - doing OUT on Link0In.\n");
                                 goto OprIn;
                            }
+                           OutBytes += AReg;
                            if (msgdebug || emudebug)
 			        printf ("-I-EMUDBG: out(1): Channel=#%08X, length #%X, from memory at #%08X.\n", BReg, AReg, CReg);
 			   IPtr++;
@@ -1939,6 +1947,7 @@ DescheduleOut:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].Out.Address = CReg;
                                         Link[TheLink(BReg)].Out.Length  = AReg;
+                                        Link[TheLink(BReg)].Out.IOBytes += AReg;
                                         deschedule ();
                                 }
 			   }
@@ -1959,6 +1968,7 @@ DescheduleOut:
 			   schedule (temp | ProcPriority);
 			   break;
 		case 0x0e: /* outbyte     */
+                           OutBytes++;
                            if (msgdebug || emudebug)
 			        printf ("-I-EMUDBG: outbyte: Channel=#%08X.\n", BReg);
 			   IPtr++;
@@ -1971,6 +1981,7 @@ DescheduleOut:
 				writeword (WPtr, AReg);
                                 Link0InDest   = WPtr;
                                 Link0InLength = 1;
+                                Link[0].In.IOBytes++;
                                 deschedule ();
                            }
 			   else if (!IsLinkOut(BReg))
@@ -2032,11 +2043,13 @@ DescheduleOutByte:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].Out.Address = WPtr;
                                         Link[TheLink(BReg)].Out.Length  = 1;
+                                        Link[TheLink(BReg)].Out.IOBytes++;
                                         deschedule ();
                                 }
 			   }
 			   break;
 		case 0x0f: /* outword     */
+                           OutBytes += 4;
                            if (msgdebug || emudebug)
 			        printf ("-I-EMUDBG: outword(1): Channel=#%08X.\n", BReg);
 			   IPtr++;
@@ -2049,6 +2062,7 @@ DescheduleOutByte:
 				writeword (WPtr, AReg);
                                 Link0InDest   = WPtr;
                                 Link0InLength = 4;
+                                Link[0].In.IOBytes += 4;
                                 deschedule ();
                            }
 			   else if (!IsLinkOut(BReg))
@@ -2125,6 +2139,7 @@ DescheduleOutWord:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].Out.Address = WPtr;
                                         Link[TheLink(BReg)].Out.Length  = 4;
+                                        Link[TheLink(BReg)].Out.IOBytes += 4;
                                         deschedule ();
                                 }
 			   }

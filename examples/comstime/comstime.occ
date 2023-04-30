@@ -23,8 +23,9 @@ PROC eg(CHAN OF SP fs,ts)
           INT x:
           SEQ
             a ? x
-            c ! x
-            d ! x
+            PAR -- PAR Delta
+              c ! x
+              d ! x
       SEQ
         WHILE TRUE
           INT x:
@@ -32,6 +33,7 @@ PROC eg(CHAN OF SP fs,ts)
             c ? x
             b ! x+1
       INT start,stop,sum :
+      INT avg.loop,ctx.switch :
       TIMER t :
       SEQ
         sum := 0
@@ -45,9 +47,15 @@ PROC eg(CHAN OF SP fs,ts)
             so.write.int(fs,ts,stop MINUS start,8)
             so.write.nl(fs,ts)
             sum := sum PLUS (stop MINUS start)
+        avg.loop := ((sum * 64000) / (repeat*runs))
+        ctx.switch := avg.loop / 8
         so.write.string(fs,ts,"Average = ")
-        so.write.int(fs,ts,((sum * 64000) / (repeat*runs)),8)
-        so.write.string.nl(fs,ts,"ns / iteration")
+        so.write.int(fs,ts,avg.loop,8)
+        so.write.string.nl(fs,ts,"ns / iteration (PAR Delta)")
+        so.write.string(fs,ts,"Ctx.Sw  = ")
+        so.write.int(fs,ts,ctx.switch,8)
+        so.write.string.nl(fs,ts,"ns")
+        so.write.string.nl(fs,ts,"Average =    15049ns / iteration (T800-20)")
         so.exit(fs,ts,sps.success)
 :      
       

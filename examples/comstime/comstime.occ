@@ -48,7 +48,7 @@ PROC eg(CHAN OF SP fs,ts)
             so.write.nl(fs,ts)
             sum := sum PLUS (stop MINUS start)
         avg.loop := ((sum * 64000) / (repeat*runs))
-        ctx.switch := avg.loop / 8
+        ctx.switch := avg.loop / 5
         so.write.string(fs,ts,"Average = ")
         so.write.int(fs,ts,avg.loop,8)
         so.write.string.nl(fs,ts,"ns / iteration (PAR Delta)")

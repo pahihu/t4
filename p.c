@@ -742,14 +742,17 @@ int channel_recvP (Channel *chan, unsigned char *data, int doWait)
 int channel_recvmemP (Channel *chan, unsigned char *data, int doMemWrite, int doWait)
 {
         int ret;
+        unsigned char *buf;
 
-        ret = channel_recvP (chan, data, doWait);
+        buf = doMemWrite ? memrange (chan->Address, data, MAX_DATA) : data;
+        ret = channel_recvP (chan, buf, doWait);
         if (ret < 0)
                 return ret;
 
         if (doMemWrite)
         {
-                writebytes_int (chan->Address, data, ret);
+                if (buf == data)
+                        writebytes_int (chan->Address, data, ret);
                 chan->Address += ret; chan->Length -= ret;
         }
         return ret;
@@ -812,14 +815,15 @@ int channel_sendmemP (Channel *chan, int doWait)
 {
         unsigned char data[MAX_DATA];
         int ndata;
+        unsigned char *buf;
 
         ndata = MAX_DATA;
         if (chan->Length < MAX_DATA)
                 ndata = chan->Length;
 
-        bytes_int (chan->Address, data, ndata);
+        buf = bytes_int (chan->Address, data, ndata);
         chan->Address += ndata; chan->Length -= ndata;
-        return channel_sendP (chan, data, ndata, doWait);
+        return channel_sendP (chan, buf, ndata, doWait);
 }
 
 /* Receive at most MAX_DATA bytes without waiting. */
@@ -832,7 +836,7 @@ int Precv_channel (Channel *chan, uint32_t address, uint32_t len)
 
         chan->Address = address;
         chan->Length  = len;
-        chan->IOBytes += len;
+        DOSTAT(chan->IOBytes += len);
         return channel_recvmemP (chan, data, TRUE, FALSE) < 0;
 }
 
@@ -844,7 +848,7 @@ int Psend_channel (Channel *chan, uint32_t address, uint32_t len)
 
         chan->Address = address;
         chan->Length  = len;
-        chan->IOBytes += len;
+        DOSTAT(chan->IOBytes += len);
         return channel_sendmemP (chan, FALSE) < 0;
 }
 
@@ -1830,7 +1834,12 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
                                         if (msgdebug || emudebug)
 					        printf ("-I-EMUDBG: in(3): Transferring message from #%08X.\n", otherPtr);
 
-                                        movebytes_int (CReg, otherPtr, AReg);
+                                        if (1 == AReg)
+                                                writebyte_int (CReg, byte_int (otherPtr));
+                                        else if (4 == AReg)
+                                                writeword_int (CReg, word_int (otherPtr));
+                                        else
+                                                movebytes_int (CReg, otherPtr, AReg);
                                         CReg = CReg + BytesRead(CReg, AReg);
 					writeword (BReg, NotProcess_p);
 					schedule (otherWdesc);
@@ -1850,7 +1859,7 @@ DescheduleIn:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].In.Address = CReg;
                                         Link[TheLink(BReg)].In.Length  = AReg;
-                                        Link[TheLink(BReg)].In.IOBytes += AReg;
+                                        DOSTAT(Link[TheLink(BReg)].In.IOBytes += AReg);
                                         deschedule ();
                                 }
 			   }
@@ -1961,7 +1970,7 @@ DescheduleOut:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].Out.Address = CReg;
                                         Link[TheLink(BReg)].Out.Length  = AReg;
-                                        Link[TheLink(BReg)].Out.IOBytes += AReg;
+                                        DOSTAT(Link[TheLink(BReg)].Out.IOBytes += AReg);
                                         deschedule ();
                                 }
 			   }
@@ -1995,7 +2004,7 @@ DescheduleOut:
 				writeword (WPtr, AReg);
                                 Link0InDest   = WPtr;
                                 Link0InLength = 1;
-                                Link[0].In.IOBytes++;
+                                DOSTAT(Link[0].In.IOBytes++);
                                 deschedule ();
                            }
 			   else if (!IsLinkOut(BReg))
@@ -2057,7 +2066,7 @@ DescheduleOutByte:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].Out.Address = WPtr;
                                         Link[TheLink(BReg)].Out.Length  = 1;
-                                        Link[TheLink(BReg)].Out.IOBytes++;
+                                        DOSTAT(Link[TheLink(BReg)].Out.IOBytes++);
                                         deschedule ();
                                 }
 			   }
@@ -2076,7 +2085,7 @@ DescheduleOutByte:
 				writeword (WPtr, AReg);
                                 Link0InDest   = WPtr;
                                 Link0InLength = 4;
-                                Link[0].In.IOBytes += 4;
+                                DOSTAT(Link[0].In.IOBytes += 4);
                                 deschedule ();
                            }
 			   else if (!IsLinkOut(BReg))
@@ -2153,7 +2162,7 @@ DescheduleOutWord:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].Out.Address = WPtr;
                                         Link[TheLink(BReg)].Out.Length  = 4;
-                                        Link[TheLink(BReg)].Out.IOBytes += 4;
+                                        DOSTAT(Link[TheLink(BReg)].Out.IOBytes += 4);
                                         deschedule ();
                                 }
 			   }
@@ -4575,6 +4584,23 @@ INLINE void writebyte_int (uint32_t ptr, unsigned char value)
 	        mem[(ptr & MemByteMask)] = value;
 }
 
+/* Return pointer to memory or data[] */
+INLINE unsigned char* memrange (uint32_t ptr, unsigned char *data, uint32_t len)
+{
+        unsigned char *dst;
+        if (CoreRange(ptr,len))
+        {
+                dst = core + (ptr & MemByteMask);
+                return dst;
+        }
+        else if (ExtMemAddr(ptr))
+        {
+                dst = mem + (ptr & MemByteMask);
+                return dst;
+        }
+        return data;
+}
+
 /* Write bytes to memory. */
 INLINE void writebytes_int (uint32_t ptr, unsigned char *data, uint32_t len)
 {
@@ -4625,25 +4651,30 @@ INLINE void movebytes_int (uint32_t dst, uint32_t src, uint32_t len)
 }
 
 /* Read bytes from memory. */
-INLINE void bytes_int (uint32_t ptr, unsigned char *data, uint32_t len)
+/* If range entirely in core/extmem then return pointer to memory */
+/* Otherwise copy to data[] and return data[] */
+INLINE unsigned char* bytes_int (uint32_t ptr, unsigned char *data, uint32_t len)
 {
         unsigned char *dst;
 	/* Write byte, ensuring memory reference is in range. */
         if (CoreRange(ptr,len))
         {
                 dst = core + (ptr & MemByteMask);
-                memcpy (data, dst, len);
+                // memcpy (data, dst, len);
+                return dst;
         }
         else if (ExtMemAddr(ptr))
         {
                 dst = mem + (ptr & MemByteMask);
-                memcpy (data, dst, len);
+                // memcpy (data, dst, len);
+                return dst;
         }
         else
         {
                 int i;
                 for (i = 0; i < len; i++)
                         data[i] = byte_int (ptr++);
+                return data;
         }
 }
 

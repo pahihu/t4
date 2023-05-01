@@ -19,7 +19,6 @@ CC = gcc-mp-12 -flto -ffloat-store -frounding-math
 CFLAGS = -I. -O3 -Wall -DCURTERM=1 -I$(HOME)/include \
         -DSPYNET=1 \
         -DSHLINKS=1 \
-        -DT4STATS=1 \
         -DNDEBUG=1
 # CFLAGS = -I. -O2 -Wall -DCURTERM=1 -I$(HOME)/include -DSPYNET=1
 # CFLAGS = -I. -O0 -Wall -DCURTERM=1 -I$(HOME)/include -DSPYNET=1 -DSHLINKS=1 -DNDEBUG=1

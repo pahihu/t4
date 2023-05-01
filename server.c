@@ -251,7 +251,7 @@ int server (void)
         }
 
 	if (profiling)
-		profile[2]++;
+		profile[PRO_ISERVER]++;
 
         activity = 0;
 	if (copy==TRUE)

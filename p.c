@@ -246,15 +246,6 @@ int timeslice;
 int delayCount1 = 5;
 int32_t quit = FALSE;
 int32_t quitstatus;
-uint64_t InBytes;              /* bytes received */
-uint64_t OutBytes;             /* bytes sent     */
-uint64_t Schedules;            /* schedule () calls     */
-uint64_t Instructions;         /* Instructions executed */
-#ifdef T4STATS
-#define DOSTAT(x)       x
-#else
-#define DOSTAT(x)
-#endif
 
 /* Signal handler. */
 void handler (int);
@@ -281,8 +272,6 @@ extern int verbose;
 extern int serve;
 extern int exitonerror;
 extern int FromServerLen;
-extern int profiling;
-extern uint32_t profile[10];
 extern int emudebug;
 extern int memdebug;
 extern int memnotinit;
@@ -836,7 +825,8 @@ int Precv_channel (Channel *chan, uint32_t address, uint32_t len)
 
         chan->Address = address;
         chan->Length  = len;
-        DOSTAT(chan->IOBytes += len);
+        if (profiling)
+                chan->IOBytes += len;
         return channel_recvmemP (chan, data, TRUE, FALSE) < 0;
 }
 
@@ -848,7 +838,8 @@ int Psend_channel (Channel *chan, uint32_t address, uint32_t len)
 
         chan->Address = address;
         chan->Length  = len;
-        DOSTAT(chan->IOBytes += len);
+        if (profiling)
+                chan->IOBytes += len;
         return channel_sendmemP (chan, FALSE) < 0;
 }
 
@@ -1484,10 +1475,8 @@ void checkWordAligned (char *where, uint32_t ptr)
         }
 }
 
-#ifdef T4STATS
 static struct timeval StartTOD, EndTOD;
 double ElapsedSecs;
-#endif
 
 void mainloop (void)
 {
@@ -1518,7 +1507,8 @@ void mainloop (void)
 	Timers = TimersStop;
 
 
-        DOSTAT(update_tod (&StartTOD));
+        if (profiling)
+                update_tod (&StartTOD);
 	while (1)
 	{
 #ifndef NDEBUG
@@ -1612,7 +1602,6 @@ void mainloop (void)
 	if (profiling)
 		add_profile (Icode);
 
-        DOSTAT(Instructions++);
 	switch (Icode)
 	{
 		case 0x00: /* j     */
@@ -1806,7 +1795,8 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
                                         printf ("-W-EMUDBG: Warning - doing IN on Link0Out.\n");
                                 goto OprOut;
                            }
-                           DOSTAT(InBytes += AReg);
+                           if (profiling)
+                                profile[PRO_CHANIN] += AReg;
                            if (msgdebug || emudebug)
 			        printf ("-I-EMUDBG: in(1): Channel=#%08X, to memory at #%08X, length #%X.\n", BReg, CReg, AReg);
 			   IPtr++;
@@ -1859,7 +1849,8 @@ DescheduleIn:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].In.Address = CReg;
                                         Link[TheLink(BReg)].In.Length  = AReg;
-                                        DOSTAT(Link[TheLink(BReg)].In.IOBytes += AReg);
+                                        if (profiling)
+                                                Link[TheLink(BReg)].In.IOBytes += AReg;
                                         deschedule ();
                                 }
 			   }
@@ -1893,7 +1884,8 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                         printf ("-W-EMUDBG: Warning - doing OUT on Link0In.\n");
                                 goto OprIn;
                            }
-                           DOSTAT(OutBytes += AReg);
+                           if (profiling)
+                                profile[PRO_CHANOUT] += AReg;
                            if (msgdebug || emudebug)
 			        printf ("-I-EMUDBG: out(1): Channel=#%08X, length #%X, from memory at #%08X.\n", BReg, AReg, CReg);
 			   IPtr++;
@@ -1970,7 +1962,8 @@ DescheduleOut:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].Out.Address = CReg;
                                         Link[TheLink(BReg)].Out.Length  = AReg;
-                                        DOSTAT(Link[TheLink(BReg)].Out.IOBytes += AReg);
+                                        if (profiling)
+                                                Link[TheLink(BReg)].Out.IOBytes += AReg;
                                         deschedule ();
                                 }
 			   }
@@ -1991,7 +1984,8 @@ DescheduleOut:
 			   schedule (temp | ProcPriority);
 			   break;
 		case 0x0e: /* outbyte     */
-                           DOSTAT(OutBytes++);
+                           if (profiling)
+                                profile[PRO_CHANOUT]++;
                            if (msgdebug || emudebug)
 			        printf ("-I-EMUDBG: outbyte: Channel=#%08X.\n", BReg);
 			   IPtr++;
@@ -2004,7 +1998,8 @@ DescheduleOut:
 				writeword (WPtr, AReg);
                                 Link0InDest   = WPtr;
                                 Link0InLength = 1;
-                                DOSTAT(Link[0].In.IOBytes++);
+                                if (profiling)
+                                        Link[0].In.IOBytes++;
                                 deschedule ();
                            }
 			   else if (!IsLinkOut(BReg))
@@ -2066,13 +2061,15 @@ DescheduleOutByte:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].Out.Address = WPtr;
                                         Link[TheLink(BReg)].Out.Length  = 1;
-                                        DOSTAT(Link[TheLink(BReg)].Out.IOBytes++);
+                                        if (profiling)
+                                                Link[TheLink(BReg)].Out.IOBytes++;
                                         deschedule ();
                                 }
 			   }
 			   break;
 		case 0x0f: /* outword     */
-                           DOSTAT(OutBytes += 4);
+                           if (profiling)
+                                profile[PRO_CHANOUT] += 4;
                            if (msgdebug || emudebug)
 			        printf ("-I-EMUDBG: outword(1): Channel=#%08X.\n", BReg);
 			   IPtr++;
@@ -2085,7 +2082,8 @@ DescheduleOutByte:
 				writeword (WPtr, AReg);
                                 Link0InDest   = WPtr;
                                 Link0InLength = 4;
-                                DOSTAT(Link[0].In.IOBytes += 4);
+                                if (profiling)
+                                        Link[0].In.IOBytes += 4;
                                 deschedule ();
                            }
 			   else if (!IsLinkOut(BReg))
@@ -2162,7 +2160,8 @@ DescheduleOutWord:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].Out.Address = WPtr;
                                         Link[TheLink(BReg)].Out.Length  = 4;
-                                        DOSTAT(Link[TheLink(BReg)].Out.IOBytes += 4);
+                                        if (profiling)
+                                                Link[TheLink(BReg)].Out.IOBytes += 4;
                                         deschedule ();
                                 }
 			   }
@@ -3825,7 +3824,7 @@ BadCode:
                         fp_setrounding ("reset", ROUND_N);
 
 		if (profiling)
-			profile[0]++;
+			profile[PRO_INSTR]++;
 
                 /* Halt when Error flag was set */
 		if ((!PrevError && ReadError) &&
@@ -3838,13 +3837,13 @@ BadCode:
                 fp_chkexcept ("mainloop");
 #endif
 	}
-#ifdef T4STATS
-        update_tod (&EndTOD);
-        ElapsedSecs = (EndTOD.tv_sec - StartTOD.tv_sec) * 1000 +
-                      (EndTOD.tv_usec - StartTOD.tv_usec) / 1000;
-        ElapsedSecs /= 1000;
-#endif
-
+        if (profiling)
+        {
+                update_tod (&EndTOD);
+                ElapsedSecs = (EndTOD.tv_sec - StartTOD.tv_sec) * 1000 +
+                              (EndTOD.tv_usec - StartTOD.tv_usec) / 1000;
+                profile[PRO_ELAPSEDMS] = ElapsedSecs;
+        }
 	if (ReadError)
 	{
                 if (ReadHaltOnError)
@@ -3903,7 +3902,6 @@ void schedule (uint32_t wdesc)
         uint32_t wptr, pri;
 	uint32_t temp;
 
-        DOSTAT(Schedules++);
         wptr = GetDescWPtr(wdesc);
 #ifndef NDEBUG
         if (NotProcess_p == wptr)
@@ -4143,7 +4141,7 @@ void start_process (void)
 	timeslice = 0;
 
 	if (profiling)
-		profile[3]++;
+		profile[PRO_STARTP]++;
 }
 
 /* Save the current process and start a new process. */
@@ -4215,7 +4213,7 @@ void D_check (void)
                 SetGotoSNP;
 	}
 	if (profiling)
-		profile[1]++;
+		profile[PRO_DCHECK]++;
 }
 
 /* Interrupt a low priority process.                    */
@@ -4737,6 +4735,7 @@ void add_profile (uint32_t instruction)
         if (instruction > 0x3ff)
         {
                 printf ("-E-EMU414: Error - profile invalid instruction! (%u)", instruction);
+                return;
         }
         instrprof[instruction]++;
 }
@@ -4746,6 +4745,7 @@ void print_profile (void)
         int i;
 	extern FILE *ProfileFile;
 
+        fprintf (ProfileFile, "-----Instruction--------Freq------\n");
 	for (i = 0; i < 0x400; i++)
 	{
                 /* Skip empty counters. */
@@ -4753,10 +4753,10 @@ void print_profile (void)
                         continue;
 
 	        if (i < 0x100)
-                        fprintf (ProfileFile, "  %02X  %-12s executed %9u times.\n", i, mnemonic (i, MostNeg, MostNeg, 1), instrprof[i]);
+                        fprintf (ProfileFile, "  %02X  %-12s     %u\n", i, mnemonic (i, MostNeg, MostNeg, 1), instrprof[i]);
 	        else if (i < 0x300)
-                        fprintf (ProfileFile, "%04X  %-12s executed %9u times.\n", i - 0x100, mnemonic (0xF0, i - 0x100, MostNeg, 1), instrprof[i]);
+                        fprintf (ProfileFile, "%04X  %-12s     %u\n", i - 0x100, mnemonic (0xF0, i - 0x100, MostNeg, 1), instrprof[i]);
                 else
-                        fprintf (ProfileFile, "S%03X  %-12s executed %9u times.\n", i - 0x300,  mnemonic (0xF0, 0xAB, i - 0x300, 1), instrprof[i]);
+                        fprintf (ProfileFile, "S%03X  %-12s     %u\n", i - 0x300,  mnemonic (0xF0, 0xAB, i - 0x300, 1), instrprof[i]);
         }
 }

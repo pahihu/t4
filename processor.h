@@ -115,11 +115,17 @@ typedef struct _LinkIface_ {
 } LinkIface;
 
 extern LinkIface Link[4];
-extern uint64_t InBytes;
-extern uint64_t OutBytes;
-extern uint64_t Schedules;
-extern uint64_t Instructions;
-extern double ElapsedSecs;
+
+extern int profiling;
+extern uint32_t profile[10];
+
+#define PRO_INSTR       0
+#define PRO_DCHECK      1
+#define PRO_ISERVER     2
+#define PRO_STARTP      3
+#define PRO_ELAPSEDMS   4
+#define PRO_CHANIN      5
+#define PRO_CHANOUT     6
 
 /* Link 0 registers. */
 #define Link0OutSource  Link[0].Out.Address

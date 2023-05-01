@@ -729,28 +729,6 @@ int main (int argc, char **argv)
 	/* Now start the emulator. */
 	mainloop ();
 
-#ifdef T4STATS
-        if (verbose)
-        {
-                printf ("\n---Statistics---\n");
-                printf ("   Schedules: %lld\n", Schedules);
-                printf ("Instructions: %lld\n", Instructions);
-                printf ("Elapsed time: %.3fs\n", ElapsedSecs);
-                printf ("        MIPS: %.1f\n", (Instructions / ElapsedSecs) / 1000000);
-                printf ("---Channels---\n");
-                printf ("ChanIn : %s\n", Humanoid (InBytes));
-                printf ("ChanOut: %s\n", Humanoid (OutBytes));
-                for (temp = 0; temp < 4; temp++)
-                {
-                        if (Link[temp].In.IOBytes)
-                                printf ("Lnk%dIn : %s\n", temp, Humanoid (Link[temp].In.IOBytes));
-                        if (Link[temp].Out.IOBytes)
-                                printf ("Lnk%dOut: %s\n", temp, Humanoid (Link[temp].Out.IOBytes));
-                }
-        }
-#endif
-                
-
 #if __profile__
 	/* METROWERKS PROFILER. */
 		ProfilerDump("\pTutorial.prof");
@@ -770,10 +748,23 @@ int main (int argc, char **argv)
 	if (profiling)
 	{
 		/* Print out profile counts. */
-                fprintf (ProfileFile, "\nInstructions           %9u\n", profile[0]);
-                fprintf (ProfileFile, "Descheduling points    %9u\n", profile[1]);
-                fprintf (ProfileFile, "Server calls           %9u\n", profile[2]);
-                fprintf (ProfileFile, "StartProcess calls     %9u\n\n", profile[3]);
+                fprintf (ProfileFile, "-----Statistics-------------------\n");
+                fprintf (ProfileFile, "Instructions           %u\n", profile[PRO_INSTR]);
+                fprintf (ProfileFile, "Elapsed time           %ums\n", profile[PRO_ELAPSEDMS]);
+                fprintf (ProfileFile, "MIPS                   %.1f\n", (profile[PRO_INSTR] / (double)profile[PRO_ELAPSEDMS]) / 1000);
+                fprintf (ProfileFile, "Descheduling points    %u\n", profile[PRO_DCHECK]);
+                fprintf (ProfileFile, "Server calls           %u\n", profile[PRO_ISERVER]);
+                fprintf (ProfileFile, "StartProcess calls     %u\n", profile[PRO_STARTP]);
+                fprintf (ProfileFile, "-----Channels---------------------\n");
+                fprintf (ProfileFile, "ChannelOut             %s\n", Humanoid (profile[PRO_CHANOUT]));
+                fprintf (ProfileFile, "ChannelIn              %s\n", Humanoid (profile[PRO_CHANIN]));
+                for (temp = 0; temp < 4; temp++)
+                {
+                        if (Link[temp].In.IOBytes)
+                                fprintf (ProfileFile, "Link%dIn                %s\n", temp, Humanoid (Link[temp].In.IOBytes));
+                        if (Link[temp].Out.IOBytes)
+                                fprintf (ProfileFile, "Link%dOut               %s\n", temp, Humanoid (Link[temp].Out.IOBytes));
+                }
 
 		print_profile ();
 

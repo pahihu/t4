@@ -1,3 +1,11 @@
+#ifdef T4RELEASE
+#undef EMUDEBUG
+#define NDEBUG          1
+#else
+#define EMUDEBUG        1
+#undef NDEBUG
+#endif
+
 #ifdef NDEBUG
 #define T4DEBUG(x)
 #else

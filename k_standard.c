@@ -107,6 +107,7 @@ double __kernel_standard(double x, double y, int type)
 #endif
 	exc.arg1 = x;
 	exc.arg2 = y;
+        exc.retval = zero;
 	switch(type) {
 	    case 1:
 		/* acos(|x|>1) */

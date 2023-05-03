@@ -68,6 +68,7 @@
 #endif
 
 #include <time.h>
+#include "t4debug.h"
 #include "processor.h"
 #include "server.h"
 
@@ -218,6 +219,7 @@ FILE* ToFile (unsigned int i)
         return Files[i].fd;
 }
 
+#ifdef EMUDEBUG
 static
 char *msgtag (unsigned char tag)
 {
@@ -228,6 +230,7 @@ char *msgtag (unsigned char tag)
         sprintf (msg, "MSG%d", tag);
         return msg;
 }
+#endif
 
 
 /* XXX support ALT construction on Link0 */
@@ -259,12 +262,10 @@ int server (void)
 		/* Still copying boot file to link. */
 		boottemp = (16*1024) - FromServerLen;
 
-                if (emudebug)
-		        printf ("-I-EMUSRV: BootTemp = %d.", boottemp);
+		EMUDBG2 ("-I-EMUSRV: BootTemp = %d.", boottemp);
 		bootlen  = fread ((char *) &(FromServerBuffer[FromServerLen]), 1, boottemp, CopyIn);
 		FromServerLen = FromServerLen + bootlen;
-                if (emudebug)
-		        printf (" Loaded %d bytes.\n", bootlen);
+		EMUDBG2 (" Loaded %d bytes.\n", bootlen);
 		if ((bootlen < boottemp))
 		{
 			/* Met end of file. */
@@ -274,6 +275,7 @@ int server (void)
 	}
 
         LinkWdesc = word (Link0Out);
+#ifdef EMUDEBUG
         if (msgdebug || emudebug)
         {
                 if (ToServerLen + FromServerLen)
@@ -281,6 +283,7 @@ int server (void)
                 if (NotProcess_p != LinkWdesc)
                         printf ("-I-EMUSRV: linkWdesc = #%08X Link0OutLength = #%x.\n", LinkWdesc, Link0OutLength);
         }
+#endif
 	if ((!usetvs && ((LinkWdesc != NotProcess_p) && Link0OutLength)) ||
             ( usetvs && (Link0InLength == 0)))
 	{
@@ -293,8 +296,7 @@ int server (void)
                         activity++;
                         if (usetvs)
                         {
-                                if (msgdebug || emudebug)
-                                        printf ("-I-EMUSRV: TVS output. Link0OutLength = #%X.\n", Link0OutLength);
+                                MSGDBG2 ("-I-EMUSRV: TVS output. Link0OutLength = #%X.\n", Link0OutLength);
                                 ToServerLen = 0;
 			        for (loop1=0; loop1<Link0OutLength; loop1++)
 			        {
@@ -303,11 +305,13 @@ int server (void)
 				        Link0OutSource++;
                                         ToServerBuffer[ToServerLen++] = data;
 			        }
+#ifdef EMUDEBUG
                                 if (msgdebug)
                                 {
                                         DumpMessage = TRUE;
                                         dump_message ("TVS Output.", ToServerBuffer, ToServerLen);
                                 }
+#endif
                                 ToServerLen = 0;
                         }
                         else
@@ -326,8 +330,7 @@ int server (void)
 			        }
                         }
 
-                        if (msgdebug || emudebug)
-			        printf ("-I-EMUSRV: Satisfied comms request. Rescheduling process #%8X.\n", LinkWdesc);
+			MSGDBG2 ("-I-EMUSRV: Satisfied comms request. Rescheduling process #%8X.\n", LinkWdesc);
 
 			/* Reset Link0Out. */
                         reset_channel (Link0Out);
@@ -367,11 +370,13 @@ int server (void)
 		}
 	}
         LinkWdesc = word (Link0In);
+#ifdef EMUDEBUG
         if (msgdebug || emudebug)
         {
                 if (NotProcess_p != LinkWdesc)
                         printf ("-I-EMUSRV: linkWdesc = #%08X Link0InLength = #%x.\n", LinkWdesc, Link0InLength);
         }
+#endif
 	if (LinkWdesc != NotProcess_p)
 	{
 		/* Can the next byte of outgoing message be transferred? */
@@ -381,18 +386,17 @@ int server (void)
                         activity++;
 			/* Move the requested amount of message. */
 			loop1 = 0;
-                        if (msgdebug || emudebug)
-                                printf ("-I-EMUSRV: FromServerLen = #%X.\n", FromServerLen);
+                        MSGDBG2 ("-I-EMUSRV: FromServerLen = #%X.\n", FromServerLen);
+#ifdef EMUDEBUG
                         dump_message ("Reply.", FromServerBuffer, FromServerLen);
+#endif
                         if (usetvs)
                         {
-                                if (msgdebug || emudebug)
-                                        printf ("-I-EMUSRV: TVS input. Link0InLength = #%X.\n", Link0InLength);
+                                MSGDBG2 ("-I-EMUSRV: TVS input. Link0InLength = #%X.\n", Link0InLength);
 
                                 if (feof (InpFile))
                                 {
-                                        if (msgdebug || emudebug)
-                                                printf ("-I-EMUSRV: EOF on TVS input.\n");
+                                        MSGDBG ("-I-EMUSRV: EOF on TVS input.\n");
                                         quit = TRUE;
                                 }
                                 else
@@ -402,8 +406,7 @@ int server (void)
                                         {
                                                 if (feof (InpFile))
                                                 {
-                                                        if (msgdebug || emudebug)
-                                                                printf ("-I-EMUSRV: EOF during TVS input.\n");
+                                                        MSGDBG ("-I-EMUSRV: EOF during TVS input.\n");
                                                         /* Terminate here. */
                                                         quit = TRUE;
                                                         break;
@@ -417,11 +420,13 @@ int server (void)
                                 }
                                 loop1 = Link0InLength;
 
+#ifdef EMUDEBUG
                                 if (msgdebug)
                                 {
                                         DumpMessage = TRUE;
                                         dump_message ("TVS Input.", FromServerBuffer, FromServerLen);
                                 }
+#endif
                                 FromServerLen = 0;
                         }
                         else
@@ -439,15 +444,13 @@ int server (void)
 				        FromServerBuffer[loop2] = FromServerBuffer[loop2+loop1];
                         }
 
-                        if (msgdebug || emudebug)
-                                printf ("-I-EMUSRV: Link0InLength = #%X, loop = #%X.\n", Link0InLength, loop1);
+                        MSGDBG3 ("-I-EMUSRV: Link0InLength = #%X, loop = #%X.\n", Link0InLength, loop1);
 
 			/* If message request was fully satisfied, reset channel. */
 			Link0InLength = Link0InLength - loop1;
 			if (Link0InLength == 0)
 			{
-                                if (msgdebug || emudebug)
-				        printf ("-I-EMUSRV: Comms request satisfied. Reschedule process #%8X.\n", LinkWdesc);
+				MSGDBG2 ("-I-EMUSRV: Comms request satisfied. Reschedule process #%8X.\n", LinkWdesc);
 
 				/* Reset channel. */
                                 reset_channel (Link0In);
@@ -459,8 +462,7 @@ int server (void)
 		}
                 else
                 {
-                        if (msgdebug || emudebug)
-			        printf ("-I-EMUSRV: Link0In ALT test. LinkWdesc=#%8X.\n", LinkWdesc);
+			MSGDBG2 ("-I-EMUSRV: Link0In ALT test. LinkWdesc=#%8X.\n", LinkWdesc);
                         alt_channel (&Link[0].In);
                 }
 	}
@@ -472,6 +474,7 @@ int printable (int ch)
         return (31 < ch) && (ch < 127) ? ch : '.';
 }
 
+#ifdef EMUDEBUG
 void dump_message (char *msg, unsigned char *buffer, int len)
 {
         int temp, i;
@@ -505,6 +508,7 @@ void dump_message (char *msg, unsigned char *buffer, int len)
 
         DumpMessage = FALSE;
 }
+#endif
 
 void message(void)
 {
@@ -517,14 +521,15 @@ void message(void)
 	check_input();
 #endif
 
-        if (msgdebug || emudebug)
-	        printf ("-I-EMUSRV: Handling server command. Buffer = %d. Tag = #%02X (%s)\n", ToServerLen, tag, msgtag (tag));
+	MSGDBG4 ("-I-EMUSRV: Handling server command. Buffer = %d. Tag = #%02X (%s)\n", ToServerLen, tag, msgtag (tag));
 
         /* XXX: 1024byte getblock/putblock support */
         /* XXX: correctly respond to non-supported sp function request */
 
         DumpMessage = TRUE;
+#ifdef EMUDEBUG
         dump_message (0, ToServerBuffer, ToServerLen);
+#endif
 
 	switch (tag)
 	{
@@ -679,8 +684,7 @@ void sp_open (void)
 	fd = fopen (filename, string);
 	if (fd == NULL)
 	{       
-                if (emudebug)
-                        printf ("-W-EMUSRV: Failed to open %s!\n",filename);
+                EMUDBG2 ("-W-EMUSRV: Failed to open %s!\n",filename);
 		error_packet ();
 		return;
 	}
@@ -804,11 +808,13 @@ void sp_write (void)
 		        if (ToServerBuffer[pos] == 0x0d)
 			        ToServerBuffer[pos] = 0x00;
 
+#ifdef EMUDEBUG
         if (dbgtrigger && (NULL != strstr ((char *) &ToServerBuffer[9], dbgtrigger)))
         {
                 set_debug ();
                 dbgtrigger = NULL;
         }
+#endif
 
 	length = fwrite ((&ToServerBuffer[9]), 1, datalen, fd);
 
@@ -1350,8 +1356,7 @@ void sp_getenv (void)
 
 	namelen = strlen (string);
 	strncpy ((char *) &FromServerBuffer[5], string, namelen);
-        if (emudebug)
-                printf ("-I-EMUSRV: SP_GETENV - %s=%s\n", name, string);
+        EMUDBG3 ("-I-EMUSRV: SP_GETENV - %s=%s\n", name, string);
 
 	FromServerBuffer[2] = SP_OK;
 
@@ -1468,8 +1473,7 @@ void sp_exit (void)
 	quitstatus = status;
 	quit = TRUE;
 
-        if (emudebug)
-	        printf ("-I-EMUSRV: ********** The server has exited **********\n");
+	EMUDBG ("-I-EMUSRV: ********** The server has exited **********\n");
 }
 
 

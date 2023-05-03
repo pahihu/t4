@@ -894,7 +894,11 @@ int linkcomms (char *where, int doBoot, int timeOut)
         int ndata;
         int i, ret;
         int poll;
+#ifdef EMUDEBUG
         char chnames[128], tmp[16];
+
+        chnames[0] = '\0';
+#endif
 
         if (nodeid < 0)
                 return 0;
@@ -902,7 +906,6 @@ int linkcomms (char *where, int doBoot, int timeOut)
         MSGDBG2 ("-I-EMUDBG: Link comms %s.\n", where);
         npfd = 0;
         poll = TRUE;
-        chnames[0] = '\0';
         for (i = 0; i < 4; i++)
         {
                 if ((0 == i) && serve) /* skip Host link */
@@ -1438,6 +1441,7 @@ void init_processor (void)
 #define FLAG(x,y)       ((x) ? (y) : '-')
 
 
+#ifdef EMUDEBUG
 void checkWPtr (char *where, uint32_t wptr)
 {
         if (wptr & ByteSelectMask)
@@ -1466,6 +1470,7 @@ void checkWordAligned (char *where, uint32_t ptr)
                 }
         }
 }
+#endif
 
 static struct timeval StartTOD, EndTOD;
 double ElapsedSecs;
@@ -1479,8 +1484,9 @@ void mainloop (void)
         fpreal32_t sntemp1, sntemp2;
         fpreal64_t dbtemp1, dbtemp2;
         REAL       fptemp;
-        fpreal32_t r32temp;
 
+#ifdef EMUDEBUG
+        fpreal32_t r32temp;
         int   printIPtr, instrBytes;
         int   asmLines;
         int   currFPInstr, prevFPInstr;
@@ -1490,6 +1496,7 @@ void mainloop (void)
         prevFPInstr = FALSE;
         instrBytes  = 0;
         asmLines    = 0;
+#endif
         m2dSourceStride = m2dDestStride = m2dLength = Undefined_p;
 
 	count1 = 0;
@@ -1508,6 +1515,8 @@ void mainloop (void)
                 otherWdesc = otherWPtr = otherPtr = altState = Undefined_p;
                 dbtemp1 = dbtemp2 = DUndefined;
                 sntemp1 = sntemp2 = RUndefined;
+#endif
+#ifdef EMUDEBUG
                 r32temp = RUndefined;
 #endif
                 /* Save current value of Error flag */

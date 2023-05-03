@@ -43,6 +43,7 @@
 #include <io.h>
 #include <fcntl.h>
 #endif
+#include "t4debug.h"
 #include "processor.h"
 #include "netcfg.h"
 
@@ -82,12 +83,14 @@ int nodeid      = -1;
 
 int membits     = 0;
 
+#ifdef EMUDEBUG
 int tracing     = 0;
 int emudebug    = FALSE;
 int memdebug    = FALSE;
 int memnotinit  = FALSE;
 int msgdebug    = FALSE;
 char *dbgtrigger = NULL;
+#endif
 int usetvs      = FALSE;
 int shlinks     = FALSE;
 
@@ -139,12 +142,14 @@ int isswopt(int c)
         return (c == '-') || (c == '/');
 }
 
+#ifdef EMUDEBUG
 void set_debug (void)
 {
         emudebug = (tracing & 1) ? TRUE : FALSE;
         msgdebug = (tracing & 2) ? TRUE : FALSE;
         memdebug = (tracing & 4) ? TRUE : FALSE;
 }
+#endif
 
 const char* Humanoid (uint64_t bytes)
 {
@@ -187,7 +192,9 @@ int main (int argc, char **argv)
 	_set_fmode (_O_BINARY);
 #endif	
 
+#ifdef EMUDEBUG
         msgdebug = NULL != getenv ("MSGDEBUG");
+#endif
         CopyIn = InpFile = OutFile = (FILE *) NULL;
         for (temp = 0; temp < 4; temp++)
         {
@@ -216,15 +223,19 @@ int main (int argc, char **argv)
                 printf("Extra options:\n");
                 printf("    -s4                  Select T414 mode. (default)\n");
                 printf("    -s8                  Select T800 mode.\n");
+#ifndef NDEBUG
                 printf("    -sg                  Halt on uninitialized memory read.\n");
+#endif
                 printf("    -sl                  Links in shared memory.\n");
                 printf("    -sm #bits            Memory size in address bits (default 21, 2Mbyte).\n");
                 printf("    -sn id               Node ID.\n");
                 printf("    -su                  Instruction profiling.\n");
                 printf("    -sv inp.tbo inp.bin out.bin\n");
                 printf("                         Select Mike's TVS: T800 + T414 FP support.\n");
+#ifdef EMUDEBUG
                 printf("    -sw \"string\"         Trigger execution trace on SP_WRITE (string).\n");
                 printf("    -sx [number]         Execution trace (4 - mem ld/st, 2 - iserver, 1 - instructions).\n");
+#endif
 		printf("\n");
 		handler (-1);
 	}
@@ -326,6 +337,7 @@ int main (int argc, char **argv)
 					  }
 					  else exitonerror=true;
 					  break;
+#ifndef NDEBUG
 				case 'g': if (argv[arg][3]!='\0')
 					  {
 						strcat (CommandLineMost, argv[arg]);
@@ -333,6 +345,7 @@ int main (int argc, char **argv)
 					  }
 					  else memnotinit=true;
 					  break;
+#endif
 				case 'i': if (argv[arg][3]!='\0')
 					  {
 						strcat (CommandLineMost, argv[arg]);
@@ -466,6 +479,7 @@ int main (int argc, char **argv)
                                                 ExtMemStart = 0x80001000;
 					  }
 					  break;
+#ifdef EMUDEBUG
 				case 'w': if (argv[arg][3]!='\0')
 					  {
 						strcat (CommandLineMost, argv[arg]);
@@ -507,6 +521,7 @@ int main (int argc, char **argv)
 						}
 					  }
 					  break;
+#endif
 				default : strcat(CommandLineMost, argv[arg]);
 					  strcat (CommandLineMost, " ");
 					  break;
@@ -549,10 +564,10 @@ int main (int argc, char **argv)
 		exit (-1);
 	}
 
+#ifdef EMUDEBUG
         if (tracing && (dbgtrigger == NULL))
                 set_debug ();
 
-#ifdef EMUDEBUG
         if (emudebug)
         {
 	        printf("Most command line is : %s\n", CommandLineMost);

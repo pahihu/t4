@@ -48,6 +48,8 @@ povray/
         POV-Ray 1.0, pictures.zip contains the generated level1/2/3 pictures,
         povsrc/build contains the povray.btl file configured for 3x5 pipeline.
         
+comstime2k/
+        Peter Welch's COMSTIME benchmark ca. 2000. PAR/SEQ version.
 
 
 

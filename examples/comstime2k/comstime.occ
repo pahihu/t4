@@ -1,0 +1,137 @@
+-- comstime.occ file from the latest KRoC/Linux/PC release
+-- 16 Nov 2000
+-- P.H.Welch
+
+-- 3 May 2023, modified to use hostio.lib
+
+#INCLUDE "hostio.inc"
+#INCLUDE "streamio.inc"
+
+#USE "hostio.lib"
+#USE "streamio.lib"
+#USE "demo_cycles"
+
+--{{{  PROC seq.delta (CHAN OF INT in, out.0, out.1)
+PROC seq.delta (CHAN OF INT in, out.0, out.1)
+  WHILE TRUE
+    INT n:
+    SEQ
+      in ? n
+      out.0 ! n
+      out.1 ! n
+:
+--}}}
+
+--{{{  PROC consume (VAL INT n.loops, CHAN OF INT in, CHAN OF SP fs, ts)
+PROC consume (VAL INT n.loops, VAL INT n.start.process, CHAN OF INT in, CHAN OF SP fs, ts)
+  TIMER tim:
+  INT t0, t1:
+  INT value:
+  SEQ
+    --{{{  warm-up loop
+    VAL INT warm.up IS 16:
+    SEQ i = 0 FOR warm.up
+      in ? value
+    --}}}
+    WHILE TRUE
+      SEQ
+        tim ? t0
+        --{{{  bench-mark loop
+        SEQ i = 0 FOR n.loops
+          in ? value
+        --}}}
+        tim ? t1
+        --{{{  report
+        VAL INT microsecs IS 16 * (t1 MINUS t0):
+        VAL INT nanosecs IS 1000 * microsecs:
+        VAL INT n.kloops IS n.loops / 1000:
+        SEQ
+          so.write.string (fs, ts, "Last value received = ")
+          so.write.int (fs, ts, value, 0)
+          so.write.string (fs, ts, "*c*n")
+          so.write.string (fs, ts, "Time = ")
+          so.write.int (fs, ts, microsecs, 0)
+          so.write.string (fs, ts, " microsecs*c*n")
+          so.write.string (fs, ts, "Time per loop = ")
+          -- so.write.int (fs, ts, INT (nanosecs/n.loops), 0)
+          so.write.int (fs, ts, INT (microsecs/n.kloops), 0)
+          so.write.string (fs, ts, " nanosecs*c*n")
+          so.write.string (fs, ts, "Context switch = ")
+          -- so.write.int (fs, ts, INT ((nanosecs/n.loops)/n.start.process), 0)
+          so.write.int (fs, ts, INT ((microsecs/n.kloops)/n.start.process), 0)
+          so.write.string (fs, ts, " nanosecs*c*n*n")
+          so.exit (fs, ts, sps.success)
+        --}}}
+:
+--}}}
+
+--{{{  PROC comms.time (CHAN OF SP fs, ts)
+PROC comms.time (CHAN OF SP fs, ts)
+
+  BOOL use.seq.delta, selected :
+  INT digit :
+  BYTE in.key, result :
+  VAL INT n.start.process.seq IS 4:
+  VAL INT n.start.process.par IS 5:
+  INT n.start.process:
+
+  SEQ
+
+    --{{{  announce
+    SEQ
+      so.write.string (fs, ts, "*c*nCommstime in occam ...*c*n*n")
+      so.write.string (fs, ts, "Using the SEQ-output version of the delta process*c*n")
+      so.write.string (fs, ts, "yields a more accurate measure of context-switch time*c*n*n")
+      so.write.string (fs, ts, "Using the PAR-output version carries an extra overhead*c*n")
+      so.write.string (fs, ts, "of one process startup/shutdown per Commstime loop*c*n*n")
+      so.write.string (fs, ts, "By comparing **loop** times between the SEQ and PAR versions,*c*n")
+      so.write.string (fs, ts, "the process startup/shutdown overhead may be deduced*c*n*n")
+    --}}}
+
+    so.write.string (fs, ts, "          Type of delta?*c*n")
+    so.write.string (fs, ts, "    ========================*c*n*n")
+    so.write.string (fs, ts, "          <1> Sequential*c*n")
+    so.write.string (fs, ts, "          <2> Parallel*c*n*n")
+
+    so.write.string (fs, ts, "Your selection ")
+
+    WHILE NOT (selected)
+      SEQ
+        so.getkey (fs, ts, in.key, result)
+        IF
+          (result = spr.ok)
+            SEQ
+              IF
+                ((in.key >= '1') AND (in.key <= '2'))
+                  SEQ
+                    digit := (INT in.key) - (INT '0')
+                    use.seq.delta := 1 = digit
+                    so.write.int (fs, ts, digit, 1)
+                    so.write.nl (fs, ts)
+                    selected := TRUE
+                TRUE
+                  SKIP
+          TRUE
+            SKIP
+
+    IF
+      use.seq.delta
+        n.start.process := n.start.process.seq
+      TRUE
+        n.start.process := n.start.process.par
+
+    so.write.string (fs, ts, "*nCommstime starting ...*c*n*n")
+
+    CHAN OF INT a, b, c, d:
+    PAR
+      prefix (0, b, a)
+      IF
+        use.seq.delta
+          seq.delta (a, c, d)    -- the one defined above
+        TRUE
+          delta (a, c, d)        -- the one that does a parallel output
+      succ (c, b)
+      consume (1000000, n.start.process, d, fs, ts)
+
+:
+--}}}

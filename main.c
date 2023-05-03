@@ -238,8 +238,10 @@ int main (int argc, char **argv)
 		if (arg>0) strcat(CommandLineAll, " ");
 		strcat(CommandLineAll, argv[arg]);
 	}
+#ifdef EMUDEBUG
         if (emudebug)
-	  printf("\nFull command line is : %s\n", CommandLineAll);
+	        printf ("\nFull command line is : %s\n", CommandLineAll);
+#endif
 
 	for (arg=1;arg<argc;arg++)
 	{
@@ -550,12 +552,14 @@ int main (int argc, char **argv)
         if (tracing && (dbgtrigger == NULL))
                 set_debug ();
 
+#ifdef EMUDEBUG
         if (emudebug)
         {
 	        printf("Most command line is : %s\n", CommandLineMost);
 	        printf("T%d (%d/%dKB); analyse %d; copy %d; exit %d; verbose %d; reset %d; peek %d; serve %d; node %d\n",
                         Txxx,CoreSize/1024,MemSize/1024,analyse,copy,exitonerror,verbose,reset,peeksize,serve,nodeid);
         }
+#endif
 
 	/* Initialise profiling array. */
 	for (temp=0; temp<10; temp++)

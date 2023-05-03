@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <fenv.h>
+#include "t4debug.h"
 #include "arithmetic.h"
 #include "fparithmetic.h"
 
@@ -249,8 +250,7 @@ void fp_setrounding (const char *where, int mode)
         }
         
         RoundingMode = mode;
-        if (emudebug)
-                printf ("-I-EMUFPU: RoundingMode set to '%c' (%s).\n", RMODE[mode - 1], where);
+        EMUDBG3 ("-I-EMUFPU: RoundingMode set to '%c' (%s).\n", RMODE[mode - 1], where);
 
         rc = fesetround (fpu_mode);
         if (rc != 0)

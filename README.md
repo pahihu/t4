@@ -97,27 +97,29 @@ pahihu,  05 / 04 / 2023
 
 Performance
 ===========
-Mike Bruestle's [INMOS occam raytracer](https://bitbucket.org/transputer/raytracer/src/master) performance on a 16 processor Linux virtual machine.
+The original [INMOS occam raytracer](https://github.com/pahihu/t4/tree/master/examples/raytracer) performance on a 16 processor Linux virtual machine.
 
 Values are in seconds.
 
 |Workers|Type|Mod1|Mod2|Mod3|Mod4|Notes|
 |--|--|--|--|--|--|--|
-|16|T800/2MB|7.9|9.0|2.4|1.6|16x T4 emulator with SHM links
-|8|T800/2MB|15.0|16.5|4.5|3.2|8x T4 emulator with SHM links
-|4|T800/2MB|29.9|32.0|8.4|6.3|4x T4 emulator with SHM links
-|2|T800/2MB|55.7|61.0|16.2|11.9|2x T4 emulator with SHM links
-|1|T800/2MB|109.4|119.5|31.8|23.3|1x T4 emulator
+|16|T800/2MB|5.7|6.4|2.7|2.8|16x T4 emulator with SHM links
+|8|T800/2MB|9.6|10.6|3.5|2.8|8x T4 emulator with SHM links
+|4|T800/2MB|19.7|21.4|6.0|4.5|4x T4 emulator with SHM links
+|2|T800/2MB|35.7|38.3|11.1|8.3|2x T4 emulator with SHM links
+|1|T800/2MB|69.8|76.7|22.0|16.1|1x T4 emulator
+
+
 
 Performance of the system compared on Model2 as in [Exploiting concurrency: a ray tracing example](http://transputer.net/tn/07/tn07.html#x1-100004).
 
 |transputers|speed|relative speed|linearity|
 |--|--|--|--|
-|1|548.4|1.00|100.0|
-|2|1074.4|1.96|98.0|
-|4|2048.0|3.73|93.4|
-|8|3971.9|7.24|90.5|
-|16|7281.8|13.28|83.0|
+|1|854.4|1.00|100.0|
+|2|1711.1|2.00|100.1|
+|4|3062.4|3.58|89.6|
+|8|6182.6|7.24|90.4|
+|16|10240.0|11.98|74.9|
 
 
 

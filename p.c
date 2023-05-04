@@ -272,6 +272,8 @@ extern int emudebug;
 extern int memdebug;
 extern int memnotinit;
 extern int msgdebug;
+extern int cachedebug;
+extern int useicache;
 extern char NetConfigName[256];
 
 LinkIface Link[4];
@@ -286,6 +288,33 @@ uint32_t instrprof[0x400];
         #100 - #2FF     secondary instr. OReg
         #300 - #3FF     fpentry
 */
+
+typedef struct _DecoInstr {
+  uint32_t IPtr;
+  uint32_t NextIPtr;
+  uint32_t OReg;
+  unsigned char Icode;
+  unsigned char Instruction;
+} DecodedInstr;
+
+#define IC_NOADDR       0xDEADBEEFU
+#define MAX_ICACHE      16384
+/* #define IHASH(x)        ((0xDEADBEEFU^(x))&(MAX_ICACHE-1)) */
+#define IHASH(x)        ((x)&(MAX_ICACHE-1))
+DecodedInstr Icache[MAX_ICACHE];
+#define INVADDR(adr) \
+{ \
+        uint32_t a = adr; \
+        uint32_t x; \
+        if ((a) == Icache[x = IHASH(a)].IPtr) \
+                Icache[x].IPtr = IC_NOADDR; \
+}
+#define INVRANGE(a,n) \
+{ \
+        int i; \
+        for (i = 0; i < (n); i++) \
+                INVADDR((a)++); \
+}
 
 /* Support functions. */
 
@@ -727,6 +756,8 @@ int channel_recvmemP (Channel *chan, unsigned char *data, int doMemWrite, int do
         {
                 if (buf == data)
                         writebytes_int (chan->Address, data, ret);
+                else if (useicache)
+                        INVRANGE(chan->Address, ret);
                 chan->Address += ret; chan->Length -= ret;
         }
         return ret;
@@ -1396,6 +1427,9 @@ void init_processor (void)
 {
         int i;
 
+        for (i = 0; i < MAX_ICACHE; i++)
+                Icache[i].IPtr = IC_NOADDR;
+
         SharedLinks = NULL;
 
         /* M.Bruestle 15.2.2012 */
@@ -1475,6 +1509,7 @@ void checkWordAligned (char *where, uint32_t ptr)
 static struct timeval StartTOD, EndTOD;
 double ElapsedSecs;
 
+
 void mainloop (void)
 {
         uint32_t temp, temp2;
@@ -1484,6 +1519,7 @@ void mainloop (void)
         fpreal32_t sntemp1, sntemp2;
         fpreal64_t dbtemp1, dbtemp2;
         REAL       fptemp;
+        unsigned short x;
 
 #ifdef EMUDEBUG
         fpreal32_t r32temp;
@@ -1532,11 +1568,72 @@ void mainloop (void)
 		/* Execute an instruction. */
         ResetRounding = FALSE;
 
-	Instruction = byte_int (IPtr);
-	Icode = Instruction & 0xf0;
-	Idata = Instruction & 0x0f;
-	OReg  = OReg | Idata;
+        if (useicache && (IPtr == Icache[x = IHASH(IPtr)].IPtr))
+        {
+                if (profiling)
+                        profile[PRO_ICHIT]++;
 
+                Instruction = Icache[x].Instruction;
+                Icode = Icache[x].Icode;
+                OReg  = Icache[x].OReg;
+                IPtr  = Icache[x].NextIPtr;
+
+#ifdef EMUDEBUG
+                if (cachedebug)
+                        printf ("-I-EMU414: Icache hit @ #%08X Icode = #%02X OReg = #%08X\n",
+                                IPtr, Icode, OReg);
+#endif
+        }
+        else
+        {
+                if (profiling)
+                        profile[PRO_ICMISS]++;
+
+                x = IHASH(IPtr);
+                Icache[x].IPtr = IPtr;
+#ifdef EMUDEBUG
+                if (cachedebug)
+                        printf ("-I-EMU414: Icache miss @ #%08X\n", IPtr);
+#endif
+
+FetchNext:      Instruction = byte_int (IPtr);
+	        Icode = Instruction & 0xf0;
+	        Idata = Instruction & 0x0f;
+	        OReg  = OReg | Idata;
+
+                if (!useicache)
+                        goto ExecuteInstr;
+
+#ifdef EMUDEBUG
+                if (cachedebug)
+                        printf ("-I-EMU414: Fetched @ #%08X Icode = #%02X Idata = #%02X OReg = #%08X\n",
+                                        IPtr, Icode, Idata, OReg);
+#endif
+
+                if (0x20 == Icode)
+                {
+		        OReg = OReg << 4;
+			IPtr++;
+                        goto FetchNext;
+                }
+                else if (0x60 == Icode)
+                {
+			OReg = (~OReg) << 4;
+			IPtr++;
+                        goto FetchNext;
+                }
+                Icache[x].Icode = Icode;
+                Icache[x].OReg  = OReg;
+                Icache[x].Instruction = Instruction;
+                Icache[x].NextIPtr = IPtr;
+
+#ifdef EMUDEBUG
+                if (cachedebug)
+                        printf ("-I-EMU414: Cached Icode = #%02X OReg = #%08X\n", Icode, OReg);
+#endif
+        }
+
+ExecuteInstr:
         /* Disable interrupts on PFIX or NFIX. */
         IntEnabled = IntEnabled && ((Icode != 0x20) && (Icode != 0x60));
 
@@ -4454,7 +4551,6 @@ uint32_t word (uint32_t ptr)
 /* Write a word to memory. */
 void writeword_int (uint32_t ptr, uint32_t value)
 {
-
 #if BYTE_ORDER==1234
 #ifndef _MSC_VER
 #warning Using little-endian access!
@@ -4466,6 +4562,9 @@ void writeword_int (uint32_t ptr, uint32_t value)
         else
                 wptr = (uint32_t *) (mem + (MemWordMask & ptr));
         *wptr = value;
+
+        if (useicache)
+                INVRANGE(ptr,4);
 #else
 	unsigned char val[4];
 
@@ -4540,6 +4639,9 @@ INLINE void writebyte_int (uint32_t ptr, unsigned char value)
                 core[(ptr & MemByteMask)] = value;
         else
 	        mem[(ptr & MemByteMask)] = value;
+
+        if (useicache)
+                INVADDR(ptr);
 }
 
 /* Return pointer to memory or data[] */
@@ -4568,11 +4670,15 @@ INLINE void writebytes_int (uint32_t ptr, unsigned char *data, uint32_t len)
         {
                 dst = core + (ptr & MemByteMask);
                 memcpy (dst, data, len);
+                if (useicache)
+                        INVRANGE(ptr,len);
         }
         else if (ExtMemAddr(ptr))
         {
                 dst = mem + (ptr & MemByteMask);
                 memcpy (dst, data, len);
+                if (useicache)
+                        INVRANGE(ptr,len);
         }
         else
         {
@@ -4593,12 +4699,16 @@ INLINE void movebytes_int (uint32_t dst, uint32_t src, uint32_t len)
                 p = core + (dst & MemByteMask);
                 q = core + (src & MemByteMask);
                 memmove (p, q, len);
+                if (useicache)
+                        INVRANGE(dst,len);
         }
         else if (ExtMemAddr(src) && ExtMemAddr(dst))
         {
                 p = mem + (dst & MemByteMask);
                 q = mem + (src & MemByteMask);
                 memmove (p, q, len);
+                if (useicache)
+                        INVRANGE(dst,len);
         }
         else
         {

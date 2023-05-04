@@ -126,6 +126,8 @@ extern uint32_t profile[10];
 #define PRO_ELAPSEDMS   4
 #define PRO_CHANIN      5
 #define PRO_CHANOUT     6
+#define PRO_ICHIT       7
+#define PRO_ICMISS      8
 
 /* Link 0 registers. */
 #define Link0OutSource  Link[0].Out.Address

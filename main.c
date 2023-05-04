@@ -89,10 +89,12 @@ int emudebug    = FALSE;
 int memdebug    = FALSE;
 int memnotinit  = FALSE;
 int msgdebug    = FALSE;
+int cachedebug  = FALSE;
 char *dbgtrigger = NULL;
 #endif
 int usetvs      = FALSE;
 int shlinks     = FALSE;
+int useicache   = TRUE;
 
 extern int32_t quit;
 extern int32_t quitstatus;
@@ -100,6 +102,7 @@ extern int32_t quitstatus;
 char CommandLineAll[256]  = "\0";
 char CommandLineMost[256] = "\0";
 char NetConfigName[256] = "\0";
+char ProfileName[256] = "\0";
 
 FILE *CopyIn;
 FILE *InpFile, *OutFile;
@@ -148,6 +151,8 @@ void set_debug (void)
         emudebug = (tracing & 1) ? TRUE : FALSE;
         msgdebug = (tracing & 2) ? TRUE : FALSE;
         memdebug = (tracing & 4) ? TRUE : FALSE;
+        cachedebug = (tracing & 8) ? TRUE : FALSE;
+        useicache = (tracing & 16) ? TRUE : FALSE;
 }
 #endif
 
@@ -731,9 +736,12 @@ int main (int argc, char **argv)
 	if (profiling)
 	{
 		/* Open profiling file. */
-		if ((ProfileFile = fopen("profile", "w"))==NULL)
+                strcpy (ProfileName, "profile");
+                if (nodeid >= 0)
+                        sprintf (ProfileName, "profile.%d", nodeid);
+		if ((ProfileFile = fopen(ProfileName, "w"))==NULL)
 		{
-			printf("Failed to open profile file!\n");
+			printf("Failed to open %s file!\n", ProfileName);
 			handler (-1);
 		}
 	}
@@ -771,6 +779,8 @@ int main (int argc, char **argv)
                 fprintf (ProfileFile, "Instructions           %u\n", profile[PRO_INSTR]);
                 fprintf (ProfileFile, "Elapsed time           %ums\n", profile[PRO_ELAPSEDMS]);
                 fprintf (ProfileFile, "MIPS                   %.1f\n", (profile[PRO_INSTR] / (double)profile[PRO_ELAPSEDMS]) / 1000);
+                fprintf (ProfileFile, "Cache Miss/Hit         %u/%u\n", profile[PRO_ICMISS], profile[PRO_ICHIT]);
+                fprintf (ProfileFile, "Cache Hit Rate         %.1f\n", 100.0 * profile[PRO_ICHIT] / (double)profile[PRO_INSTR]);
                 fprintf (ProfileFile, "Descheduling points    %u\n", profile[PRO_DCHECK]);
                 fprintf (ProfileFile, "Server calls           %u\n", profile[PRO_ISERVER]);
                 fprintf (ProfileFile, "StartProcess calls     %u\n", profile[PRO_STARTP]);

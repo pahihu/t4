@@ -302,18 +302,18 @@ typedef struct _DecoInstr {
 /* #define IHASH(x)        ((0xDEADBEEFU^(x))&(MAX_ICACHE-1)) */
 #define IHASH(x)        ((x)&(MAX_ICACHE-1))
 DecodedInstr Icache[MAX_ICACHE];
-#define INVADDR(adr) \
-{ \
-        uint32_t a = adr; \
-        uint32_t x; \
-        if ((a) == Icache[x = IHASH(a)].IPtr) \
-                Icache[x].IPtr = IC_NOADDR; \
+static void InvalidateAddr(uint32_t a)
+{
+        uint32_t x;
+        if (a == Icache[x = IHASH(a)].IPtr)
+                Icache[x].IPtr = IC_NOADDR;
 }
-#define INVRANGE(a,n) \
-{ \
-        int i; \
-        for (i = 0; i < (n); i++) \
-                INVADDR((a)++); \
+
+static void InvalidateRange(uint32_t a, uint32_t n)
+{
+        int i;
+        for (i = 0; i < n; i++)
+                InvalidateAddr(a++);
 }
 
 /* Support functions. */
@@ -757,7 +757,7 @@ int channel_recvmemP (Channel *chan, unsigned char *data, int doMemWrite, int do
                 if (buf == data)
                         writebytes_int (chan->Address, data, ret);
                 else if (useicache)
-                        INVRANGE(chan->Address, ret);
+                        InvalidateRange(chan->Address, ret);
                 chan->Address += ret; chan->Length -= ret;
         }
         return ret;
@@ -4564,7 +4564,7 @@ void writeword_int (uint32_t ptr, uint32_t value)
         *wptr = value;
 
         if (useicache)
-                INVRANGE(ptr,4);
+                InvalidateRange(ptr,4);
 #else
 	unsigned char val[4];
 
@@ -4641,7 +4641,7 @@ INLINE void writebyte_int (uint32_t ptr, unsigned char value)
 	        mem[(ptr & MemByteMask)] = value;
 
         if (useicache)
-                INVADDR(ptr);
+                InvalidateAddr(ptr);
 }
 
 /* Return pointer to memory or data[] */
@@ -4671,14 +4671,14 @@ INLINE void writebytes_int (uint32_t ptr, unsigned char *data, uint32_t len)
                 dst = core + (ptr & MemByteMask);
                 memcpy (dst, data, len);
                 if (useicache)
-                        INVRANGE(ptr,len);
+                        InvalidateRange(ptr,len);
         }
         else if (ExtMemAddr(ptr))
         {
                 dst = mem + (ptr & MemByteMask);
                 memcpy (dst, data, len);
                 if (useicache)
-                        INVRANGE(ptr,len);
+                        InvalidateRange(ptr,len);
         }
         else
         {
@@ -4700,7 +4700,7 @@ INLINE void movebytes_int (uint32_t dst, uint32_t src, uint32_t len)
                 q = core + (src & MemByteMask);
                 memmove (p, q, len);
                 if (useicache)
-                        INVRANGE(dst,len);
+                        InvalidateRange(dst,len);
         }
         else if (ExtMemAddr(src) && ExtMemAddr(dst))
         {
@@ -4708,7 +4708,7 @@ INLINE void movebytes_int (uint32_t dst, uint32_t src, uint32_t len)
                 q = mem + (src & MemByteMask);
                 memmove (p, q, len);
                 if (useicache)
-                        INVRANGE(dst,len);
+                        InvalidateRange(dst,len);
         }
         else
         {

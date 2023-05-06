@@ -94,7 +94,6 @@ char *dbgtrigger = NULL;
 #endif
 int usetvs      = FALSE;
 int shlinks     = FALSE;
-int useicache   = TRUE;
 
 extern int32_t quit;
 extern int32_t quitstatus;
@@ -152,7 +151,6 @@ void set_debug (void)
         msgdebug = (tracing & 2) ? TRUE : FALSE;
         memdebug = (tracing & 4) ? TRUE : FALSE;
         cachedebug = (tracing & 8) ? TRUE : FALSE;
-        useicache = (tracing & 16) ? TRUE : FALSE;
 }
 #endif
 
@@ -234,12 +232,14 @@ int main (int argc, char **argv)
                 printf("    -sl                  Links in shared memory.\n");
                 printf("    -sm #bits            Memory size in address bits (default 21, 2Mbyte).\n");
                 printf("    -sn id               Node ID.\n");
+#ifdef PROFILE
                 printf("    -su                  Instruction profiling.\n");
+#endif
                 printf("    -sv inp.tbo inp.bin out.bin\n");
                 printf("                         Select Mike's TVS: T800 + T414 FP support.\n");
 #ifdef EMUDEBUG
                 printf("    -sw \"string\"         Trigger execution trace on SP_WRITE (string).\n");
-                printf("    -sx [number]         Execution trace (4 - mem ld/st, 2 - iserver, 1 - instructions).\n");
+                printf("    -sx [number]         Execution trace (8 - cache, 4 - mem ld/st, 2 - iserver, 1 - instructions).\n");
 #endif
 		printf("\n");
 		handler (-1);
@@ -454,6 +454,7 @@ int main (int argc, char **argv)
 					  }
 					  else serve=TRUE;
 					  break;
+#ifdef PROFILE
 				case 'u': if (argv[arg][3]!='\0')
 					  {
 						strcat (CommandLineMost, argv[arg]);
@@ -461,6 +462,7 @@ int main (int argc, char **argv)
 					  }
 					  else profiling=true;
 					  break;
+#endif
                                 case 'v': if (argv[arg][3]!='\0')
 					  {
 						strcat (CommandLineMost, argv[arg]);
@@ -733,6 +735,7 @@ int main (int argc, char **argv)
 #endif
 #endif
 
+#ifdef PROFILE
 	if (profiling)
 	{
 		/* Open profiling file. */
@@ -745,6 +748,7 @@ int main (int argc, char **argv)
 			handler (-1);
 		}
 	}
+#endif
 
 
 #if __profile__
@@ -772,6 +776,7 @@ int main (int argc, char **argv)
 
         close_channels ();
 
+#ifdef PROFILE
 	if (profiling)
 	{
 		/* Print out profile counts. */
@@ -799,6 +804,7 @@ int main (int argc, char **argv)
 
 		fclose (ProfileFile);
 	}
+#endif
 
 #ifdef CURTERM
         prepterm (0);
@@ -831,8 +837,10 @@ void handler (int signal)
 
         fflush (stdout);
 
+#ifdef PROFILE
 	if (profiling)
 		fclose (ProfileFile);
+#endif
 
         if (CopyIn)
                 fclose (CopyIn);

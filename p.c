@@ -273,7 +273,6 @@ extern int memdebug;
 extern int memnotinit;
 extern int msgdebug;
 extern int cachedebug;
-extern int useicache;
 extern char NetConfigName[256];
 
 LinkIface Link[4];
@@ -305,8 +304,8 @@ DecodedInstr Icache[MAX_ICACHE];
 static void InvalidateAddr(uint32_t a)
 {
         uint32_t x;
-        if (a == Icache[x = IHASH(a)].IPtr)
-                Icache[x].IPtr = IC_NOADDR;
+        // if (a == Icache[x = IHASH(a)].IPtr)
+                Icache[IHASH(a)].IPtr = IC_NOADDR;
 }
 
 static void InvalidateRange(uint32_t a, uint32_t n)
@@ -756,7 +755,7 @@ int channel_recvmemP (Channel *chan, unsigned char *data, int doMemWrite, int do
         {
                 if (buf == data)
                         writebytes_int (chan->Address, data, ret);
-                else if (useicache)
+                else
                         InvalidateRange(chan->Address, ret);
                 chan->Address += ret; chan->Length -= ret;
         }
@@ -842,8 +841,10 @@ int Precv_channel (Channel *chan, uint32_t address, uint32_t len)
 
         chan->Address = address;
         chan->Length  = len;
+#ifdef PROFILE
         if (profiling)
                 chan->IOBytes += len;
+#endif
         return channel_recvmemP (chan, data, TRUE, FALSE) < 0;
 }
 
@@ -855,8 +856,10 @@ int Psend_channel (Channel *chan, uint32_t address, uint32_t len)
 
         chan->Address = address;
         chan->Length  = len;
+#ifdef PROFILE
         if (profiling)
                 chan->IOBytes += len;
+#endif
         return channel_sendmemP (chan, FALSE) < 0;
 }
 
@@ -1467,9 +1470,11 @@ void init_processor (void)
 
         /* ErrorFlag is in an indeterminate state on power up. */
 
+#ifdef PROFILE
         if (profiling)
                 for (i = 0; i < 0x400; i++)
                         instrprof[i] = 0;
+#endif
 }
 
 #define FLAG(x,y)       ((x) ? (y) : '-')
@@ -1506,8 +1511,10 @@ void checkWordAligned (char *where, uint32_t ptr)
 }
 #endif
 
+#ifdef PROFILE
 static struct timeval StartTOD, EndTOD;
 double ElapsedSecs;
+#endif
 
 
 void mainloop (void)
@@ -1542,8 +1549,10 @@ void mainloop (void)
 	Timers = TimersStop;
 
 
+#ifdef PROFILE
         if (profiling)
                 update_tod (&StartTOD);
+#endif
 	while (1)
 	{
 #ifndef NDEBUG
@@ -1568,17 +1577,19 @@ void mainloop (void)
 		/* Execute an instruction. */
         ResetRounding = FALSE;
 
-        if (useicache && (IPtr == Icache[x = IHASH(IPtr)].IPtr))
+        if (IPtr == Icache[x = IHASH(IPtr)].IPtr)
         {
+#ifdef PROFILE
                 if (profiling)
                         profile[PRO_ICHIT]++;
+#endif
 
-                Instruction = Icache[x].Instruction;
                 Icode = Icache[x].Icode;
                 OReg  = Icache[x].OReg;
                 IPtr  = Icache[x].NextIPtr;
 
 #ifdef EMUDEBUG
+                Instruction = Icache[x].Instruction;
                 if (cachedebug)
                         printf ("-I-EMU414: Icache hit @ #%08X Icode = #%02X OReg = #%08X\n",
                                 IPtr, Icode, OReg);
@@ -1586,8 +1597,10 @@ void mainloop (void)
         }
         else
         {
+#ifdef PROFILE
                 if (profiling)
                         profile[PRO_ICMISS]++;
+#endif
 
                 x = IHASH(IPtr);
                 Icache[x].IPtr = IPtr;
@@ -1600,9 +1613,6 @@ FetchNext:      Instruction = byte_int (IPtr);
 	        Icode = Instruction & 0xf0;
 	        Idata = Instruction & 0x0f;
 	        OReg  = OReg | Idata;
-
-                if (!useicache)
-                        goto ExecuteInstr;
 
 #ifdef EMUDEBUG
                 if (cachedebug)
@@ -1624,16 +1634,15 @@ FetchNext:      Instruction = byte_int (IPtr);
                 }
                 Icache[x].Icode = Icode;
                 Icache[x].OReg  = OReg;
-                Icache[x].Instruction = Instruction;
                 Icache[x].NextIPtr = IPtr;
 
 #ifdef EMUDEBUG
+                Icache[x].Instruction = Instruction;
                 if (cachedebug)
                         printf ("-I-EMU414: Cached Icode = #%02X OReg = #%08X\n", Icode, OReg);
 #endif
         }
 
-ExecuteInstr:
         /* Disable interrupts on PFIX or NFIX. */
         IntEnabled = IntEnabled && ((Icode != 0x20) && (Icode != 0x60));
 
@@ -1701,8 +1710,10 @@ ExecuteInstr:
         }
 #endif
 
+#ifdef PROFILE
 	if (profiling)
 		add_profile (Icode);
+#endif
 
 	switch (Icode)
 	{
@@ -1826,8 +1837,10 @@ ExecuteInstr:
 
         IntEnabled = TRUE;
 
+#ifdef PROFILE
 	if (profiling)
 		add_profile (0x100 + OReg);
+#endif
 
 	switch (OReg)
 	{
@@ -1894,8 +1907,10 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
                                 MSGDBG ("-W-EMUDBG: Warning - doing IN on Link0Out.\n");
                                 goto OprOut;
                            }
+#ifdef PROFILE
                            if (profiling)
                                 profile[PRO_CHANIN] += AReg;
+#endif
 			   MSGDBG4 ("-I-EMUDBG: in(1): Channel=#%08X, to memory at #%08X, length #%X.\n", BReg, CReg, AReg);
 			   IPtr++;
 			   if (!IsLinkIn(BReg))
@@ -1943,8 +1958,10 @@ DescheduleIn:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].In.Address = CReg;
                                         Link[TheLink(BReg)].In.Length  = AReg;
+#ifdef PROFILE
                                         if (profiling)
                                                 Link[TheLink(BReg)].In.IOBytes += AReg;
+#endif
                                         deschedule ();
                                 }
 			   }
@@ -1977,8 +1994,10 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 MSGDBG ("-W-EMUDBG: Warning - doing OUT on Link0In.\n");
                                 goto OprIn;
                            }
+#ifdef PROFILE
                            if (profiling)
                                 profile[PRO_CHANOUT] += AReg;
+#endif
 			   MSGDBG4 ("-I-EMUDBG: out(1): Channel=#%08X, length #%X, from memory at #%08X.\n", BReg, AReg, CReg);
 			   IPtr++;
 			   if (!IsLinkOut(BReg))
@@ -2050,8 +2069,10 @@ DescheduleOut:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].Out.Address = CReg;
                                         Link[TheLink(BReg)].Out.Length  = AReg;
+#ifdef PROFILE
                                         if (profiling)
                                                 Link[TheLink(BReg)].Out.IOBytes += AReg;
+#endif
                                         deschedule ();
                                 }
 			   }
@@ -2072,8 +2093,10 @@ DescheduleOut:
 			   schedule (temp | ProcPriority);
 			   break;
 		case 0x0e: /* outbyte     */
+#ifdef PROFILE
                            if (profiling)
                                 profile[PRO_CHANOUT]++;
+#endif
 			   MSGDBG2 ("-I-EMUDBG: outbyte: Channel=#%08X.\n", BReg);
 			   IPtr++;
                            if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
@@ -2084,8 +2107,10 @@ DescheduleOut:
 				writeword (WPtr, AReg);
                                 Link0InDest   = WPtr;
                                 Link0InLength = 1;
+#ifdef PROFILE
                                 if (profiling)
                                         Link[0].In.IOBytes++;
+#endif
                                 deschedule ();
                            }
 			   else if (!IsLinkOut(BReg))
@@ -2147,15 +2172,19 @@ DescheduleOutByte:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].Out.Address = WPtr;
                                         Link[TheLink(BReg)].Out.Length  = 1;
+#ifdef PROFILE
                                         if (profiling)
                                                 Link[TheLink(BReg)].Out.IOBytes++;
+#endif
                                         deschedule ();
                                 }
 			   }
 			   break;
 		case 0x0f: /* outword     */
+#ifdef PROFLE
                            if (profiling)
                                 profile[PRO_CHANOUT] += 4;
+#endif
 			   MSGDBG2 ("-I-EMUDBG: outword(1): Channel=#%08X.\n", BReg);
 			   IPtr++;
                            if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
@@ -2166,8 +2195,10 @@ DescheduleOutByte:
 				writeword (WPtr, AReg);
                                 Link0InDest   = WPtr;
                                 Link0InLength = 4;
+#ifdef PROFILE
                                 if (profiling)
                                         Link[0].In.IOBytes += 4;
+#endif
                                 deschedule ();
                            }
 			   else if (!IsLinkOut(BReg))
@@ -2241,8 +2272,10 @@ DescheduleOutWord:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].Out.Address = WPtr;
                                         Link[TheLink(BReg)].Out.Length  = 4;
+#ifdef PROFILE
                                         if (profiling)
                                                 Link[TheLink(BReg)].Out.IOBytes += 4;
+#endif
                                         deschedule ();
                                 }
 			   }
@@ -3708,8 +3741,10 @@ DescheduleOutWord:
                            BReg = CReg;
 		           IPtr++;
 
+#ifdef PROFILE
                            if (profiling)
                                 add_profile (0x300 + temp);
+#endif
 
                            switch (temp) {
 			   case 0x01: /* fpusqrtfirst    */
@@ -3891,8 +3926,10 @@ BadCode:
                 if ((IsT800 || IsTVS) && ResetRounding && (RoundingMode != ROUND_N))
                         fp_setrounding ("reset", ROUND_N);
 
+#ifdef PROFILE
 		if (profiling)
 			profile[PRO_INSTR]++;
+#endif
 
                 /* Halt when Error flag was set */
 		if ((!PrevError && ReadError) &&
@@ -3905,6 +3942,7 @@ BadCode:
                 fp_chkexcept ("mainloop");
 #endif
 	}
+#ifdef PROFILE
         if (profiling)
         {
                 update_tod (&EndTOD);
@@ -3912,6 +3950,7 @@ BadCode:
                               (EndTOD.tv_usec - StartTOD.tv_usec) / 1000;
                 profile[PRO_ELAPSEDMS] = ElapsedSecs;
         }
+#endif
 	if (ReadError)
 	{
                 if (ReadHaltOnError)
@@ -4198,8 +4237,10 @@ void start_process (void)
 	/* Reset timeslice counter. */
 	timeslice = 0;
 
+#ifdef PROFILE
 	if (profiling)
 		profile[PRO_STARTP]++;
+#endif
 }
 
 /* Save the current process and start a new process. */
@@ -4268,8 +4309,10 @@ void D_check (void)
 		/* Set StartNewProcess flag. */
                 SetGotoSNP;
 	}
+#ifdef PROFILE
 	if (profiling)
 		profile[PRO_DCHECK]++;
+#endif
 }
 
 /* Interrupt a low priority process.                    */
@@ -4563,8 +4606,7 @@ void writeword_int (uint32_t ptr, uint32_t value)
                 wptr = (uint32_t *) (mem + (MemWordMask & ptr));
         *wptr = value;
 
-        if (useicache)
-                InvalidateRange(ptr,4);
+        InvalidateRange(ptr,4);
 #else
 	unsigned char val[4];
 
@@ -4640,8 +4682,7 @@ INLINE void writebyte_int (uint32_t ptr, unsigned char value)
         else
 	        mem[(ptr & MemByteMask)] = value;
 
-        if (useicache)
-                InvalidateAddr(ptr);
+        InvalidateAddr(ptr);
 }
 
 /* Return pointer to memory or data[] */
@@ -4670,15 +4711,13 @@ INLINE void writebytes_int (uint32_t ptr, unsigned char *data, uint32_t len)
         {
                 dst = core + (ptr & MemByteMask);
                 memcpy (dst, data, len);
-                if (useicache)
-                        InvalidateRange(ptr,len);
+                InvalidateRange(ptr,len);
         }
         else if (ExtMemAddr(ptr))
         {
                 dst = mem + (ptr & MemByteMask);
                 memcpy (dst, data, len);
-                if (useicache)
-                        InvalidateRange(ptr,len);
+                InvalidateRange(ptr,len);
         }
         else
         {
@@ -4699,16 +4738,14 @@ INLINE void movebytes_int (uint32_t dst, uint32_t src, uint32_t len)
                 p = core + (dst & MemByteMask);
                 q = core + (src & MemByteMask);
                 memmove (p, q, len);
-                if (useicache)
-                        InvalidateRange(dst,len);
+                InvalidateRange(dst,len);
         }
         else if (ExtMemAddr(src) && ExtMemAddr(dst))
         {
                 p = mem + (dst & MemByteMask);
                 q = mem + (src & MemByteMask);
                 memmove (p, q, len);
-                if (useicache)
-                        InvalidateRange(dst,len);
+                InvalidateRange(dst,len);
         }
         else
         {

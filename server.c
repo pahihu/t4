@@ -253,8 +253,10 @@ int server (void)
                 do_init = 0;
         }
 
+#ifdef PROFILE
 	if (profiling)
 		profile[PRO_ISERVER]++;
+#endif
 
         activity = 0;
 	if (copy==TRUE)

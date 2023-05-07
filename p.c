@@ -304,7 +304,7 @@ DecodedInstr Icache[MAX_ICACHE];
 static void InvalidateAddr(uint32_t a)
 {
         uint32_t x;
-        // if (a == Icache[x = IHASH(a)].IPtr)
+        if (a == Icache[x = IHASH(a)].IPtr)
                 Icache[IHASH(a)].IPtr = IC_NOADDR;
 }
 

@@ -175,7 +175,6 @@ uint32_t BPtrReg[2];
 
 uint32_t STATUSReg;             /* Processor flags: GotoSNPBit, HaltOnError, Error */
 
-uint32_t IntEnabled;            /* Interrupt enabled */
 #define ClearInterrupt          writeword (0x8000002C, IdleProcess_p)
 #define ReadInterrupt           (word (0x8000002C) != IdleProcess_p)
 
@@ -486,6 +485,26 @@ void fp_pushsn (fpreal32_t fp)
 
 
 /* Do a binary floating point operation. */
+#ifdef T4RELEASE
+#define fp_dobinary(dbop, snop) \
+{ \
+        fpreal64_t dbtemp1, dbtemp2; \
+        fpreal32_t sntemp1, sntemp2; \
+ \
+        ResetRounding = TRUE; \
+ \
+        if (FP_REAL64 == FAReg.length) \
+        { \
+                fp_pop2db (&dbtemp1, &dbtemp2); \
+                fp_pushdb (dbop (dbtemp1, dbtemp2)); \
+        } \
+        else \
+        { \
+                fp_pop2sn (&sntemp1, &sntemp2); \
+                fp_pushsn (snop (sntemp1, sntemp2)); \
+        } \
+}
+#else
 void fp_dobinary (fpreal64_t (*dbop)(fpreal64_t,fpreal64_t),
                   fpreal32_t (*snop)(fpreal32_t,fpreal32_t))
 {
@@ -513,6 +532,7 @@ void fp_dobinary (fpreal64_t (*dbop)(fpreal64_t,fpreal64_t),
                         break;
         }
 }
+#endif
 
 
 /* Do a binary floating point operation. */
@@ -547,6 +567,26 @@ int fp_binary2word (int (*dbop)(fpreal64_t,fpreal64_t),
 
 
 /* Do an unary floating point operation. */
+#ifdef T4RELEASE
+#define fp_dounary(dbop, snop) \
+{ \
+        fpreal64_t dbtemp; \
+        fpreal32_t sntemp; \
+ \
+        ResetRounding = TRUE; \
+ \
+        if (FP_REAL64 == FAReg.length) \
+        { \
+                fp_popdb (&dbtemp); \
+                fp_pushdb (dbop (dbtemp)); \
+        } \
+        else \
+        { \
+                fp_popsn (&sntemp); \
+                fp_pushsn (snop (sntemp)); \
+        } \
+}
+#else
 void fp_dounary (fpreal64_t (*dbop)(fpreal64_t), fpreal32_t (*snop)(fpreal32_t))
 {
         fpreal64_t dbtemp;
@@ -573,6 +613,7 @@ void fp_dounary (fpreal64_t (*dbop)(fpreal64_t), fpreal32_t (*snop)(fpreal32_t))
                         break;
         }
 }
+#endif
 
 
 struct timeval LastTOD;         /* Time-of-day */
@@ -1452,8 +1493,6 @@ void init_processor (void)
         TPtrLoc[1] = NotProcess_p;
         ClearInterrupt; /* XXX not required ??? */
 
-        IntEnabled = TRUE;
-
         /* Init TOD. */
         LastTOD.tv_sec  = 0;
         LastTOD.tv_usec = 0;
@@ -1644,7 +1683,7 @@ FetchNext:      Instruction = byte_int (IPtr);
         }
 
         /* Disable interrupts on PFIX or NFIX. */
-        IntEnabled = IntEnabled && ((Icode != 0x20) && (Icode != 0x60));
+        /* Using Icache IntEnabled is always TRUE. */
 
 #ifndef NDEBUG
         if (Idle)
@@ -1720,7 +1759,7 @@ FetchNext:      Instruction = byte_int (IPtr);
 		case 0x00: /* j     */
 			   IPtr++;
 			   IPtr = IPtr + OReg;
-			   OReg = 0; IntEnabled = TRUE;
+			   OReg = 0;
 			   D_check();
 			   break;
 		case 0x10: /* ldlp  */
@@ -1728,7 +1767,7 @@ FetchNext:      Instruction = byte_int (IPtr);
 			   BReg = AReg;
 			   AReg = index (WPtr, OReg);
 			   IPtr++;
-			   OReg = 0; IntEnabled = TRUE;
+			   OReg = 0;
 			   break;
 		case 0x20: /* pfix  */
 			   OReg = OReg << 4;
@@ -1738,21 +1777,21 @@ FetchNext:      Instruction = byte_int (IPtr);
                            T4DEBUG(checkWordAligned ("LDNL", AReg));
 			   AReg = word (index (AReg, OReg));
 			   IPtr++;
-			   OReg = 0; IntEnabled = TRUE;
+			   OReg = 0;
 			   break;
 		case 0x40: /* ldc   */
 			   CReg = BReg;
 			   BReg = AReg;
 			   AReg = OReg;
 			   IPtr++;
-			   OReg = 0; IntEnabled = TRUE;
+			   OReg = 0;
 			   break;
 		case 0x50: /* ldnlp */
                            /* NB. Minix demo uses unaligned AReg! */
                            T4DEBUG(checkWordAligned ("LDNLP", AReg));
 			   AReg = index (AReg, OReg);
 			   IPtr++;
-			   OReg = 0; IntEnabled = TRUE;
+			   OReg = 0;
 			   break;
 		case 0x60: /* nfix  */
 			   OReg = (~OReg) << 4;
@@ -1763,7 +1802,7 @@ FetchNext:      Instruction = byte_int (IPtr);
 			   BReg = AReg;
 			   AReg = word (index (WPtr, OReg));
 			   IPtr++;
-			   OReg = 0; IntEnabled = TRUE;
+			   OReg = 0;
 			   break;
 		case 0x80: /* adc   */
 			   t4_overflow = FALSE;
@@ -1772,7 +1811,7 @@ FetchNext:      Instruction = byte_int (IPtr);
 			   if (t4_overflow == TRUE)
 				SetError;
 			   IPtr++;
-			   OReg = 0; IntEnabled = TRUE;
+			   OReg = 0;
 			   break;
 		case 0x90: /* call  */
 			   IPtr++;
@@ -1786,7 +1825,7 @@ FetchNext:      Instruction = byte_int (IPtr);
                            /* Pop BReg. */
                            BReg = CReg;
 			   IPtr = IPtr + OReg;
-			   OReg = 0; IntEnabled = TRUE;
+			   OReg = 0;
 			   break;
 		case 0xa0: /* cj    */
 			   IPtr++;
@@ -1799,13 +1838,13 @@ FetchNext:      Instruction = byte_int (IPtr);
 			   {
 				IPtr = IPtr + OReg;
 			   }
-			   OReg = 0; IntEnabled = TRUE;
+			   OReg = 0;
 			   break;
 		case 0xb0: /* ajw   */
                            UpdateWdescReg (index (WPtr, OReg) | ProcPriority);
                            T4DEBUG(checkWPtr ("AJW", WPtr));
 			   IPtr++;
-			   OReg = 0; IntEnabled = TRUE;
+			   OReg = 0;
 			   break;
 		case 0xc0: /* eqc   */
 			   if (AReg == OReg)
@@ -1817,25 +1856,23 @@ FetchNext:      Instruction = byte_int (IPtr);
 				AReg = false_t;
 			   }
 			   IPtr++;
-			   OReg = 0; IntEnabled = TRUE;
+			   OReg = 0;
 			   break;
 		case 0xd0: /* stl   */
 			   writeword (index (WPtr, OReg), AReg);
 			   AReg = BReg;
 			   BReg = CReg;
 			   IPtr++;
-			   OReg = 0; IntEnabled = TRUE;
+			   OReg = 0;
 			   break;
 		case 0xe0: /* XXX stnl  */
                            T4DEBUG(checkWordAligned ("STNL", AReg));
 			   writeword (index (AReg, OReg), BReg);
 			   AReg = CReg;
 			   IPtr++;
-			   OReg = 0; IntEnabled = TRUE;
+			   OReg = 0;
 			   break;
 		case 0xf0: /* opr   */
-
-        IntEnabled = TRUE;
 
 #ifdef PROFILE
 	if (profiling)
@@ -4172,8 +4209,10 @@ void start_process (void)
 {
         int active, links_active;
 
-        if ((ProcPriority == LoPriority) && !IntEnabled)
-                return;
+        /* IntEnabled is always TRUE.
+         * if ((ProcPriority == LoPriority) && !IntEnabled)
+         *        return;
+         */
 
         /* First, clear GotoSNP flag. */
         ClearGotoSNP;
@@ -4285,7 +4324,9 @@ void D_check (void)
 	/* Called only from 'j' and 'lend'. */
 
 	/* First, handle any host link communication. */
-        if ((ProcPriority == HiPriority) || IntEnabled)
+        /* IntEnabled is always TRUE.
+         * if ((ProcPriority == HiPriority) || IntEnabled)
+         */
         {
 	        if (serve) server ();
                 linkcomms ("pri", FALSE, LTO_HI);
@@ -4441,8 +4482,10 @@ void schedule_timerq (int prio)
 {
         uint32_t temp3;
 
-        if ((TPtrLoc[prio] != NotProcess_p) &&
-                ((ProcPriority == HiPriority) || IntEnabled))
+        /* IntEnabled is always TRUE. */
+        if ((TPtrLoc[prio] != NotProcess_p)
+                /* && ((ProcPriority == HiPriority) || IntEnabled) */
+           )
         {
 	        temp3 = word (index (TPtrLoc[prio], Time_s));
 		while ((INT32(ClockReg[prio] - temp3) > 0) && (TPtrLoc[prio] != NotProcess_p))

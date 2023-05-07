@@ -286,6 +286,7 @@ uint32_t instrprof[0x400];
         #100 - #2FF     secondary instr. OReg
         #300 - #3FF     fpentry
 */
+uint32_t combinedprof[0x400][0x400];
 
 typedef struct _DecoInstr {
   uint32_t IPtr;
@@ -1469,7 +1470,7 @@ void init_memory (void)
 
 void init_processor (void)
 {
-        int i;
+        int i, j;
 
         for (i = 0; i < MAX_ICACHE; i++)
                 Icache[i].IPtr = IC_NOADDR;
@@ -1512,7 +1513,11 @@ void init_processor (void)
 #ifdef PROFILE
         if (profiling)
                 for (i = 0; i < 0x400; i++)
+                {
                         instrprof[i] = 0;
+                        for (j = 0; j < 0x400; j++)
+                                combinedprof[i][j] = 0;
+                }
 #endif
 }
 
@@ -1750,7 +1755,7 @@ FetchNext:      Instruction = byte_int (IPtr);
 #endif
 
 #ifdef PROFILE
-	if (profiling)
+	if (profiling && (0xF0 != Icode))
 		add_profile (Icode);
 #endif
 
@@ -4880,6 +4885,8 @@ void writereal64 (uint32_t ptr, fpreal64_t value)
 }
 
 /* Add an executing instruction to the profile list. */
+static uint32_t previnstruction = 0x400;
+
 void add_profile (uint32_t instruction)
 {
         if (instruction > 0x3ff)
@@ -4888,12 +4895,27 @@ void add_profile (uint32_t instruction)
                 return;
         }
         instrprof[instruction]++;
+        if (0x400 != previnstruction)
+                combinedprof[previnstruction][instruction]++;
+        previnstruction = instruction;
+}
+
+char* profmnemonic(uint32_t i, char *buf)
+{
+        if (i < 0x100)
+                sprintf (buf, "  %02X  %-12s", i, mnemonic (i, MostNeg, MostNeg, 1));
+	else if (i < 0x300)
+                sprintf (buf, "%04X  %-12s", i - 0x100, mnemonic (0xF0, i - 0x100, MostNeg, 1));
+        else
+                sprintf (buf, "S%03X  %-12s", i - 0x300, mnemonic (0xF0, 0xAB, i - 0x300, 1));
+        return buf;
 }
 
 void print_profile (void)
 {
-        int i;
+        int i, j;
 	extern FILE *ProfileFile;
+        char buf1[64], buf2[64];
 
         fprintf (ProfileFile, "-----Instruction--------Freq------\n");
 	for (i = 0; i < 0x400; i++)
@@ -4902,11 +4924,17 @@ void print_profile (void)
                 if (0 == instrprof[i])
                         continue;
 
-	        if (i < 0x100)
-                        fprintf (ProfileFile, "  %02X  %-12s     %u\n", i, mnemonic (i, MostNeg, MostNeg, 1), instrprof[i]);
-	        else if (i < 0x300)
-                        fprintf (ProfileFile, "%04X  %-12s     %u\n", i - 0x100, mnemonic (0xF0, i - 0x100, MostNeg, 1), instrprof[i]);
-                else
-                        fprintf (ProfileFile, "S%03X  %-12s     %u\n", i - 0x300,  mnemonic (0xF0, 0xAB, i - 0x300, 1), instrprof[i]);
+                fprintf (ProfileFile, "%s     %u\n", profmnemonic (i, buf1), instrprof[i]);
+        }
+	for (i = 0; i < 0x400; i++)
+	{
+                for (j = 0; j < 0x400; j++)
+                {
+                        /* Skip empty counters. */
+                        if (0 == combinedprof[i][j])
+                                continue;
+
+                        fprintf (ProfileFile, "%s%s     %u\n", profmnemonic (i, buf1), profmnemonic (j, buf2), combinedprof[i][j]);
+                }
         }
 }

@@ -288,19 +288,24 @@ uint32_t instrprof[0x400];
 */
 uint32_t combinedprof[0x400][0x400];
 
-typedef struct _DecoInstr {
+typedef struct _InstrSlot {
   uint32_t IPtr;
   uint32_t NextIPtr;
   uint32_t OReg;
+#ifdef COMBINATIONS
+  uint32_t _Arg0, _Arg1;
+#endif
   unsigned char Icode;
   unsigned char Instruction;
-} DecodedInstr;
+} InstrSlot;
+#define Arg0            Icache[islot]._Arg0
+#define Arg1            Icache[islot]._Arg1
 
 #define IC_NOADDR       0xDEADBEEFU
 #define MAX_ICACHE      16384
-/* #define IHASH(x)        ((0xDEADBEEFU^(x))&(MAX_ICACHE-1)) */
 #define IHASH(x)        ((x)&(MAX_ICACHE-1))
-DecodedInstr Icache[MAX_ICACHE];
+InstrSlot Icache[MAX_ICACHE];
+
 static void InvalidateAddr(uint32_t a)
 {
         uint32_t x;
@@ -314,6 +319,21 @@ static void InvalidateRange(uint32_t a, uint32_t n)
         for (i = 0; i < n; i++)
                 InvalidateAddr(a++);
 }
+
+#define NO_ICODE        0x400
+
+static struct {
+        unsigned short code0, code1;
+        uint32_t ccode;
+} combined[] = {
+        { 0xD0 /* stl */, 0x70 /* ldl   */, 0x100 },
+        { 0x70 /* ldl */, 0x30 /* ldnl  */, 0x101 },
+        { 0xc0 /* eqc */, 0xa0 /* cj    */, 0x102 },
+        { 0x70 /* ldl */, 0x50 /* ldnlp */, 0x103 },
+        { 0x70 /* ldl */, 0x70 /* ldl   */, 0x104 },
+        { NO_ICODE, NO_ICODE, NO_ICODE }
+};
+static unsigned char combinations[0x400 * 0x400];
 
 /* Support functions. */
 
@@ -1519,6 +1539,9 @@ void init_processor (void)
                                 combinedprof[i][j] = 0;
                 }
 #endif
+        memset (combinations, 0, sizeof(combinations));
+        for (i = 0; NO_ICODE != combined[i].code0; i++)
+                combinations[(combined[i].code0 << 10) + combined[i].code1] = 1 + i;
 }
 
 #define FLAG(x,y)       ((x) ? (y) : '-')
@@ -1560,6 +1583,20 @@ static struct timeval StartTOD, EndTOD;
 double ElapsedSecs;
 #endif
 
+unsigned short ProfileCode (unsigned char instrCode, uint32_t oprCode)
+{
+        unsigned short ret;
+
+        ret = instrCode;
+        if (0xF0 == instrCode)
+        {
+                if (0xab == oprCode)
+                        ret = 0x300; /* XXX */
+                else
+                        ret = 0x100 + oprCode;
+        }
+        return ret;
+}
 
 void mainloop (void)
 {
@@ -1570,7 +1607,8 @@ void mainloop (void)
         fpreal32_t sntemp1, sntemp2;
         fpreal64_t dbtemp1, dbtemp2;
         REAL       fptemp;
-        unsigned short x;
+        unsigned int islot;
+        int i;
 
 #ifdef EMUDEBUG
         fpreal32_t r32temp;
@@ -1621,19 +1659,19 @@ void mainloop (void)
 		/* Execute an instruction. */
         ResetRounding = FALSE;
 
-        if (IPtr == Icache[x = IHASH(IPtr)].IPtr)
+        if (IPtr == Icache[islot = IHASH(IPtr)].IPtr)
         {
 #ifdef PROFILE
                 if (profiling)
                         profile[PRO_ICHIT]++;
 #endif
 
-                Icode = Icache[x].Icode;
-                OReg  = Icache[x].OReg;
-                IPtr  = Icache[x].NextIPtr;
+                Icode = Icache[islot].Icode;
+                OReg  = Icache[islot].OReg;
+                IPtr  = Icache[islot].NextIPtr;
 
 #ifdef EMUDEBUG
-                Instruction = Icache[x].Instruction;
+                Instruction = Icache[islot].Instruction;
                 if (cachedebug)
                         printf ("-I-EMU414: Icache hit @ #%08X Icode = #%02X OReg = #%08X\n",
                                 IPtr, Icode, OReg);
@@ -1646,8 +1684,7 @@ void mainloop (void)
                         profile[PRO_ICMISS]++;
 #endif
 
-                x = IHASH(IPtr);
-                Icache[x].IPtr = IPtr;
+                Icache[islot].IPtr = IPtr;
 #ifdef EMUDEBUG
                 if (cachedebug)
                         printf ("-I-EMU414: Icache miss @ #%08X\n", IPtr);
@@ -1676,14 +1713,37 @@ FetchNext:      Instruction = byte_int (IPtr);
 			IPtr++;
                         goto FetchNext;
                 }
-                Icache[x].Icode = Icode;
-                Icache[x].OReg  = OReg;
-                Icache[x].NextIPtr = IPtr;
+                Icache[islot].Icode = Icode;
+                Icache[islot].OReg  = OReg;
+                Icache[islot].NextIPtr = IPtr;
 
 #ifdef EMUDEBUG
-                Icache[x].Instruction = Instruction;
+                Icache[islot].Instruction = Instruction;
                 if (cachedebug)
                         printf ("-I-EMU414: Cached Icode = #%02X OReg = #%08X\n", Icode, OReg);
+#endif
+
+#ifdef COMBINATIONS
+                if (islot)
+                {
+                        unsigned short code0 = ProfileCode (Icache[islot-1].Icode, Icache[islot-1].OReg);
+                        unsigned short code1 = ProfileCode (Icode, OReg);
+                        if ((i = combinations[(code0 << 10) + code1])
+                                && (Icache[islot-1].IPtr == (Icache[islot].IPtr - 1)))
+                        {
+                                i--;
+                                EMUDBG3 ("-I-EMU414: code0=#%03X code1=#%03X\n", code0, code1);
+                                EMUDBG2 ("-I-EMU414: combined code=#%03X\n", combined[i].ccode);
+
+                                Icache[islot-1].Icode = 0xF0;
+                                Icache[islot-1]._Arg0 = Icache[islot-1].OReg;
+                                Icache[islot-1]._Arg1 = Icache[islot].OReg;
+                                Icache[islot-1].OReg  = combined[i].ccode;
+                                Icache[islot-1].NextIPtr = Icache[islot].NextIPtr;
+
+                                EMUDBG4 ("-I-EMU414: OReg=#%X Arg0=#%X Arg1=#%X\n", Icache[islot-1].OReg, Icache[islot-1]._Arg0, Icache[islot-1]._Arg1);
+                        }
+                }
 #endif
         }
 
@@ -3993,6 +4053,52 @@ DescheduleOutWord:
                            BReg = CReg;
 		           IPtr++;
 		           break;
+#ifdef COMBINATIONS
+                case 0x100: /* stl ldl */
+			   writeword (index (WPtr, Arg0), AReg);
+                           if (Arg0 != Arg1)
+			        AReg = word (index (WPtr, Arg1));
+			   IPtr++;
+			   OReg = 0;
+                           break;
+                case 0x101: /* ldl ldnl */
+			   CReg = BReg;
+			   BReg = AReg;
+			   AReg = word (index (WPtr, Arg0));
+			   AReg = word (index (AReg, Arg1));
+			   IPtr++;
+			   OReg = 0;
+                           break;
+                case 0x102: /* eqc cj */
+			   IPtr++;
+			   if (AReg == Arg0)
+			   {
+				AReg = BReg;
+				BReg = CReg;
+			   }
+			   else
+			   {
+                                AReg = false_t;
+				IPtr = IPtr + Arg1;
+			   }
+			   OReg = 0;
+                           break;
+                case 0x103: /* ldl ldnlp */
+			   CReg = BReg;
+			   BReg = AReg;
+			   AReg = word (index (WPtr, Arg0));
+			   AReg = index (AReg, Arg1);
+			   IPtr++;
+			   OReg = 0;
+                           break;
+                case 0x104: /* ldl ldl */
+			   CReg = AReg;
+			   BReg = word (index (WPtr, Arg0));
+			   AReg = word (index (WPtr, Arg1));
+			   IPtr++;
+			   OReg = 0;
+                           break;
+#endif
                 case 0x17c: /* XXX lddevid    */
                            if (IsT800) /* TTH */
                                 BReg = CReg;
@@ -4938,7 +5044,7 @@ void writereal64 (uint32_t ptr, fpreal64_t value)
 }
 
 /* Add an executing instruction to the profile list. */
-static uint32_t previnstruction = 0x400;
+static uint32_t previnstruction = NO_ICODE;
 
 void add_profile (uint32_t instruction)
 {
@@ -4948,7 +5054,7 @@ void add_profile (uint32_t instruction)
                 return;
         }
         instrprof[instruction]++;
-        if (0x400 != previnstruction)
+        if (NO_ICODE != previnstruction)
                 combinedprof[previnstruction][instruction]++;
         previnstruction = instruction;
 }
@@ -4979,6 +5085,7 @@ void print_profile (void)
 
                 fprintf (ProfileFile, "%s     %u\n", profmnemonic (i, buf1), instrprof[i]);
         }
+        fprintf (ProfileFile, "-----Combined-----------------------------Freq------\n");
 	for (i = 0; i < 0x400; i++)
 	{
                 for (j = 0; j < 0x400; j++)

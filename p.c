@@ -289,15 +289,18 @@ uint32_t instrprof[0x400];
 uint32_t combinedprof[0x400][0x400];
 
 typedef struct _InstrSlot {
-  uint32_t IPtr;
-  uint32_t NextIPtr;
-  uint32_t OReg;
+        uint32_t IPtr;
+        uint32_t NextIPtr;
+        uint32_t OReg;
 #ifdef COMBINATIONS
-  uint32_t _Arg0, _Arg1;
+        uint32_t _Arg0, _Arg1;
 #endif
-  unsigned char Icode;
-  unsigned char Instruction;
+        unsigned char Icode;
+#ifdef EMUDEBUG
+        unsigned char Instruction;
+#endif
 } InstrSlot;
+
 #define Arg0            Icache[islot]._Arg0
 #define Arg1            Icache[islot]._Arg1
 
@@ -1735,9 +1738,9 @@ FetchNext:      Instruction = byte_int (IPtr);
                                 EMUDBG3 ("-I-EMU414: code0=#%03X code1=#%03X\n", code0, code1);
                                 EMUDBG2 ("-I-EMU414: combined code=#%03X\n", combined[i].ccode);
 
-                                Icache[islot-1].Icode = 0xF0;
                                 Icache[islot-1]._Arg0 = Icache[islot-1].OReg;
                                 Icache[islot-1]._Arg1 = Icache[islot].OReg;
+                                Icache[islot-1].Icode = 0xF0;
                                 Icache[islot-1].OReg  = combined[i].ccode;
                                 Icache[islot-1].NextIPtr = Icache[islot].NextIPtr;
 

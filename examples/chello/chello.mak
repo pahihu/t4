@@ -18,13 +18,13 @@ COPT=   #-g
 ##### IMAKEF CUT #####
 
 chello.b4h: chello.c4h 
-	$(COLLECT) chello.c4h -t  -o chello.b4h $(COLLECTOPT)
+	time $(COLLECT) chello.c4h -t  -o chello.b4h $(COLLECTOPT)
 
 chello.c4h: chello.lnk chello.t4h
-	$(LINK) -f chello.lnk -t4 -h -o chello.c4h $(LINKOPT)
+	time $(LINK) -f chello.lnk -t4 -h -o chello.c4h $(LINKOPT)
 
 chello.t4h: chello.c
-	$(CC) chello.c -t4 -o chello.t4h $(COPT)
+	time $(CC) chello.c -t4 -o chello.t4h $(COPT)
 
 clean  : delete
 delete :

@@ -127,6 +127,8 @@ uint32_t BReg;
 uint32_t CReg;
 uint32_t OReg;
 
+uint32_t XReg;
+
 uint32_t WdescReg;
 
 uint32_t DReg;                  /* undocumented DReg/EReg */
@@ -329,11 +331,12 @@ static struct {
         unsigned short code0, code1;
         uint32_t ccode;
 } combined[] = {
-        { 0xD0 /* stl */, 0x70 /* ldl   */, 0x100 },
-        { 0x70 /* ldl */, 0x30 /* ldnl  */, 0x101 },
-        { 0xc0 /* eqc */, 0xa0 /* cj    */, 0x102 },
-        { 0x70 /* ldl */, 0x50 /* ldnlp */, 0x103 },
-        { 0x70 /* ldl */, 0x70 /* ldl   */, 0x104 },
+        { 0xD0 /* stl  */,  0x70 /* ldl      */, 0x100 },
+        { 0x70 /* ldl  */,  0x30 /* ldnl     */, 0x101 },
+        { 0xc0 /* eqc  */,  0xa0 /* cj       */, 0x102 },
+        { 0x70 /* ldl  */,  0x50 /* ldnlp    */, 0x103 },
+        { 0x70 /* ldl  */,  0x70 /* ldl      */, 0x104 },
+        { 0x10 /* ldlp */, 0x18a /* fpldnldb */, 0x105 },
         { NO_ICODE, NO_ICODE, NO_ICODE }
 };
 static unsigned char combinations[0x400 * 0x400];
@@ -1173,18 +1176,40 @@ int linkcomms (char *where, int doBoot, int timeOut)
 void close_channels (void)
 {
         int i;
-
-        /* see comment for NN_LINGER at
-         *      https://nanomsg.org/v1.1.5/nn_setsockopt.html
-         */
-        sleep (1);
+        int nsocks;
 
         if (SharedLinks)
         {
                 shlink_detach (SharedLinks);
                 if (0 == nodeid)
                         shlink_free ();
+
+                return;
         }
+
+        nsocks = 0;
+        for (i = 0; i < 4; i++)
+        {
+                if (-1 != Link[i].Out.sock)
+                {
+                        nsocks++;
+                        break;
+                }
+                else if (-1 != Link[i].In.sock)
+                {
+                        nsocks++;
+                        break;
+                }
+        }
+
+        if (0 == nsocks)
+                return;
+
+        /* see comment for NN_LINGER at
+         *      https://nanomsg.org/v1.1.5/nn_setsockopt.html
+         */
+
+        sleep (1);
 
         for (i = 0; i < 4; i++)
                 if (-1 != Link[i].Out.sock)
@@ -4100,6 +4125,11 @@ DescheduleOutWord:
 			   AReg = word (index (WPtr, Arg1));
 			   IPtr++;
 			   OReg = 0;
+                           break;
+                case 0x105: /* ldlp fpldnldb */
+			   XReg = index (WPtr, Arg0);
+                           fp_pushdb (real64 (XReg));
+		           IPtr++;
                            break;
 #endif
                 case 0x17c: /* XXX lddevid    */

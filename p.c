@@ -313,9 +313,9 @@ InstrSlot Icache[MAX_ICACHE];
 
 static void InvalidateAddr(uint32_t a)
 {
-        uint32_t x;
-        if (a == Icache[x = IHASH(a)].IPtr)
-                Icache[IHASH(a)].IPtr = IC_NOADDR;
+        uint32_t x = IHASH(a);
+        if (a == Icache[x].IPtr)
+                Icache[x].IPtr = IC_NOADDR;
 }
 
 static void InvalidateRange(uint32_t a, uint32_t n)
@@ -1713,6 +1713,7 @@ void mainloop (void)
 #endif
 
                 Icache[islot].IPtr = IPtr;
+                OReg = 0;
 #ifdef EMUDEBUG
                 if (cachedebug)
                         printf ("-I-EMU414: Icache miss @ #%08X\n", IPtr);
@@ -1852,7 +1853,6 @@ FetchNext:      Instruction = byte_int (IPtr);
 		case 0x00: /* j     */
 			   IPtr++;
 			   IPtr = IPtr + OReg;
-			   OReg = 0;
 			   D_check();
 			   break;
 		case 0x10: /* ldlp  */
@@ -1860,7 +1860,6 @@ FetchNext:      Instruction = byte_int (IPtr);
 			   BReg = AReg;
 			   AReg = index (WPtr, OReg);
 			   IPtr++;
-			   OReg = 0;
 			   break;
 		case 0x20: /* pfix  */
 			   OReg = OReg << 4;
@@ -1870,21 +1869,18 @@ FetchNext:      Instruction = byte_int (IPtr);
                            T4DEBUG(checkWordAligned ("LDNL", AReg));
 			   AReg = word (index (AReg, OReg));
 			   IPtr++;
-			   OReg = 0;
 			   break;
 		case 0x40: /* ldc   */
 			   CReg = BReg;
 			   BReg = AReg;
 			   AReg = OReg;
 			   IPtr++;
-			   OReg = 0;
 			   break;
 		case 0x50: /* ldnlp */
                            /* NB. Minix demo uses unaligned AReg! */
                            T4DEBUG(checkWordAligned ("LDNLP", AReg));
 			   AReg = index (AReg, OReg);
 			   IPtr++;
-			   OReg = 0;
 			   break;
 		case 0x60: /* nfix  */
 			   OReg = (~OReg) << 4;
@@ -1895,7 +1891,6 @@ FetchNext:      Instruction = byte_int (IPtr);
 			   BReg = AReg;
 			   AReg = word (index (WPtr, OReg));
 			   IPtr++;
-			   OReg = 0;
 			   break;
 		case 0x80: /* adc   */
 			   t4_overflow = FALSE;
@@ -1904,7 +1899,6 @@ FetchNext:      Instruction = byte_int (IPtr);
 			   if (t4_overflow == TRUE)
 				SetError;
 			   IPtr++;
-			   OReg = 0;
 			   break;
 		case 0x90: /* call  */
 			   IPtr++;
@@ -1918,7 +1912,6 @@ FetchNext:      Instruction = byte_int (IPtr);
                            /* Pop BReg. */
                            BReg = CReg;
 			   IPtr = IPtr + OReg;
-			   OReg = 0;
 			   break;
 		case 0xa0: /* cj    */
 			   IPtr++;
@@ -1931,13 +1924,11 @@ FetchNext:      Instruction = byte_int (IPtr);
 			   {
 				IPtr = IPtr + OReg;
 			   }
-			   OReg = 0;
 			   break;
 		case 0xb0: /* ajw   */
                            UpdateWdescReg (index (WPtr, OReg) | ProcPriority);
                            T4DEBUG(checkWPtr ("AJW", WPtr));
 			   IPtr++;
-			   OReg = 0;
 			   break;
 		case 0xc0: /* eqc   */
 			   if (AReg == OReg)
@@ -1949,21 +1940,18 @@ FetchNext:      Instruction = byte_int (IPtr);
 				AReg = false_t;
 			   }
 			   IPtr++;
-			   OReg = 0;
 			   break;
 		case 0xd0: /* stl   */
 			   writeword (index (WPtr, OReg), AReg);
 			   AReg = BReg;
 			   BReg = CReg;
 			   IPtr++;
-			   OReg = 0;
 			   break;
 		case 0xe0: /* XXX stnl  */
                            T4DEBUG(checkWordAligned ("STNL", AReg));
 			   writeword (index (AReg, OReg), BReg);
 			   AReg = CReg;
 			   IPtr++;
-			   OReg = 0;
 			   break;
 		case 0xf0: /* opr   */
 
@@ -4087,7 +4075,6 @@ DescheduleOutWord:
                            if (Arg0 != Arg1)
 			        AReg = word (index (WPtr, Arg1));
 			   IPtr++;
-			   OReg = 0;
                            break;
                 case 0x101: /* ldl ldnl */
 			   CReg = BReg;
@@ -4095,7 +4082,6 @@ DescheduleOutWord:
 			   AReg = word (index (WPtr, Arg0));
 			   AReg = word (index (AReg, Arg1));
 			   IPtr++;
-			   OReg = 0;
                            break;
                 case 0x102: /* eqc cj */
 			   IPtr++;
@@ -4109,7 +4095,6 @@ DescheduleOutWord:
                                 AReg = false_t;
 				IPtr = IPtr + Arg1;
 			   }
-			   OReg = 0;
                            break;
                 case 0x103: /* ldl ldnlp */
 			   CReg = BReg;
@@ -4117,14 +4102,12 @@ DescheduleOutWord:
 			   AReg = word (index (WPtr, Arg0));
 			   AReg = index (AReg, Arg1);
 			   IPtr++;
-			   OReg = 0;
                            break;
                 case 0x104: /* ldl ldl */
 			   CReg = AReg;
 			   BReg = word (index (WPtr, Arg0));
 			   AReg = word (index (WPtr, Arg1));
 			   IPtr++;
-			   OReg = 0;
                            break;
                 case 0x105: /* ldlp fpldnldb */
 			   XReg = index (WPtr, Arg0);
@@ -4148,7 +4131,6 @@ BadCode:
 			   handler (-1);
 			   break;
 	} /* switch OReg */
-			   OReg = 0;
 			   break;
 		default  : 
                            printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg, AReg, 0));

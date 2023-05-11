@@ -43,6 +43,9 @@ The compiled binaries are in the `bin/` directory.
 Changes
 =======
 
+* added some instruction combinations, which are detected at runtime
+* simplified OReg clearing
+* eliminated IntEnabled tests using the Icache[]
 * Minix demo runs again, implemented idle mode, adaptive timer updates, updated networking binaries
 * added POV-Ray 1.0 sources and boot loader file (see examples/povray/pictures.zip for the generated images)
 * added COMSTIME benchmark
@@ -103,23 +106,22 @@ Values are in seconds.
 
 |Workers|Type|Mod1|Mod2|Mod3|Mod4|Notes|
 |--|--|--|--|--|--|--|
-|16|T800/2MB|4.6|4.8|2.8|2.3|16x T4 emulator with SHM links
-|8|T800/2MB|6.9|7.8|3.2|2.4|8x T4 emulator with SHM links
-|4|T800/2MB|13.3|14.5|4.6|3.7|4x T4 emulator with SHM links
-|2|T800/2MB|25.4|28.1|8.5|6.3|2x T4 emulator with SHM links
-|1|T800/2MB|51.1|54.8|16.4|12.5|1x T4 emulator
-
+|16|T800/2MB|3.9|4.5|2.8|2.5|16x T4 emulator with SHM links
+|8|T800/2MB|6.6|7.8|3.0|2.5|8x T4 emulator with SHM links
+|4|T800/2MB|12.7|14.1|4.4|3.5|4x T4 emulator with SHM links
+|2|T800/2MB|24.7|26.9|8.1|6.0|2x T4 emulator with SHM links
+|1|T800/2MB|48.5|53.2|15.9|11.7|1x T4 emulator
 
 
 Performance of the system compared on Model2 as in [Exploiting concurrency: a ray tracing example](http://transputer.net/tn/07/tn07.html#x1-100004).
 
 |transputers|speed|relative speed|linearity|
 |--|--|--|--|
-|1|1195.9|1.00|100.0|
-|2|2332.2|1.95|97.5|
-|4|4519.7|3.78|94.5|
-|8|8402.1|7.03|87.8|
-|16|13653.3|11.42|71.4|
+|1|1231.9|1.00|100.0|
+|2|2436.3|1.98|98.9|
+|4|4647.9|3.77|94.3|
+|8|8402.1|6.82|85.3|
+|16|14563.6|11.82|73.9|
 
 
 

@@ -94,8 +94,8 @@ extern uint32_t CoreSize;
 #define MAX_CHANNEL_URL 128
 
 #define MAX_DATA        255
-#define SCH_LEN         0
-#define SCH_DATA        1
+#define SCH_LEN         255
+#define SCH_DATA        0
 #define SCH_SIZE        (MAX_DATA+1)
 
 typedef struct _Channel_ {

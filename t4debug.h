@@ -12,6 +12,12 @@
 #define T4DEBUG(x)      x
 #endif
 
+#ifdef T4PROFILE
+#define PROFILE(x)      if(profiling)x
+#else
+#define PROFILE(x)
+#endif
+
 #ifdef EMUDEBUG
 #define EMUDBG(x)       if(emudebug)printf(x)
 #define EMUDBG2(x,y)    if(emudebug)printf(x,y)

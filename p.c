@@ -294,7 +294,7 @@ typedef struct _InstrSlot {
         uint32_t IPtr;
         uint32_t NextIPtr;
         uint32_t OReg;
-#ifdef COMBINATIONS
+#ifdef T4COMBINATIONS
         uint32_t _Arg0, _Arg1;
 #endif
         unsigned char Icode;
@@ -909,10 +909,7 @@ int Precv_channel (Channel *chan, uint32_t address, uint32_t len)
 
         chan->Address = address;
         chan->Length  = len;
-#ifdef PROFILE
-        if (profiling)
-                chan->IOBytes += len;
-#endif
+        PROFILE(chan->IOBytes += len);
         return channel_recvmemP (chan, data, TRUE, FALSE) < 0;
 }
 
@@ -924,10 +921,7 @@ int Psend_channel (Channel *chan, uint32_t address, uint32_t len)
 
         chan->Address = address;
         chan->Length  = len;
-#ifdef PROFILE
-        if (profiling)
-                chan->IOBytes += len;
-#endif
+        PROFILE(chan->IOBytes += len);
         return channel_sendmemP (chan, FALSE) < 0;
 }
 
@@ -1558,7 +1552,7 @@ void init_processor (void)
 
         /* ErrorFlag is in an indeterminate state on power up. */
 
-#ifdef PROFILE
+#ifdef T4PROFILE
         if (profiling)
                 for (i = 0; i < 0x400; i++)
                 {
@@ -1606,7 +1600,7 @@ void checkWordAligned (char *where, uint32_t ptr)
 }
 #endif
 
-#ifdef PROFILE
+#ifdef T4PROFILE
 static struct timeval StartTOD, EndTOD;
 double ElapsedSecs;
 #endif
@@ -1659,10 +1653,7 @@ void mainloop (void)
 	Timers = TimersStop;
 
 
-#ifdef PROFILE
-        if (profiling)
-                update_tod (&StartTOD);
-#endif
+        PROFILE(update_tod (&StartTOD));
 	while (1)
 	{
 #ifndef NDEBUG
@@ -1689,11 +1680,7 @@ void mainloop (void)
 
         if (IPtr == Icache[islot = IHASH(IPtr)].IPtr)
         {
-#ifdef PROFILE
-                if (profiling)
-                        profile[PRO_ICHIT]++;
-#endif
-
+                PROFILE(profile[PRO_ICHIT]++);
                 Icode = Icache[islot].Icode;
                 OReg  = Icache[islot].OReg;
                 IPtr  = Icache[islot].NextIPtr;
@@ -1707,11 +1694,7 @@ void mainloop (void)
         }
         else
         {
-#ifdef PROFILE
-                if (profiling)
-                        profile[PRO_ICMISS]++;
-#endif
-
+                PROFILE(profile[PRO_ICMISS]++);
                 Icache[islot].IPtr = IPtr;
                 OReg = 0;
 #ifdef EMUDEBUG
@@ -1752,7 +1735,7 @@ FetchNext:      Instruction = byte_int (IPtr);
                         printf ("-I-EMU414: Cached Icode = #%02X OReg = #%08X\n", Icode, OReg);
 #endif
 
-#ifdef COMBINATIONS
+#ifdef T4COMBINATIONS
                 if (islot)
                 {
                         unsigned short code0 = ProfileCode (Icache[islot-1].Icode, Icache[islot-1].OReg);
@@ -1843,7 +1826,7 @@ FetchNext:      Instruction = byte_int (IPtr);
         }
 #endif
 
-#ifdef PROFILE
+#ifdef T4PROFILE
 	if (profiling && (0xF0 != Icode))
 		add_profile (Icode);
 #endif
@@ -1955,11 +1938,7 @@ FetchNext:      Instruction = byte_int (IPtr);
 			   break;
 		case 0xf0: /* opr   */
 
-#ifdef PROFILE
-	if (profiling)
-		add_profile (0x100 + OReg);
-#endif
-
+	PROFILE(add_profile (0x100 + OReg));
 	switch (OReg)
 	{
 		case 0x00: /* rev         */
@@ -2025,10 +2004,7 @@ OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
                                 MSGDBG ("-W-EMUDBG: Warning - doing IN on Link0Out.\n");
                                 goto OprOut;
                            }
-#ifdef PROFILE
-                           if (profiling)
-                                profile[PRO_CHANIN] += AReg;
-#endif
+                           PROFILE(profile[PRO_CHANIN] += AReg);
 			   MSGDBG4 ("-I-EMUDBG: in(1): Channel=#%08X, to memory at #%08X, length #%X.\n", BReg, CReg, AReg);
 			   IPtr++;
 			   if (!IsLinkIn(BReg))
@@ -2076,10 +2052,7 @@ DescheduleIn:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].In.Address = CReg;
                                         Link[TheLink(BReg)].In.Length  = AReg;
-#ifdef PROFILE
-                                        if (profiling)
-                                                Link[TheLink(BReg)].In.IOBytes += AReg;
-#endif
+                                        PROFILE(Link[TheLink(BReg)].In.IOBytes += AReg);
                                         deschedule ();
                                 }
 			   }
@@ -2112,10 +2085,7 @@ OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
                                 MSGDBG ("-W-EMUDBG: Warning - doing OUT on Link0In.\n");
                                 goto OprIn;
                            }
-#ifdef PROFILE
-                           if (profiling)
-                                profile[PRO_CHANOUT] += AReg;
-#endif
+                           PROFILE(profile[PRO_CHANOUT] += AReg);
 			   MSGDBG4 ("-I-EMUDBG: out(1): Channel=#%08X, length #%X, from memory at #%08X.\n", BReg, AReg, CReg);
 			   IPtr++;
 			   if (!IsLinkOut(BReg))
@@ -2187,10 +2157,7 @@ DescheduleOut:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].Out.Address = CReg;
                                         Link[TheLink(BReg)].Out.Length  = AReg;
-#ifdef PROFILE
-                                        if (profiling)
-                                                Link[TheLink(BReg)].Out.IOBytes += AReg;
-#endif
+                                        PROFILE(Link[TheLink(BReg)].Out.IOBytes += AReg);
                                         deschedule ();
                                 }
 			   }
@@ -2211,10 +2178,7 @@ DescheduleOut:
 			   schedule (temp | ProcPriority);
 			   break;
 		case 0x0e: /* outbyte     */
-#ifdef PROFILE
-                           if (profiling)
-                                profile[PRO_CHANOUT]++;
-#endif
+                           PROFILE(profile[PRO_CHANOUT]++);
 			   MSGDBG2 ("-I-EMUDBG: outbyte: Channel=#%08X.\n", BReg);
 			   IPtr++;
                            if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
@@ -2225,10 +2189,7 @@ DescheduleOut:
 				writeword (WPtr, AReg);
                                 Link0InDest   = WPtr;
                                 Link0InLength = 1;
-#ifdef PROFILE
-                                if (profiling)
-                                        Link[0].In.IOBytes++;
-#endif
+                                PROFILE(Link[0].In.IOBytes++);
                                 deschedule ();
                            }
 			   else if (!IsLinkOut(BReg))
@@ -2290,19 +2251,13 @@ DescheduleOutByte:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].Out.Address = WPtr;
                                         Link[TheLink(BReg)].Out.Length  = 1;
-#ifdef PROFILE
-                                        if (profiling)
-                                                Link[TheLink(BReg)].Out.IOBytes++;
-#endif
+                                        PROFILE(Link[TheLink(BReg)].Out.IOBytes++);
                                         deschedule ();
                                 }
 			   }
 			   break;
 		case 0x0f: /* outword     */
-#ifdef PROFLE
-                           if (profiling)
-                                profile[PRO_CHANOUT] += 4;
-#endif
+                           PROFILE(profile[PRO_CHANOUT] += 4);
 			   MSGDBG2 ("-I-EMUDBG: outword(1): Channel=#%08X.\n", BReg);
 			   IPtr++;
                            if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
@@ -2313,10 +2268,7 @@ DescheduleOutByte:
 				writeword (WPtr, AReg);
                                 Link0InDest   = WPtr;
                                 Link0InLength = 4;
-#ifdef PROFILE
-                                if (profiling)
-                                        Link[0].In.IOBytes += 4;
-#endif
+                                PROFILE(Link[0].In.IOBytes += 4);
                                 deschedule ();
                            }
 			   else if (!IsLinkOut(BReg))
@@ -2390,10 +2342,7 @@ DescheduleOutWord:
 				        writeword (BReg, Wdesc);
                                         Link[TheLink(BReg)].Out.Address = WPtr;
                                         Link[TheLink(BReg)].Out.Length  = 4;
-#ifdef PROFILE
-                                        if (profiling)
-                                                Link[TheLink(BReg)].Out.IOBytes += 4;
-#endif
+                                        PROFILE(Link[TheLink(BReg)].Out.IOBytes += 4);
                                         deschedule ();
                                 }
 			   }
@@ -3890,11 +3839,7 @@ DescheduleOutWord:
                            BReg = CReg;
 		           IPtr++;
 
-#ifdef PROFILE
-                           if (profiling)
-                                add_profile (0x300 + temp);
-#endif
-
+                           PROFILE(add_profile (0x300 + temp));
                            switch (temp) {
 			   case 0x01: /* fpusqrtfirst    */
                                       if (FAReg.length == FP_REAL64)
@@ -4069,7 +4014,7 @@ DescheduleOutWord:
                            BReg = CReg;
 		           IPtr++;
 		           break;
-#ifdef COMBINATIONS
+#ifdef T4COMBINATIONS
                 case 0x100: /* stl ldl */
 			   writeword (index (WPtr, Arg0), AReg);
                            if (Arg0 != Arg1)
@@ -4142,10 +4087,7 @@ BadCode:
                 if ((IsT800 || IsTVS) && ResetRounding && (RoundingMode != ROUND_N))
                         fp_setrounding ("reset", ROUND_N);
 
-#ifdef PROFILE
-		if (profiling)
-			profile[PRO_INSTR]++;
-#endif
+		PROFILE(profile[PRO_INSTR]++);
 
                 /* Halt when Error flag was set */
 		if ((!PrevError && ReadError) &&
@@ -4158,7 +4100,7 @@ BadCode:
                 fp_chkexcept ("mainloop");
 #endif
 	}
-#ifdef PROFILE
+#ifdef T4PROFILE
         if (profiling)
         {
                 update_tod (&EndTOD);
@@ -4455,10 +4397,7 @@ void start_process (void)
 	/* Reset timeslice counter. */
 	timeslice = 0;
 
-#ifdef PROFILE
-	if (profiling)
-		profile[PRO_STARTP]++;
-#endif
+	PROFILE(profile[PRO_STARTP]++);
 }
 
 /* Save the current process and start a new process. */
@@ -4529,10 +4468,7 @@ void D_check (void)
 		/* Set StartNewProcess flag. */
                 SetGotoSNP;
 	}
-#ifdef PROFILE
-	if (profiling)
-		profile[PRO_DCHECK]++;
-#endif
+	PROFILE(profile[PRO_DCHECK]++);
 }
 
 /* Interrupt a low priority process.                    */

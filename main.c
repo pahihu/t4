@@ -232,9 +232,7 @@ int main (int argc, char **argv)
                 printf("    -sl                  Links in shared memory.\n");
                 printf("    -sm #bits            Memory size in address bits (default 21, 2Mbyte).\n");
                 printf("    -sn id               Node ID.\n");
-#ifdef PROFILE
-                printf("    -su                  Instruction profiling.\n");
-#endif
+                PROFILE(printf("    -su                  Instruction profiling.\n"));
                 printf("    -sv inp.tbo inp.bin out.bin\n");
                 printf("                         Select Mike's TVS: T800 + T414 FP support.\n");
 #ifdef EMUDEBUG
@@ -454,7 +452,7 @@ int main (int argc, char **argv)
 					  }
 					  else serve=TRUE;
 					  break;
-#ifdef PROFILE
+#ifdef T4PROFILE
 				case 'u': if (argv[arg][3]!='\0')
 					  {
 						strcat (CommandLineMost, argv[arg]);
@@ -735,7 +733,7 @@ int main (int argc, char **argv)
 #endif
 #endif
 
-#ifdef PROFILE
+#ifdef T4PROFILE
 	if (profiling)
 	{
 		/* Open profiling file. */
@@ -776,7 +774,7 @@ int main (int argc, char **argv)
 
         close_channels ();
 
-#ifdef PROFILE
+#ifdef T4PROFILE
 	if (profiling)
 	{
 		/* Print out profile counts. */
@@ -837,10 +835,7 @@ void handler (int signal)
 
         fflush (stdout);
 
-#ifdef PROFILE
-	if (profiling)
-		fclose (ProfileFile);
-#endif
+	PROFILE(fclose (ProfileFile));
 
         if (CopyIn)
                 fclose (CopyIn);

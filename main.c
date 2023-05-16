@@ -232,7 +232,9 @@ int main (int argc, char **argv)
                 printf("    -sl                  Links in shared memory.\n");
                 printf("    -sm #bits            Memory size in address bits (default 21, 2Mbyte).\n");
                 printf("    -sn id               Node ID.\n");
-                PROFILE(printf("    -su                  Instruction profiling.\n"));
+#ifdef T4PROFILE
+                printf("    -su                  Instruction profiling.\n");
+#endif
                 printf("    -sv inp.tbo inp.bin out.bin\n");
                 printf("                         Select Mike's TVS: T800 + T414 FP support.\n");
 #ifdef EMUDEBUG

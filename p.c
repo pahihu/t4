@@ -337,6 +337,7 @@ static struct {
         { 0x70 /* ldl  */,  0x50 /* ldnlp    */, 0x103 },
         { 0x70 /* ldl  */,  0x70 /* ldl      */, 0x104 },
         { 0x10 /* ldlp */, 0x18a /* fpldnldb */, 0x105 },
+        { 0xb0 /* ajw  */, 0x120 /* ret      */, 0x106 },
         { NO_ICODE, NO_ICODE, NO_ICODE }
 };
 static unsigned char combinations[0x400 * 0x400];
@@ -4058,6 +4059,13 @@ DescheduleOutWord:
 			   XReg = index (WPtr, Arg0);
                            fp_pushdb (real64 (XReg));
 		           IPtr++;
+                           break;
+                case 0x106: /* ajw ret */
+                           WPtr = index (WPtr, Arg0);
+                           T4DEBUG(checkWPtr ("AJW", WPtr));
+			   IPtr = word (WPtr);
+			   UpdateWdescReg (index (WPtr, 4) | ProcPriority);
+                           T4DEBUG(checkWPtr ("RET", WPtr));
                            break;
 #endif
                 case 0x17c: /* XXX lddevid    */

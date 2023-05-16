@@ -294,22 +294,25 @@ typedef struct _InstrSlot {
         uint32_t IPtr;
         uint32_t NextIPtr;
         uint32_t OReg;
-#ifdef T4COMBINATIONS
-        uint32_t _Arg0, _Arg1;
-#endif
         unsigned char Icode;
+        unsigned char rsvd[3];
 #ifdef EMUDEBUG
         unsigned char Instruction;
 #endif
 } InstrSlot;
 
-#define Arg0            Icache[islot]._Arg0
-#define Arg1            Icache[islot]._Arg1
+typedef struct _ArgSlot {
+        uint32_t _Arg0, _Arg1;
+} ArgSlot;
+
+#define Arg0            Acache[islot]._Arg0
+#define Arg1            Acache[islot]._Arg1
 
 #define IC_NOADDR       0xDEADBEEFU
 #define MAX_ICACHE      16384
 #define IHASH(x)        ((x)&(MAX_ICACHE-1))
 InstrSlot Icache[MAX_ICACHE];
+ArgSlot  Acache[MAX_ICACHE];
 
 static void InvalidateAddr(uint32_t a)
 {
@@ -1748,13 +1751,13 @@ FetchNext:      Instruction = byte_int (IPtr);
                                 EMUDBG3 ("-I-EMU414: code0=#%03X code1=#%03X\n", code0, code1);
                                 EMUDBG2 ("-I-EMU414: combined code=#%03X\n", combined[i].ccode);
 
-                                Icache[islot-1]._Arg0 = Icache[islot-1].OReg;
-                                Icache[islot-1]._Arg1 = Icache[islot].OReg;
+                                Acache[islot-1]._Arg0 = Icache[islot-1].OReg;
+                                Acache[islot-1]._Arg1 = Icache[islot].OReg;
                                 Icache[islot-1].Icode = 0xF0;
                                 Icache[islot-1].OReg  = combined[i].ccode;
                                 Icache[islot-1].NextIPtr = Icache[islot].NextIPtr;
 
-                                EMUDBG4 ("-I-EMU414: OReg=#%X Arg0=#%X Arg1=#%X\n", Icache[islot-1].OReg, Icache[islot-1]._Arg0, Icache[islot-1]._Arg1);
+                                EMUDBG4 ("-I-EMU414: OReg=#%X Arg0=#%X Arg1=#%X\n", Icache[islot-1].OReg, Acache[islot-1]._Arg0, Acache[islot-1]._Arg1);
                         }
                 }
 #endif

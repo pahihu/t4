@@ -50,7 +50,11 @@ char           *Secondaries[] = {"REV", "LB", "BSUB", "ENDP",
 		 "--E5--", "--E6--", "--E7--", "--E8--", "--E9--", "--EA--",
 		 "--EB--", "--EC--", "--ED--", "--EE--", "--EF--", "DEVLB",
 			     "DEVSB", "DEVLS", "DEVSS", "DEVLW", "DEVSW",
-			     "DEVXSWORD", "LSX", "CS" "CSU"};
+			     "DEVXSWORD", "LSX", "CS", "CSU",
+                 "--FA--", "--FB--", "--FC--", "--FD--", "--FE--", "--FF--",
+                 "STL+LDL", "LDL+LDNL", "EQC+CJ", "LDL+LDNLP", "LDL+LDL",
+                 "LDLP+FPLDNLDB", "AJW+RET", "LDLP+LDC", "LDLP+LDL"
+};
 
 
 char            *FpuEntries[] = {"--FPU00--", "FPUSQRTFIRST", "FPUSQRTSTEP", "FPUSQRTLAST",

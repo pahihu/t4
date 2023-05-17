@@ -335,13 +335,15 @@ static struct {
         unsigned short code0, code1;
         uint32_t ccode;
 } combined[] = {
-        { 0xD0 /* stl  */,  0x70 /* ldl      */, 0x100 },
+        { 0xd0 /* stl  */,  0x70 /* ldl      */, 0x100 },
         { 0x70 /* ldl  */,  0x30 /* ldnl     */, 0x101 },
         { 0xc0 /* eqc  */,  0xa0 /* cj       */, 0x102 },
         { 0x70 /* ldl  */,  0x50 /* ldnlp    */, 0x103 },
         { 0x70 /* ldl  */,  0x70 /* ldl      */, 0x104 },
         { 0x10 /* ldlp */, 0x18a /* fpldnldb */, 0x105 },
         { 0xb0 /* ajw  */, 0x120 /* ret      */, 0x106 },
+        { 0x10 /* ldlp */,  0x40 /* ldc      */, 0x107 },
+        { 0x10 /* ldlp */,  0x70 /* ldl      */, 0x108 },
         { NO_ICODE, NO_ICODE, NO_ICODE }
 };
 static unsigned char combinations[0x400 * 0x400];
@@ -1482,7 +1484,7 @@ char *mnemonic(unsigned char icode, uint32_t oreg, uint32_t fpuentry, int onlymn
                         mnemo = "LDDEVID";
                 else if (oreg == 0x1FF)
                         mnemo = "START";
-                else if (oreg < 0xfa)
+                else if (oreg < 0x109)
                         mnemo = Secondaries[oreg];
 
                 if (mnemo == NULL)
@@ -4060,6 +4062,18 @@ DescheduleOutWord:
 			   IPtr = word (WPtr);
 			   UpdateWdescReg (index (WPtr, 4) | ProcPriority);
                            T4DEBUG(checkWPtr ("RET", WPtr));
+                           break;
+                case 0x107: /* ldlp ldc */
+			   CReg = AReg;
+			   BReg = index (WPtr, Arg0);
+			   AReg = Arg1;
+			   IPtr++;
+                           break;
+                case 0x108: /* ldlp ldl */
+			   CReg = AReg;
+			   BReg = index (WPtr, Arg0);
+			   AReg = word (index (WPtr, Arg1));
+			   IPtr++;
                            break;
 #endif
                 case 0x17c: /* XXX lddevid    */

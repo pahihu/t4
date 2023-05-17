@@ -106,22 +106,23 @@ Values are in seconds.
 
 |Workers|Type|Mod1|Mod2|Mod3|Mod4|Notes|
 |--|--|--|--|--|--|--|
-|16|T800/2MB|3.9|4.5|2.8|2.5|16x T4 emulator with SHM links
-|8|T800/2MB|6.6|7.8|3.0|2.5|8x T4 emulator with SHM links
-|4|T800/2MB|12.7|14.1|4.4|3.5|4x T4 emulator with SHM links
-|2|T800/2MB|24.7|26.9|8.1|6.0|2x T4 emulator with SHM links
-|1|T800/2MB|48.5|53.2|15.9|11.7|1x T4 emulator
+|16|T800/2MB|4.1|4.6|2.7|2.6|16x T4 emulator with SHM links
+|8|T800/2MB|6.5|7.2|3.0|2.4|8x T4 emulator with SHM links
+|4|T800/2MB|12.6|13.0|4.3|3.6|4x T4 emulator with SHM links
+|2|T800/2MB|23.6|25.5|7.8|6.0|2x T4 emulator with SHM links
+|1|T800/2MB|46.0|51.3|14.7|11.1|1x T4 emulator
+
 
 
 Performance of the system compared on Model2 as in [Exploiting concurrency: a ray tracing example](http://transputer.net/tn/07/tn07.html#x1-100004).
 
 |transputers|speed|relative speed|linearity|
 |--|--|--|--|
-|1|1231.9|1.00|100.0|
-|2|2436.3|1.98|98.9|
-|4|4647.9|3.77|94.3|
-|8|8402.1|6.82|85.3|
-|16|14563.6|11.82|73.9|
+|1|1277.5|1.00|100.0|
+|2|2570.0|2.01|100.6|
+|4|5041.2|3.95|98.7|
+|8|9102.2|7.13|89.1|
+|16|14247.0|11.15|69.7|
 
 
 

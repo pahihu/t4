@@ -19,6 +19,7 @@
 #endif
 
 #ifdef EMUDEBUG
+#define BADCODE(x)      if(x)goto BadCode;
 #define EMUDBG(x)       if(emudebug)printf(x)
 #define EMUDBG2(x,y)    if(emudebug)printf(x,y)
 #define EMUDBG3(x,y,z)  if(emudebug)printf(x,y,z)
@@ -29,6 +30,7 @@
 #define MSGDBG3(x,y,z)  if(msgdebug||emudebug)printf(x,y,z)
 #define MSGDBG4(a1,a2,a3,a4) if(msgdebug||emudebug)printf(a1,a2,a3,a4)
 #else
+#define BADCODE(x)
 #define EMUDBG(x)
 #define EMUDBG2(x,y)
 #define EMUDBG3(x,y,z)

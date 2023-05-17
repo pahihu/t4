@@ -311,6 +311,7 @@ typedef struct _ArgSlot {
 #define IC_NOADDR       0xDEADBEEFU
 #define MAX_ICACHE      16384
 #define IHASH(x)        ((x)&(MAX_ICACHE-1))
+#define OprCombined(x,y)(((x) == 0xf0)&&((y)>0xff)&&((y)<0x17c))
 InstrSlot Icache[MAX_ICACHE];
 ArgSlot  Acache[MAX_ICACHE];
 
@@ -1546,7 +1547,9 @@ void init_processor (void)
         update_tod (&LastTOD);
 
 
+#ifdef EMUDEBUG
         if (IsT800 || IsTVS)
+#endif
         {
                 fp_init ();
                 FAReg.length = FP_UNKNOWN;
@@ -1692,8 +1695,14 @@ void mainloop (void)
 #ifdef EMUDEBUG
                 Instruction = Icache[islot].Instruction;
                 if (cachedebug)
-                        printf ("-I-EMU414: Icache hit @ #%08X Icode = #%02X OReg = #%08X\n",
+                {
+                        if (OprCombined(Icode,OReg))
+                                printf ("-I-EMU414: Icache hit @ #%08X Icode = #%02X OReg = #%08X Arg0=#%X Arg1=#%X\n",
+                                        IPtr, Icode, OReg, Arg0, Arg1);
+                        else
+                                printf ("-I-EMU414: Icache hit @ #%08X Icode = #%02X OReg = #%08X\n",
                                 IPtr, Icode, OReg);
+                }
 #endif
         }
         else
@@ -3100,15 +3109,13 @@ DescheduleOutWord:
 			   IPtr++;
 			   break;
 		case 0x5a: /* dup    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            CReg = BReg;
                            BReg = AReg;
 		           IPtr++;
 		           break;
 		case 0x5b: /* XXX move2dinit    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            m2dLength = AReg;
                            m2dDestStride = BReg;
                            m2dSourceStride = CReg;
@@ -3120,8 +3127,7 @@ DescheduleOutWord:
 #define m2dSourceAddress        CReg
 
 		case 0x5c: /* XXX move2dall    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            if (INT32(m2dWidth) >= 0 && INT32(m2dLength) >= 0)
                            {
                                 for (temp = 0; temp < m2dLength; temp++)
@@ -3137,8 +3143,7 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x5d: /* XXX move2dnonzero    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            if (INT32(m2dWidth) >= 0 && INT32(m2dLength) >= 0)
                            {
                                 for (temp = 0; temp < m2dLength; temp++)
@@ -3159,8 +3164,7 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x5e: /* XXX move2dzero    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            if (INT32(m2dWidth) >= 0 && INT32(m2dLength) >= 0)
                            {
                                 for (temp = 0; temp < m2dLength; temp++)
@@ -3186,8 +3190,7 @@ DescheduleOutWord:
 #undef m2dSourceAddress
 
 		case 0x63: /* unpacksn    */
-                           if (IsT800)
-                                goto BadCode;
+                           BADCODE(IsT800);
 #ifdef EMUDEBUG
                            if (emudebug)
                            {
@@ -3221,8 +3224,7 @@ DescheduleOutWord:
 			   IPtr++;
 			   break;
 		case 0x6c: /* postnormsn  */
-                           if (IsT800)
-                                goto BadCode;
+                           BADCODE(IsT800);
 			   temp = (INT32(word (index (WPtr, Temp_s))) - INT32(CReg));
                            if (INT32(temp) <= -BitsPerWord)
                            {
@@ -3245,8 +3247,7 @@ DescheduleOutWord:
 			   IPtr++;
 			   break;
 		case 0x6d: /* roundsn     */
-                           if (IsT800)
-                                goto BadCode;
+                           BADCODE(IsT800);
 			   if (INT32(CReg) >= 0x000000ff)
 			   {
 				AReg = t4_infinity ();
@@ -3275,8 +3276,7 @@ DescheduleOutWord:
 			   IPtr++;
 			   break;
 		case 0x71: /* ldinf       */
-                           if (IsT800)
-                                goto BadCode;
+                           BADCODE(IsT800);
 			   CReg = BReg;
 			   BReg = AReg;
 			   AReg = t4_infinity ();
@@ -3297,15 +3297,13 @@ DescheduleOutWord:
 			   IPtr++;
 			   break;
 		case 0x73: /* cflerr      */
-                           if (IsT800)
-                                goto BadCode;
+                           BADCODE(IsT800);
 			   if ((t4_isinf (AReg)) || (t4_isnan (AReg)))
 				SetError;
 			   IPtr++;
 			   break;
 		case 0x74: /* crcword    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            for (temp = 0; temp < BitsPerWord; temp++)
                            {
 			        AReg = t4_shl64 (BReg, AReg, 1);
@@ -3319,8 +3317,7 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x75: /* crcbyte    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            /* Data must be in the most significant byte of the word. */
                            for (temp = 0; temp < BitsPerByte; temp++)
                            {
@@ -3335,22 +3332,19 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x76: /* bitcnt    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            temp = t4_bitcount (AReg);
                            AReg = temp + BReg;
                            BReg = CReg;
 		           IPtr++;
 		           break;
 		case 0x77: /* bitrevword    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            AReg = t4_bitreverse (AReg);
 		           IPtr++;
 		           break;
 		case 0x78: /* bitrevnbits    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            if (AReg == 0)
                                 AReg = 0;
                            else if (AReg <= BitsPerWord)
@@ -3374,17 +3368,22 @@ DescheduleOutWord:
                            {
                                 fp_popdb (&dbtemp1);
                            }
-                           else if (FAReg.length == FP_REAL32)
+                           else
+#ifdef EMUDEBUG
+                           if (FAReg.length == FP_REAL32)
+#endif
                            {
                                 fp_popsn (&sntemp1);
                                 dbtemp1.bits = sntemp1.bits;
                            }
+#ifdef EMUDEBUG
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpsttest)\n");
                                 temp    = FP_REAL64;
                                 dbtemp1 = DUndefined;
                            }
+#endif
                            dbtemp2 = fp_state (temp, dbtemp1, &temp2);
                            writereal64 (AReg, dbtemp2);
                            writeword (index (AReg, 2), temp2);
@@ -3394,15 +3393,13 @@ DescheduleOutWord:
                            IPtr++;
                            break;
 		case 0x81: /* wsubdb    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
 			   AReg = index (AReg, 2*BReg);
 			   BReg = CReg;
 		           IPtr++;
 		           break;
 		case 0x82: /* XXX fpldnldbi    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            T4DEBUG(checkWordAligned ("FPLDNLDBI", AReg));
                            fp_pushdb (real64 (index (AReg, 2*BReg)));
                            AReg = CReg;
@@ -3410,8 +3407,7 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x83: /* fpchkerr    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            fp_syncexcept ();
                            if (FP_Error)
                            {
@@ -3421,14 +3417,13 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x84: /* fpstnldb    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            T4DEBUG(checkWordAligned ("FPSTNLDB", AReg));
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            if (FAReg.length == FP_REAL64)
 #endif
                                 fp_popdb (&dbtemp1);
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpstnldb)\n");
@@ -3450,8 +3445,7 @@ DescheduleOutWord:
                            IPtr++;
                            break;
 		case 0x86: /* XXX fpldnlsni    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            T4DEBUG(checkWordAligned ("FPLDNLSNI", AReg));
                            fp_pushsn (real32 (index (AReg, BReg)));
                            AReg = CReg;
@@ -3460,20 +3454,18 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x87: /* fpadd    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            fp_dobinary (fp_adddb, fp_addsn);
 		           IPtr++;
 		           break;
 		case 0x88: /* fpstnlsn    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            T4DEBUG(checkWordAligned ("FPSTNLSN", AReg));
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            if (FAReg.length == FP_REAL32)
 #endif
                                 fp_popsn (&sntemp1);
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fpstnlsn)\n");
@@ -3487,14 +3479,12 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x89: /* fpsub    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            fp_dobinary (fp_subdb, fp_subsn);
 		           IPtr++;
 		           break;
 		case 0x8a: /* fpldnldb    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            T4DEBUG(checkWordAligned ("FPLDNLDB", AReg));
                            fp_pushdb (real64 (AReg));
                            AReg = BReg;
@@ -3502,20 +3492,17 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x8b: /* fpmul    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            fp_dobinary (fp_muldb, fp_mulsn);
 		           IPtr++;
 		           break;
 		case 0x8c: /* fpdiv    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            fp_dobinary (fp_divdb, fp_divsn);
 		           IPtr++;
 		           break;
 		case 0x8e: /* fpldnlsn    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            T4DEBUG(checkWordAligned ("FPLDNLSN", AReg));
                            fp_pushsn (real32 (AReg));
                            AReg = BReg;
@@ -3523,8 +3510,7 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x8f: /* XXX fpremfirst    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            /* Do calculation at fpremfirst. Push true to AReg, to execute one more fpremstep. */
                            fp_dobinary (fp_remfirstdb, fp_remfirstsn);
                            CReg = BReg;
@@ -3533,8 +3519,7 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x90: /* XXX fpremstep    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            /* Do nothing here. Terminate loop with false. */
                            CReg = BReg;
                            BReg = AReg;
@@ -3543,14 +3528,16 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x91: /* fpnan    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            temp = true_t;
                            if (FAReg.length == FP_REAL64)
                                 temp = fp_nandb (DB(FAReg));
-                           else if (FAReg.length == FP_REAL32)
+                           else
+#ifdef EMUDEBUG
+                           if (FAReg.length == FP_REAL32)
+#endif
                                 temp = fp_nansn (SN(FAReg));
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            else
                                 printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpnan)\n");
 #endif
@@ -3561,20 +3548,22 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x92: /* fpordered    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            temp = false_t;
                            if (FAReg.length == FP_REAL64)
                            {
                                 fp_peek2db (&dbtemp1, &dbtemp2);
                                 temp = fp_ordereddb (dbtemp1, dbtemp2);
                            }
-                           else if (FAReg.length == FP_REAL32)
+                           else
+#ifdef EMUDEBUG
+                           if (FAReg.length == FP_REAL32)
+#endif
                            {
                                 fp_peek2sn (&sntemp1, &sntemp2);
                                 temp = fp_orderedsn (sntemp1, sntemp2);
                            }
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            else
                                 printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpordered)\n");
 #endif
@@ -3585,14 +3574,16 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x93: /* fpnotfinite    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            temp = true_t;
                            if (FAReg.length == FP_REAL64)
                                 temp = fp_notfinitedb (DB(FAReg));
-                           else if (FAReg.length == FP_REAL32)
+                           else
+#ifdef EMUDEBUG
+                           if (FAReg.length == FP_REAL32)
+#endif
                                 temp = fp_notfinitesn (SN(FAReg));
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            else
                                 printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpnotfinite)\n");
 #endif
@@ -3603,8 +3594,7 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x94: /* fpgt    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            temp = fp_binary2word (fp_gtdb, fp_gtsn);
                            CReg = BReg;
                            BReg = AReg;
@@ -3612,8 +3602,7 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x95: /* fpeq    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            temp = fp_binary2word (fp_eqdb, fp_eqsn);
                            CReg = BReg;
                            BReg = AReg;
@@ -3621,8 +3610,7 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x96: /* fpi32tor32    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            temp = word (AReg);
                            fp_pushsn (fp_i32tor32 (temp));
                            AReg = BReg;
@@ -3631,8 +3619,7 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x98: /* fpi32tor64    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            temp = word (AReg);
                            fp_pushdb (fp_i32tor64 (temp));
                            AReg = BReg;
@@ -3641,8 +3628,7 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x9a: /* fpb32tor64    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            temp = word (AReg);
                            fp_pushdb (fp_b32tor64 (temp));
                            AReg = BReg;
@@ -3651,8 +3637,7 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x9c: /* fptesterr    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            fp_syncexcept ();            /* Sync FP_Error with native FPU excp. */
                            if (FP_Error)
                                 temp = false_t;
@@ -3667,13 +3652,15 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x9d: /* fprtoi32    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            if (FAReg.length == FP_REAL64)
                                 DB(FAReg) = fp_rtoi32db (DB(FAReg));
-                           else if (FAReg.length == FP_REAL32)
+                           else
+#ifdef EMUDEBUG
+                           if (FAReg.length == FP_REAL32)
+#endif
                                 SN(FAReg) = fp_rtoi32sn (SN(FAReg));
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is undefined! (fprtoi32)\n");
@@ -3685,19 +3672,21 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x9e: /* fpstnli32    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            if (FAReg.length == FP_REAL64)
                            {
                                 fp_popdb (&dbtemp1);
                                 temp = fp_stnli32db (dbtemp1);
                            }
-                           else if (FAReg.length == FP_REAL32)
+                           else
+#ifdef EMUDEBUG
+                           if (FAReg.length == FP_REAL32)
+#endif
                            {
                                 fp_popsn (&sntemp1);
                                 temp = fp_stnli32sn (sntemp1);
                            }
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpstnli32)\n");
@@ -3712,27 +3701,27 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0x9f: /* fpldzerosn    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            fp_pushsn (Zero);
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0xa0: /* fpldzerodb    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            fp_pushdb (DZero);
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0xa1: /* fpint    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            if (FAReg.length == FP_REAL64)
                                 DB(FAReg) = fp_intdb (DB(FAReg));
-                           else if (FAReg.length == FP_REAL32)
+                           else
+#ifdef EMUDEBUG
+                           if (FAReg.length == FP_REAL32)
+#endif
                                 SN(FAReg) = fp_intsn (SN(FAReg));
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpint)\n");
@@ -3744,16 +3733,14 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0xa3: /* fpdup    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            FCReg = FBReg;
                            FBReg = FAReg;
                            ResetRounding = TRUE;
 		           IPtr++;
 		           break;
 		case 0xa4: /* fprev    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            fptemp = FAReg;
                            FAReg  = FBReg;
                            FBReg  = fptemp;
@@ -3761,18 +3748,17 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0xa6: /* fpldnladddb    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            T4DEBUG(checkWordAligned ("FPLDNLADDDB", AReg));
                            fp_pushdb (real64 (AReg));
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            if (FAReg.length == FP_REAL64)
 #endif
                            {
                                 fp_pop2db (&dbtemp1, &dbtemp2);
                                 fp_pushdb (fp_adddb (dbtemp1, dbtemp2));
                            }
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpldnladddb)\n");
@@ -3786,18 +3772,17 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0xa8: /* fpldnlmuldb    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            T4DEBUG(checkWordAligned ("FPLDNLMULDB", AReg));
                            fp_pushdb (real64 (AReg));
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            if (FAReg.length == FP_REAL64)
 #endif
                            {
                                 fp_pop2db (&dbtemp1, &dbtemp2);
                                 fp_pushdb (fp_muldb (dbtemp1, dbtemp2));
                            }
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpldnlmuldb)\n");
@@ -3811,18 +3796,17 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0xaa: /* fpldnladdsn    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            T4DEBUG(checkWordAligned ("FPLDNLADDSN", AReg));
                            fp_pushsn (real32 (AReg));
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            if (FAReg.length == FP_REAL32)
 #endif
                            {
                                 fp_pop2sn (&sntemp1, &sntemp2);
                                 fp_pushsn (fp_addsn (sntemp1, sntemp2));
                            }
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fpldnladdsn)\n");
@@ -3836,8 +3820,7 @@ DescheduleOutWord:
 		           IPtr++;
 		           break;
 		case 0xab: /* fpentry    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            temp = AReg;
                            AReg = BReg;
                            BReg = CReg;
@@ -3848,9 +3831,12 @@ DescheduleOutWord:
 			   case 0x01: /* fpusqrtfirst    */
                                       if (FAReg.length == FP_REAL64)
                                           DB(FAReg) = fp_sqrtfirstdb (DB(FAReg));
-                                      else if (FAReg.length == FP_REAL32)
+                                      else
+#ifdef EMUDEBUG
+                                      if (FAReg.length == FP_REAL32)
+#endif
                                           SN(FAReg) = fp_sqrtfirstsn (SN(FAReg));
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                                       else
                                       {
                                           printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpusqrtfirst)\n");
@@ -3883,14 +3869,14 @@ DescheduleOutWord:
                                       /* Do not reset rounding mode. */
 			              break;
 			   case 0x07: /* fpur32tor64    */
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                                       if (FAReg.length == FP_REAL32)
 #endif
                                       {
                                           FAReg.length = FP_REAL64;
                                           DB(FAReg)    = fp_r32tor64 (SN(FAReg));
                                       }
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                                       else
                                       {
                                           printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fpur32tor64)\n");
@@ -3901,14 +3887,14 @@ DescheduleOutWord:
                                       ResetRounding = TRUE;
 			              break;
 			   case 0x08: /* fpur64tor32    */
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                                       if (FAReg.length == FP_REAL64)
 #endif
                                       {
                                           FAReg.length = FP_REAL32;
                                           SN(FAReg) = fp_r64tor32 (DB(FAReg));
                                       }
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                                       else
                                       {
                                           printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpur64tor32)\n");
@@ -3928,14 +3914,14 @@ DescheduleOutWord:
                                       fp_dounary (fp_absdb, fp_abssn);
 			              break;
 			   case 0x0d: /* fpunoround    */
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                                       if (FAReg.length == FP_REAL64)
 #endif
                                       {
                                           FAReg.length = FP_REAL32;
                                           SN(FAReg) = fp_norounddb (DB(FAReg));
                                       }
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                                       else
                                       {
                                           printf ("-W-EMUFPU: Warning - FAReg is not REAL64! (fpunoround)\n");
@@ -3948,9 +3934,12 @@ DescheduleOutWord:
 			   case 0x0e: /* fpuchki32    */
                                       if (FAReg.length == FP_REAL64)
                                           fp_chki32db (DB(FAReg));
-                                      else if (FAReg.length == FP_REAL32)
+                                      else
+#ifdef EMUDEBUG
+                                      if (FAReg.length == FP_REAL32)
+#endif
                                           fp_chki32sn (SN(FAReg));
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                                       else
                                           printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpuchki32)\n");
 #endif
@@ -3959,9 +3948,12 @@ DescheduleOutWord:
 			   case 0x0f: /* fpuchki64    */
                                       if (FAReg.length == FP_REAL64)
                                           fp_chki64db (DB(FAReg));
-                                      else if (FAReg.length == FP_REAL32)
+                                      else
+#ifdef EMUDEBUG
+                                      if (FAReg.length == FP_REAL32)
+#endif
                                           fp_chki64sn (SN(FAReg));
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                                       else
                                           printf ("-W-EMUFPU: Warning - FAReg is undefined! (fpuchki64)\n");
 #endif
@@ -3994,18 +3986,17 @@ DescheduleOutWord:
                            }
 		           break;
 		case 0xac: /* fpldnlmulsn    */
-		           if (IsT414)
-		               goto BadCode;
+		           BADCODE(IsT414);
                            T4DEBUG(checkWordAligned ("FPLDNLMULSN", AReg));
                            fp_pushsn (real32 (AReg));
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            if (FAReg.length == FP_REAL32)
 #endif
                            {
                                 fp_pop2sn (&sntemp1, &sntemp2);
                                 fp_pushsn (fp_mulsn (sntemp1, sntemp2));
                            }
-#ifndef EMUDEBUG
+#ifdef EMUDEBUG
                            else
                            {
                                 printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fpldnlmulsn)\n");
@@ -4081,7 +4072,9 @@ DescheduleOutWord:
                            IPtr++;
                            break;
 		default  : 
+#ifdef EMUDEBUG
 BadCode:
+#endif
                            printf ("-E-EMU414: Error - bad Icode! (#%02X - %s)\n", OReg, mnemonic (Icode, OReg, AReg, 0));
                            processor_state ();
 			   handler (-1);
@@ -4095,7 +4088,7 @@ BadCode:
 			   break;
 	} /* switch (Icode) */
                 /* Reset rounding mode to round nearest. */
-                if ((IsT800 || IsTVS) && ResetRounding && (RoundingMode != ROUND_N))
+                if (/*(IsT800 || IsTVS) &&*/ ResetRounding && (RoundingMode != ROUND_N))
                         fp_setrounding ("reset", ROUND_N);
 
 		PROFILE(profile[PRO_INSTR]++);
@@ -4292,7 +4285,9 @@ int run_process (void)
 		STATUSReg = word (index (MostNeg, 16));
 		/*EReg = word (index (MostNeg, 17));*/
 
+#ifdef EMUDEBUG
                 if (IsT800 || IsTVS)
+#endif
                 {
                         FAReg = FARegSave;
                         FBReg = FBRegSave;
@@ -4510,7 +4505,9 @@ void interrupt (void)
 	        writeword (index (MostNeg, 16), STATUSReg);
 	        /*writeword (index (MostNeg, 17), EReg);*/
 
+#ifdef EMUDEBUG
                 if (IsT800 || IsTVS)
+#endif
                 {
                         FARegSave = FAReg;
                         FBRegSave = FBReg;

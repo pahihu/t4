@@ -1,0 +1,137 @@
+rm -f level1.log
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/alphafun.pov -w640 -h480 -v -f +d > povray.def
+echo "=== alphafun.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm alphafun.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/ballbox1.pov -w640 -h480 -v -f +d > povray.def
+echo "=== ballbox1.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm ballbox1.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/basicvue.pov -w640 -h480 -v -f +d > povray.def
+echo "=== basicvue.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm basicvue.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/blob.pov     -w640 -h480 -v -f +d > povray.def
+echo "=== blob.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm blob.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/box.pov      -w640 -h480 -v -f +d > povray.def
+echo "=== box.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm box.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/cantelop.pov -w640 -h480 -v -f +d > povray.def
+echo "=== cantelop.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm cantelop.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/checker2.pov -w640 -h480 -v -f +d > povray.def
+echo "=== checker2.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm checker2.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/cliptst2.pov -w640 -h480 -v -f +d > povray.def
+echo "=== cliptst2.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm cliptst2.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/colors.pov   -w640 -h480 -v -f +d > povray.def
+echo "=== colors.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm colors.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/dish.pov     -w640 -h480 -v -f +d > povray.def
+echo "=== dish.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm dish.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/dodec2.pov   -w640 -h480 -v -f +d > povray.def
+echo "=== dodec2.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm dodec2.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/fogtst.pov   -w640 -h480 -v -f +d > povray.def
+echo "=== fogtst.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm fogtst.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/glasdish.pov -w640 -h480 -v -f +d > povray.def
+echo "=== glasdish.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm glasdish.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/glass.pov    -w640 -h480 -v -f +d > povray.def
+echo "=== glass.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm glass.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/imagetst.pov -w640 -h480 -v -f +d > povray.def
+echo "=== imagetst.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm imagetst.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/intee1.pov   -w640 -h480 -v -f +d > povray.def
+echo "=== intee1.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm intee1.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/laser.pov    -w640 -h480 -v -f +d > povray.def
+echo "=== laser.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm laser.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/mapper.pov   -w640 -h480 -v -f +d > povray.def
+echo "=== mapper.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm mapper.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/mappr2.pov   -w640 -h480 -v -f +d > povray.def
+echo "=== mappr2.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm mappr2.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/matmap.pov   -w640 -h480 -v -f +d > povray.def
+echo "=== matmap.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm matmap.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/pvinterp.pov -w640 -h480 -v -f +d > povray.def
+echo "=== pvinterp.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm pvinterp.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/shapes.pov   -w640 -h480 -v -f +d > povray.def
+echo "=== shapes.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm shapes.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/shapes2.pov  -w640 -h480 -v -f +d > povray.def
+echo "=== shapes2.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm shapes2.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/spotlite.pov -w640 -h480 -v -f +d > povray.def
+echo "=== spotlite.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm spotlite.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/stone1.pov   -w640 -h480 -v -f +d > povray.def
+echo "=== stone1.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm stone1.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/stone2.pov   -w640 -h480 -v -f +d > povray.def
+echo "=== stone2.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm stone2.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/stone3.pov   -w640 -h480 -v -f +d > povray.def
+echo "=== stone3.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm stone3.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/stone4.pov   -w640 -h480 -v -f +d > povray.def
+echo "=== stone4.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm stone4.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/sunset.pov   -w640 -h480 -v -f +d > povray.def
+echo "=== sunset.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm sunset.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/sunset1.pov  -w640 -h480 -v -f +d > povray.def
+echo "=== sunset1.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm sunset1.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/texture1.pov -w640 -h480 -v -f +d > povray.def
+echo "=== texture1.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm texture1.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/texture2.pov -w640 -h480 -v -f +d > povray.def
+echo "=== texture2.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm texture2.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/texture3.pov -w640 -h480 -v -f +d > povray.def
+echo "=== texture3.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm texture3.ppm
+echo +l../../povscn/include -l../../povscn/level1 -i../../povscn/level1/window.pov   -w640 -h480 -v -f +d > povray.def
+echo "=== window.ppm ===" >>level1.log
+time pov >>level1.log
+mv picture.ppm window.ppm

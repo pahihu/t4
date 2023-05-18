@@ -1,9 +1,11 @@
 #resnet
 export SPYNET=povray.map
-for i in `seq 1 15`
+t4 -s8 -sn 1 -sl -sm 22 -si &
+sleep 1
+for i in `seq 2 15`
 do
   t4 -s8 -sn $i -sl -sm 22 -si &
-  sleep 1
 done
+sleep 2
 t4 -s8 -sn 0 -sl -sm 22 -sb povray.btl
 pkill -9 -x t4

@@ -1,0 +1,65 @@
+rm -f level3.log
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/chess.pov -w640 -h480 -v -f +d > povray.def
+echo "=== chess.ppm ===" >>level3.log
+time pov >>level3.log
+mv picture.ppm chess.ppm
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/desk.pov -w640 -h480 -v -f +d > povray.def
+echo "=== desk.ppm ===" >>level3.log
+time pov >>level3.log
+mv picture.ppm desk.ppm
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/dfwood.pov -w640 -h480 -v -f +d > povray.def
+echo "=== dfwood.ppm ===" >>level3.log
+time pov >>level3.log
+mv picture.ppm dfwood.ppm
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/fishbowl.pov -w640 -h480 -v -f +d > povray.def
+echo "=== fishbowl.ppm ===" >>level3.log
+time pov >>level3.log
+mv picture.ppm fishbowl.ppm
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/kscope.pov -w640 -h480 -v -f +d > povray.def
+echo "=== kscope.ppm ===" >>level3.log
+time pov >>level3.log
+mv picture.ppm kscope.ppm
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/lamp.pov -w640 -h480 -v -f +d > povray.def
+echo "=== lamp.ppm ===" >>level3.log
+time pov >>level3.log
+mv picture.ppm lamp.ppm
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/oak2.pov -w640 -h480 -v -f +d > povray.def
+echo "=== oak2.ppm ===" >>level3.log
+time pov >>level3.log
+mv picture.ppm oak2.ppm
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/palace.pov -w640 -h480 -v -f +d > povray.def
+echo "=== palace.ppm ===" >>level3.log
+time pov >>level3.log
+mv picture.ppm palace.ppm
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/piece1.pov -w640 -h480 -v -f +d > povray.def
+echo "=== piece1.ppm ===" >>level3.log
+time pov >>level3.log
+mv picture.ppm piece1.ppm
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/pool.pov -w640 -h480 -v -f +d > povray.def
+echo "=== pool.ppm ===" >>level3.log
+time pov >>level3.log
+mv picture.ppm pool.ppm
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/roman.pov -w640 -h480 -v -f +d > povray.def
+echo "=== roman.ppm ===" >>level3.log
+time pov >>level3.log
+mv picture.ppm roman.ppm
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/snack.pov -w640 -h480 -v -f +d > povray.def
+echo "=== snack.ppm ===" >>level3.log
+time pov >>level3.log
+mv picture.ppm snack.ppm
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/takeoff.pov -w640 -h480 -v -f +d > povray.def
+echo "=== takeoff.ppm ===" >>level3.log
+time pov >>level3.log
+mv picture.ppm takeoff.ppm
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/tomb.pov -w640 -h480 -v -f +d > povray.def
+echo "=== tomb.ppm ===" >>level3.log
+time pov >>level3.log
+mv picture.ppm tomb.ppm
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/wealth.pov -w640 -h480 -v -f +d > povray.def
+echo "=== wealth.ppm ===" >>level3.log
+time pov >>level3.log
+mv picture.ppm wealth.ppm
+echo +l../../povscn/include +l../../povscn/level3 -i../../povscn/level3/wg5.pov -w640 -h480 -v -f +d > povray.def
+echo "=== wg5.ppm ===" >>level3.log
+time pov >>level3.log
+mv picture.ppm wg5.ppm

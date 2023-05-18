@@ -50,6 +50,9 @@
 #define NoneSelected_o	0xffffffff
 #define Ready_p		0x80000003
 
+typedef unsigned char  u_char;
+typedef unsigned short u_short;
+
 extern int Txxx;
 extern uint32_t MemSize;
 extern uint32_t MemWordMask;
@@ -105,7 +108,7 @@ typedef struct _Channel_ {
         int  Link;
         int  sock;
         char url[MAX_CHANNEL_URL];
-        unsigned char *schbuf;
+        u_char *schbuf;
         uint64_t IOBytes;
 } Channel;
 
@@ -152,21 +155,21 @@ void purge_timer   (void);
 INLINE void update_time   (void);
 uint32_t word (uint32_t);
 void     writeword     (uint32_t, uint32_t);
-unsigned char byte (uint32_t);
+u_char byte (uint32_t);
 INLINE
-void writebyte     (uint32_t, unsigned char);
+void writebyte     (uint32_t, u_char);
 fpreal32_t real32 (uint32_t);
 void    writereal32 (uint32_t, fpreal32_t);
 fpreal64_t real64 (uint32_t);
 void    writereal64 (uint32_t, fpreal64_t);
 uint32_t   word_int (uint32_t);
 void    writeword_int (uint32_t, uint32_t);
-unsigned char byte_int (uint32_t);
-void writebyte_int (uint32_t, unsigned char);
-void writebytes_int(uint32_t, unsigned char*, uint32_t);
+u_char byte_int (uint32_t);
+void writebyte_int (uint32_t, u_char);
+void writebytes_int(uint32_t, u_char*, uint32_t);
 void movebytes_int (uint32_t, uint32_t, uint32_t);
-unsigned char* bytes_int (uint32_t, unsigned char*, uint32_t);
-unsigned char* memrange (uint32_t, unsigned char*, uint32_t);
+u_char* bytes_int (uint32_t, u_char*, uint32_t);
+u_char* memrange (uint32_t, u_char*, uint32_t);
 void add_profile   (uint32_t);
 void print_profile (void);
 void open_channel  (uint32_t);

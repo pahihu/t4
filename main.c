@@ -106,8 +106,8 @@ char ProfileName[256] = "\0";
 FILE *CopyIn;
 FILE *InpFile, *OutFile;
 
-extern unsigned char *core;
-extern unsigned char *mem;
+extern u_char *core;
+extern u_char *mem;
 extern uint32_t WPtr;
 extern uint32_t ProcPriority;
 

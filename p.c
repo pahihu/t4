@@ -105,11 +105,11 @@ int Txxx = 414;
 uint32_t MemStart    = 0x80000048;
 
 /* Memory space. */
-unsigned char *core;
+u_char *core;
 uint32_t CoreSize    = 2 * 1024;
 uint32_t ExtMemStart = 0x80000800;
 
-unsigned char *mem;
+u_char *mem;
 uint32_t MemSize     = 1 << 21;
 uint32_t MemWordMask = ((uint32_t)0x001ffffc);
 uint32_t MemByteMask = ((uint32_t)0x001fffff);
@@ -224,9 +224,9 @@ uint32_t STATUSReg;             /* Processor flags: GotoSNPBit, HaltOnError, Err
 #endif
 
 /* Internal variables. */
-unsigned char Instruction;
-unsigned char Icode;
-unsigned char Idata;
+u_char Instruction;
+u_char Icode;
+u_char Idata;
 int  Timers;
 uint32_t t4_overflow;
 uint32_t t4_carry;
@@ -247,7 +247,7 @@ int32_t quitstatus;
 /* Signal handler. */
 void handler (int);
 
-unsigned char *SharedLinks;
+u_char *SharedLinks;
 
 #define StrPrio(p)      ((p) ? "Lo" : "Hi")
 
@@ -294,10 +294,10 @@ typedef struct _InstrSlot {
         uint32_t IPtr;
         uint32_t NextIPtr;
         uint32_t OReg;
-        unsigned char Icode;
-        unsigned char rsvd[3];
+        u_char   Icode;
+        u_char   rsvd[3];
 #ifdef EMUDEBUG
-        unsigned char Instruction;
+        u_char Instruction;
 #endif
 } InstrSlot;
 
@@ -309,11 +309,17 @@ typedef struct _ArgSlot {
 #define Arg1            Acache[islot]._Arg1
 
 #define IC_NOADDR       0xDEADBEEFU
-#define MAX_ICACHE      16384
-#define IHASH(x)        ((x)&(MAX_ICACHE-1))
+#define CACHE_BITS      17
+#define MAX_ICACHE      (1<<CACHE_BITS)
 #define OprCombined(x,y)(((x) == 0xf0)&&((y)>0xff)&&((y)<0x17c))
 InstrSlot Icache[MAX_ICACHE];
 ArgSlot  Acache[MAX_ICACHE];
+
+static uint32_t IHASH(uint32_t a)
+{
+        return a & (MAX_ICACHE-1);
+        /* return (a ^ (a >> (32 - CACHE_BITS))) & (MAX_ICACHE-1); */
+}
 
 static void InvalidateAddr(uint32_t a)
 {
@@ -332,7 +338,7 @@ static void InvalidateRange(uint32_t a, uint32_t n)
 #define NO_ICODE        0x400
 
 static struct {
-        unsigned short code0, code1;
+        u_short code0, code1;
         uint32_t ccode;
 } combined[] = {
         { 0xd0 /* stl  */,  0x70 /* ldl      */, 0x100 },
@@ -346,7 +352,7 @@ static struct {
         { 0x10 /* ldlp */,  0x70 /* ldl      */, 0x108 },
         { NO_ICODE, NO_ICODE, NO_ICODE }
 };
-static unsigned char combinations[0x400 * 0x400];
+static u_char combinations[0x400 * 0x400];
 
 /* Support functions. */
 
@@ -677,7 +683,7 @@ void update_tod (struct timeval *tp)
 static uint32_t BootLink = 0;
 static int CtrlByte = C_UNKNOWN;
 
-int handleboot (Channel *chan, unsigned char *data, int ndata)
+int handleboot (Channel *chan, u_char *data, int ndata)
 {
         uint32_t address, value;
         Channel *outchan;
@@ -779,7 +785,7 @@ Exit:
         return 0;
 }
 
-int channel_recvP (Channel *chan, unsigned char *data, int doWait)
+int channel_recvP (Channel *chan, u_char *data, int doWait)
 {
         int ret;
 
@@ -816,10 +822,10 @@ int channel_recvP (Channel *chan, unsigned char *data, int doWait)
         return ret;
 }
 
-int channel_recvmemP (Channel *chan, unsigned char *data, int doMemWrite, int doWait)
+int channel_recvmemP (Channel *chan, u_char *data, int doMemWrite, int doWait)
 {
         int ret;
-        unsigned char *buf;
+        u_char *buf;
 
         buf = doMemWrite ? memrange (chan->Address, data, MAX_DATA) : data;
         ret = channel_recvP (chan, buf, doWait);
@@ -838,7 +844,7 @@ int channel_recvmemP (Channel *chan, unsigned char *data, int doMemWrite, int do
 }
 
 
-int channel_sendP (Channel *chan, unsigned char *data, int ndata, int doWait)
+int channel_sendP (Channel *chan, u_char *data, int ndata, int doWait)
 {
         int ret;
 
@@ -893,9 +899,9 @@ int channel_sendP (Channel *chan, unsigned char *data, int ndata, int doWait)
 
 int channel_sendmemP (Channel *chan, int doWait)
 {
-        unsigned char data[MAX_DATA];
+        u_char data[MAX_DATA];
         int ndata;
-        unsigned char *buf;
+        u_char *buf;
 
         ndata = MAX_DATA;
         if (chan->Length < MAX_DATA)
@@ -909,7 +915,7 @@ int channel_sendmemP (Channel *chan, int doWait)
 /* Receive at most MAX_DATA bytes without waiting. */
 int Precv_channel (Channel *chan, uint32_t address, uint32_t len)
 {
-        unsigned char data[MAX_DATA];
+        u_char data[MAX_DATA];
 
         if (len > MAX_DATA)
                 return 1;
@@ -993,7 +999,7 @@ int linkcomms (char *where, int doBoot, int timeOut)
         int npfd;
         uint32_t linkWdesc;
         Channel *channels[8];
-        unsigned char data[MAX_DATA];
+        u_char data[MAX_DATA];
         int ndata;
         int i, ret;
         int poll;
@@ -1257,7 +1263,7 @@ void open_channel (uint32_t addr)
         int chanIn, theLink;
         int othernode, otherlink;
         int ret;
-        unsigned char *nodeBase;
+        u_char *nodeBase;
 
         chan = reset_channel (addr);
         chanIn = IsLinkIn(addr);
@@ -1448,7 +1454,7 @@ void save_dump (void)
                 printf ("-E-EMU404: Error - failed to open dump file.\n");
                 handler (-1);
         }
-        bytesWritten = fwrite (mem, sizeof (unsigned char), MemSize, fout);
+        bytesWritten = fwrite (mem, sizeof (u_char), MemSize, fout);
         if (bytesWritten != MemSize)
         {
                 printf ("-E-EMU414: Error - failed to write dump file.\n");
@@ -1459,7 +1465,7 @@ void save_dump (void)
         fclose (fout);
 }
 
-char *mnemonic(unsigned char icode, uint32_t oreg, uint32_t fpuentry, int onlymnemo)
+char *mnemonic(u_char icode, uint32_t oreg, uint32_t fpuentry, int onlymnemo)
 {
         char *mnemo;
         char bad[16];
@@ -1472,7 +1478,11 @@ char *mnemonic(unsigned char icode, uint32_t oreg, uint32_t fpuentry, int onlymn
                 {
                         if (fpuentry == 0x9c)
                                 mnemo = "FPUCLRERR";
-                        else if (fpuentry < 0x24)
+                        else if (fpuentry == 0x23)
+                                mnemo = "FPUSETERR";
+                        else if (fpuentry == 0x22)
+                                mnemo = "FPURN";
+                        else if (fpuentry <= MAX_FPUENTRIES)
                                 mnemo = FpuEntries[fpuentry];
                         else
                         {
@@ -1480,12 +1490,14 @@ char *mnemonic(unsigned char icode, uint32_t oreg, uint32_t fpuentry, int onlymn
                                 mnemo = bad;
                         }
                 }
+                else if (oreg == 0x1ff)
+                        mnemo = "START";
                 else if (oreg == 0x17c)
                         mnemo = "LDDEVID";
-                else if (oreg == 0x1FF)
-                        mnemo = "START";
-                else if (oreg < 0x109)
+                else if (oreg <= MAX_SECONDARIES)
                         mnemo = Secondaries[oreg];
+                else if (MIN_COMBINATIONS <= oreg && oreg <= MAX_COMBINATIONS)
+                        mnemo = Combinations[oreg - MIN_COMBINATIONS];
 
                 if (mnemo == NULL)
                 {
@@ -1614,9 +1626,9 @@ static struct timeval StartTOD, EndTOD;
 double ElapsedSecs;
 #endif
 
-unsigned short ProfileCode (unsigned char instrCode, uint32_t oprCode)
+u_short ProfileCode (u_char instrCode, uint32_t oprCode)
 {
-        unsigned short ret;
+        u_short ret;
 
         ret = instrCode;
         if (0xF0 == instrCode)
@@ -1634,7 +1646,7 @@ void mainloop (void)
         uint32_t temp, temp2;
         uint32_t otherWdesc, otherWPtr, otherPtr, altState;
         uint32_t PrevError;
-        unsigned char pixel;
+        u_char pixel;
         fpreal32_t sntemp1, sntemp2;
         fpreal64_t dbtemp1, dbtemp2;
         REAL       fptemp;
@@ -1690,9 +1702,9 @@ void mainloop (void)
         if (IPtr == Icache[islot = IHASH(IPtr)].IPtr)
         {
                 PROFILE(profile[PRO_ICHIT]++);
-                Icode = Icache[islot].Icode;
-                OReg  = Icache[islot].OReg;
                 IPtr  = Icache[islot].NextIPtr;
+                OReg  = Icache[islot].OReg;
+                Icode = Icache[islot].Icode;
 
 #ifdef EMUDEBUG
                 Instruction = Icache[islot].Instruction;
@@ -1740,9 +1752,9 @@ FetchNext:      Instruction = byte_int (IPtr);
 			IPtr++;
                         goto FetchNext;
                 }
-                Icache[islot].Icode = Icode;
-                Icache[islot].OReg  = OReg;
                 Icache[islot].NextIPtr = IPtr;
+                Icache[islot].OReg  = OReg;
+                Icache[islot].Icode = Icode;
 
 #ifdef EMUDEBUG
                 Icache[islot].Instruction = Instruction;
@@ -1753,8 +1765,8 @@ FetchNext:      Instruction = byte_int (IPtr);
 #ifdef T4COMBINATIONS
                 if (islot)
                 {
-                        unsigned short code0 = ProfileCode (Icache[islot-1].Icode, Icache[islot-1].OReg);
-                        unsigned short code1 = ProfileCode (Icode, OReg);
+                        u_short code0 = ProfileCode (Icache[islot-1].Icode, Icache[islot-1].OReg);
+                        u_short code1 = ProfileCode (Icode, OReg);
                         if ((i = combinations[(code0 << 10) + code1])
                                 && (Icache[islot-1].IPtr == (Icache[islot].IPtr - 1)))
                         {
@@ -1764,9 +1776,10 @@ FetchNext:      Instruction = byte_int (IPtr);
 
                                 Acache[islot-1]._Arg0 = Icache[islot-1].OReg;
                                 Acache[islot-1]._Arg1 = Icache[islot].OReg;
-                                Icache[islot-1].Icode = 0xF0;
-                                Icache[islot-1].OReg  = combined[i].ccode;
+
                                 Icache[islot-1].NextIPtr = Icache[islot].NextIPtr;
+                                Icache[islot-1].OReg  = combined[i].ccode;
+                                Icache[islot-1].Icode = 0xF0;
 
                                 EMUDBG4 ("-I-EMU414: OReg=#%X Arg0=#%X Arg1=#%X\n", Icache[islot-1].OReg, Acache[islot-1]._Arg0, Acache[islot-1]._Arg1);
                         }
@@ -4723,7 +4736,7 @@ uint32_t word_int (uint32_t ptr)
                 wptr = (uint32_t *)(mem + (MemWordMask & ptr));
         result = *wptr;
 #else
-	unsigned char val[4];
+	u_char val[4];
 
 	/* Get bytes, ensuring memory references are in range. */
         if (CoreAddr(ptr))
@@ -4788,7 +4801,7 @@ void writeword_int (uint32_t ptr, uint32_t value)
 
         InvalidateRange(ptr,4);
 #else
-	unsigned char val[4];
+	u_char val[4];
 
 	val[0] = (value & 0x000000ff);
 	val[1] = ((value & 0x0000ff00)>>8);
@@ -4827,9 +4840,9 @@ void writeword (uint32_t ptr, uint32_t value)
 
 
 /* Read a byte from memory. */
-unsigned char byte_int (uint32_t ptr)
+u_char byte_int (uint32_t ptr)
 {
-	unsigned char result;
+	u_char result;
 
 	/* Get byte, ensuring memory reference is in range. */
         if (CoreAddr(ptr))
@@ -4841,9 +4854,9 @@ unsigned char byte_int (uint32_t ptr)
 }
 
 #ifndef NDEBUG
-unsigned char byte (uint32_t ptr)
+u_char byte (uint32_t ptr)
 {
-        unsigned char result;
+        u_char result;
 
         result = byte_int (ptr);
         if (memdebug)
@@ -4854,7 +4867,7 @@ unsigned char byte (uint32_t ptr)
 #endif
 
 /* Write a byte to memory. */
-INLINE void writebyte_int (uint32_t ptr, unsigned char value)
+INLINE void writebyte_int (uint32_t ptr, u_char value)
 {
 	/* Write byte, ensuring memory reference is in range. */
         if (CoreAddr(ptr))
@@ -4866,9 +4879,9 @@ INLINE void writebyte_int (uint32_t ptr, unsigned char value)
 }
 
 /* Return pointer to memory or data[] */
-INLINE unsigned char* memrange (uint32_t ptr, unsigned char *data, uint32_t len)
+INLINE u_char* memrange (uint32_t ptr, u_char *data, uint32_t len)
 {
-        unsigned char *dst;
+        u_char *dst;
         if (CoreRange(ptr,len))
         {
                 dst = core + (ptr & MemByteMask);
@@ -4883,9 +4896,9 @@ INLINE unsigned char* memrange (uint32_t ptr, unsigned char *data, uint32_t len)
 }
 
 /* Write bytes to memory. */
-INLINE void writebytes_int (uint32_t ptr, unsigned char *data, uint32_t len)
+INLINE void writebytes_int (uint32_t ptr, u_char *data, uint32_t len)
 {
-        unsigned char *dst;
+        u_char *dst;
 	/* Write byte, ensuring memory reference is in range. */
         if (CoreRange(ptr,len))
         {
@@ -4910,7 +4923,7 @@ INLINE void writebytes_int (uint32_t ptr, unsigned char *data, uint32_t len)
 /* Move bytes to memory. */
 INLINE void movebytes_int (uint32_t dst, uint32_t src, uint32_t len)
 {
-        unsigned char *p, *q;
+        u_char *p, *q;
 
 	/* Write byte, ensuring memory reference is in range. */
         if (CoreRange(src,len) && CoreRange(dst,len))
@@ -4938,9 +4951,9 @@ INLINE void movebytes_int (uint32_t dst, uint32_t src, uint32_t len)
 /* Read bytes from memory. */
 /* If range entirely in core/extmem then return pointer to memory */
 /* Otherwise copy to data[] and return data[] */
-INLINE unsigned char* bytes_int (uint32_t ptr, unsigned char *data, uint32_t len)
+INLINE u_char* bytes_int (uint32_t ptr, u_char *data, uint32_t len)
 {
-        unsigned char *dst;
+        u_char *dst;
 	/* Write byte, ensuring memory reference is in range. */
         if (CoreRange(ptr,len))
         {
@@ -4964,7 +4977,7 @@ INLINE unsigned char* bytes_int (uint32_t ptr, unsigned char *data, uint32_t len
 }
 
 #ifndef NDEBUG
-void writebyte (uint32_t ptr, unsigned char value)
+void writebyte (uint32_t ptr, u_char value)
 {
         if (memdebug)
                 printf ("-I-EMUMEM: WB: Mem[%08X] ! %02X\n", ptr, value);

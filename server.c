@@ -87,9 +87,9 @@ int  loop1;
 int  loop2;
 int  FromServerLen = 0;
 int  ToServerLen = 0;
-unsigned char FromServerBuffer[(16*1024)+5];
-unsigned char ToServerBuffer[514];
-void dump_message   (char *msg, unsigned char *buffer, int len);
+u_char FromServerBuffer[(16*1024)+5];
+u_char ToServerBuffer[514];
+void dump_message   (char *msg, u_char *buffer, int len);
 void notimpl_packet (void);
 void error_packet   (void);
 int DumpMessage;
@@ -221,7 +221,7 @@ FILE* ToFile (unsigned int i)
 
 #ifdef EMUDEBUG
 static
-char *msgtag (unsigned char tag)
+char *msgtag (u_char tag)
 {
         static char msg[16];
 
@@ -473,7 +473,7 @@ int printable (int ch)
 }
 
 #ifdef EMUDEBUG
-void dump_message (char *msg, unsigned char *buffer, int len)
+void dump_message (char *msg, u_char *buffer, int len)
 {
         int temp, i;
 
@@ -510,7 +510,7 @@ void dump_message (char *msg, unsigned char *buffer, int len)
 
 void message(void)
 {
-	unsigned char tag;
+	u_char tag;
 
 	tag = ToServerBuffer[2];
 	
@@ -1516,7 +1516,7 @@ void sp_core (void)
 	uint32_t length;
 	extern int peeksize;
 	extern int analyse;
-	extern unsigned char *core;
+	extern u_char *core;
 
 	offset = ToServerBuffer[3] + (ToServerBuffer[4]<<8);
 	offset = offset + (ToServerBuffer[5]<<16) + (ToServerBuffer[6]<<24);

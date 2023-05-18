@@ -309,8 +309,10 @@ typedef struct _ArgSlot {
 #define Arg1            Acache[islot]._Arg1
 
 #define IC_NOADDR       0xDEADBEEFU
-#define CACHE_BITS      17
-#define MAX_ICACHE      (1<<CACHE_BITS)
+#ifndef T4CACHEBITS
+#define T4CACHEBITS     14
+#endif
+#define MAX_ICACHE      (1<<T4CACHEBITS)
 #define OprCombined(x,y)(((x) == 0xf0)&&((y)>0xff)&&((y)<0x17c))
 InstrSlot Icache[MAX_ICACHE];
 ArgSlot  Acache[MAX_ICACHE];

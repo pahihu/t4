@@ -1699,6 +1699,7 @@ void mainloop (void)
                         start_process ();
 
 		/* Execute an instruction. */
+        ResetRounding = FALSE;
 
         if (IPtr == Icache[islot = IHASH(IPtr)].IPtr)
         {
@@ -4116,10 +4117,8 @@ BadCode:
 			   break;
 	} /* switch (Icode) */
                 /* Reset rounding mode to round nearest. */
-                if (ResetRounding && (RoundingMode != ROUND_N)) {
+                if (ResetRounding && (RoundingMode != ROUND_N))
                         fp_setrounding ("reset", ROUND_N);
-                        ResetRounding = FALSE;
-                }
 
 		PROFILE(profile[PRO_INSTR]++);
 

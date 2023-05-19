@@ -1699,7 +1699,6 @@ void mainloop (void)
                         start_process ();
 
 		/* Execute an instruction. */
-        ResetRounding = FALSE;
 
         if (IPtr == Icache[islot = IHASH(IPtr)].IPtr)
         {
@@ -4117,8 +4116,10 @@ BadCode:
 			   break;
 	} /* switch (Icode) */
                 /* Reset rounding mode to round nearest. */
-                if (/*(IsT800 || IsTVS) &&*/ ResetRounding && (RoundingMode != ROUND_N))
+                if (ResetRounding && (RoundingMode != ROUND_N)) {
                         fp_setrounding ("reset", ROUND_N);
+                        ResetRounding = FALSE;
+                }
 
 		PROFILE(profile[PRO_INSTR]++);
 
@@ -4795,10 +4796,7 @@ void writeword_int (uint32_t ptr, uint32_t value)
 #endif
         uint32_t *wptr;
 
-        if (CoreAddr(ptr))
-                wptr = (uint32_t *) (core + (MemWordMask & ptr));
-        else
-                wptr = (uint32_t *) (mem + (MemWordMask & ptr));
+        wptr = (uint32_t *) ((CoreAddr(ptr) ? core : mem) + (MemWordMask & ptr));
         *wptr = value;
 
         InvalidateRange(ptr,4);
@@ -4960,13 +4958,11 @@ INLINE u_char* bytes_int (uint32_t ptr, u_char *data, uint32_t len)
         if (CoreRange(ptr,len))
         {
                 dst = core + (ptr & MemByteMask);
-                // memcpy (data, dst, len);
                 return dst;
         }
         else if (ExtMemAddr(ptr))
         {
                 dst = mem + (ptr & MemByteMask);
-                // memcpy (data, dst, len);
                 return dst;
         }
         else

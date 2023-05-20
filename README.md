@@ -43,6 +43,7 @@ The compiled binaries are in the `bin/` directory.
 Changes
 =======
 
+* binaries use profile guided optimization (PGO)
 * added some instruction combinations, which are detected at runtime
 * simplified OReg clearing
 * eliminated IntEnabled tests using the Icache[]
@@ -106,23 +107,22 @@ Values are in seconds.
 
 |Workers|Type|Mod1|Mod2|Mod3|Mod4|Notes|
 |--|--|--|--|--|--|--|
-|16|T800/2MB|4.1|4.6|2.7|2.6|16x T4 emulator with SHM links
-|8|T800/2MB|6.5|7.2|3.0|2.4|8x T4 emulator with SHM links
-|4|T800/2MB|12.6|13.0|4.3|3.6|4x T4 emulator with SHM links
-|2|T800/2MB|23.6|25.5|7.8|6.0|2x T4 emulator with SHM links
-|1|T800/2MB|46.0|51.3|14.7|11.1|1x T4 emulator
-
+|16|T800/2MB|3.6|3.7|2.6|2.3|16x T4 emulator with SHM links
+|8|T800/2MB|5.0|5.5|2.8|2.4|8x T4 emulator with SHM links
+|4|T800/2MB|9.4|11.7|3.6|3.2|4x T4 emulator with SHM links
+|2|T800/2MB|19.7|19.9|6.5|4.8|2x T4 emulator with SHM links
+|1|T800/2MB|36.5|39.3|11.8|9.5|1x T4 emulator
 
 
 Performance of the system compared on Model2 as in [Exploiting concurrency: a ray tracing example](http://transputer.net/tn/07/tn07.html#x1-100004).
 
 |transputers|speed|relative speed|linearity|
 |--|--|--|--|
-|1|1277.5|1.00|100.0|
-|2|2570.0|2.01|100.6|
-|4|5041.2|3.95|98.7|
-|8|9102.2|7.13|89.1|
-|16|14247.0|11.15|69.7|
+|1|1667.6|1.00|100.0|
+|2|3293.3|1.97|98.7|
+|4|5601.4|3.36|84.0|
+|8|11915.6|7.15|89.3|
+|16|17712.4|10.62|66.4|
 
 
 

@@ -352,6 +352,8 @@ static struct {
         { 0xb0 /* ajw  */, 0x120 /* ret      */, 0x106 },
         { 0x10 /* ldlp */,  0x40 /* ldc      */, 0x107 },
         { 0x10 /* ldlp */,  0x70 /* ldl      */, 0x108 },
+        { 0xd0 /* stl  */,  0xd0 /* stl      */, 0x109 },
+        { 0x70 /* ldl  */, 0x173 /* cflerr   */, 0x10a },
         { NO_ICODE, NO_ICODE, NO_ICODE }
 };
 static u_char combinations[0x400 * 0x400];
@@ -4090,6 +4092,22 @@ DescheduleOutWord:
 			   AReg = word (index (WPtr, Arg1));
 			   IPtr++;
                            break;
+                case 0x109: /* stl stl */
+			   writeword (index (WPtr, Arg0), AReg);
+			   writeword (index (WPtr, Arg1), BReg);
+			   AReg = CReg;
+			   BReg = CReg;
+			   IPtr++;
+                           break;
+                case 0x10a: /* ldl cflerr */
+			   CReg = BReg;
+			   BReg = AReg;
+			   AReg = word (index (WPtr, Arg0));
+                           BADCODE(IsT800);
+			   if ((t4_isinf (AReg)) || (t4_isnan (AReg)))
+				SetError;
+			   IPtr++;
+                           break;
 #endif
                 case 0x17c: /* XXX lddevid    */
                            if (IsT800) /* TTH */
@@ -4721,6 +4739,7 @@ INLINE void update_time (void)
 #define ExtMemAddr(a)   (INT32(ExtMemStart) <= INT32(a))
 #define CoreRange(a,n)  (CoreAddr(a) && CoreAddr((a)+(n)))
 #define ExtMemRange(a,n)(ExtMemAddr(a) && ExtMemAddr((a)+(n)))
+#define MemWordPtr(a)   ((CoreAddr(a) ? core : mem) + (MemWordMask & (a)))
 
 /* Read a word from memory. */
 uint32_t word_int (uint32_t ptr)
@@ -4732,10 +4751,7 @@ uint32_t word_int (uint32_t ptr)
 #endif
         uint32_t *wptr;
 
-        if (CoreAddr(ptr))
-                wptr = (uint32_t *)(core + (MemWordMask & ptr));
-        else
-                wptr = (uint32_t *)(mem + (MemWordMask & ptr));
+        wptr = (uint32_t *)MemWordPtr(ptr);
         result = *wptr;
 #else
 	u_char val[4];
@@ -4795,7 +4811,7 @@ void writeword_int (uint32_t ptr, uint32_t value)
 #endif
         uint32_t *wptr;
 
-        wptr = (uint32_t *) ((CoreAddr(ptr) ? core : mem) + (MemWordMask & ptr));
+        wptr = (uint32_t *)MemWordPtr(ptr);
         *wptr = value;
 
         InvalidateRange(ptr,4);
@@ -4987,25 +5003,60 @@ void writebyte (uint32_t ptr, u_char value)
 fpreal32_t real32 (uint32_t ptr)
 {
         fpreal32_t x;
+#if BYTE_ORDER==1234
+#ifndef _MSC_VER
+#warning Using little-endian access!
+#endif
+        REAL32 *p;
 
         ResetRounding = TRUE;
 
+        p = (REAL32 *)MemWordPtr(ptr);
+        x.fp = *p;
+#else
+        ResetRounding = TRUE;
+
         x.bits = word (ptr);
+#endif
         return x;
 }
 
 /* Write a REAL32 to memory. */
 void writereal32 (uint32_t ptr, fpreal32_t value)
 {
+#if BYTE_ORDER==1234
+#ifndef _MSC_VER
+#warning Using little-endian access!
+#endif
+        REAL32 *p;
+
+        ResetRounding = TRUE;
+
+        p = (REAL32 *)MemWordPtr(ptr);
+        *p = value.fp;
+        InvalidateRange (ptr, 4);
+#else
         ResetRounding = TRUE;
 
         writeword (ptr, value.bits);
+#endif
 }
 
 /* Read a REAL64 from memory. */
 fpreal64_t real64 (uint32_t ptr)
 {
         fpreal64_t x;
+#if BYTE_ORDER==1234
+#ifndef _MSC_VER
+#warning Using little-endian access!
+#endif
+        REAL64 *p;
+
+        ResetRounding = TRUE;
+
+        p = (REAL64 *)MemWordPtr(ptr);
+        x.fp = *p;
+#else
         uint32_t lobits, hibits;
 
         ResetRounding = TRUE;
@@ -5014,16 +5065,30 @@ fpreal64_t real64 (uint32_t ptr)
         hibits = word (ptr + 4);
 
         x.bits = ((uint64_t)(hibits) << 32) | lobits;
+#endif
         return x;
 }
 
 /* Write a REAL64 to memory. */
 void writereal64 (uint32_t ptr, fpreal64_t value)
 {
+#if BYTE_ORDER==1234
+#ifndef _MSC_VER
+#warning Using little-endian access!
+#endif
+        REAL64 *p;
+
+        ResetRounding = TRUE;
+
+        p = (REAL64 *)MemWordPtr(ptr);
+        *p = value.fp;
+        InvalidateRange (ptr, 8);
+#else
         ResetRounding = TRUE;
 
         writeword (ptr,     value.bits & 0xffffffff);
         writeword (ptr + 4, (value.bits >> 32) & 0xffffffff);
+#endif
 }
 
 /* Add an executing instruction to the profile list. */

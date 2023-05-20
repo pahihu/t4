@@ -82,10 +82,10 @@ char* FpuEntries[] = {
 
 
 char* Combinations[] = {
-/*100*/ "STL+LDL", "LDL+LDNL",      "EQC+CJ",   "LDL+LDNLP",
-/*104*/ "LDL+LDL", "LDLP+FPLDNLDB", "AJW+RET",  "LDLP+LDC",
-/*108*/ "LDLP+LDL", "STL+STL",      "LDL+CFLERR","--C10B--",
-/*10C*/ "--C10C--", "--C10D--",     "--C10E--", "--C10F--"
+/*100*/ "STL+LDL",       "LDL+LDNL",      "EQC+CJ",     "LDL+LDNLP",
+/*104*/ "LDL+LDL",       "LDLP+FPLDNLDB", "AJW+RET",    "LDLP+LDC",
+/*108*/ "LDLP+LDL",      "STL+STL",       "LDL+CFLERR", "LDLP+FPSTNLSN",
+/*10C*/ "LDLP+FPLDNLSN", "--C10D--",      "--C10E--",   "--C10F--"
 };
 #define MIN_COMBINATIONS 0x100
 #define MAX_COMBINATIONS 0x10f

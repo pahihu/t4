@@ -354,6 +354,8 @@ static struct {
         { 0x10 /* ldlp */,  0x70 /* ldl      */, 0x108 },
         { 0xd0 /* stl  */,  0xd0 /* stl      */, 0x109 },
         { 0x70 /* ldl  */, 0x173 /* cflerr   */, 0x10a },
+        { 0x10 /* ldlp */, 0x188 /* fpstnlsn */, 0x10b },
+        { 0x10 /* ldlp */, 0x18e /* fpldnlsn */, 0x10c },
         { NO_ICODE, NO_ICODE, NO_ICODE }
 };
 static u_char combinations[0x400 * 0x400];
@@ -4107,6 +4109,32 @@ DescheduleOutWord:
 			   if ((t4_isinf (AReg)) || (t4_isnan (AReg)))
 				SetError;
 			   IPtr++;
+                           break;
+                case 0x10b: /* ldlp fpstnlsn */
+			   XReg = index (WPtr, Arg0);
+		           BADCODE(IsT414);
+                           T4DEBUG(checkWordAligned ("FPSTNLSN", XReg));
+#ifdef EMUDEBUG
+                           if (FAReg.length == FP_REAL32)
+#endif
+                                fp_popsn (&sntemp1);
+#ifdef EMUDEBUG
+                           else
+                           {
+                                printf ("-W-EMUFPU: Warning - FAReg is not REAL32! (fpstnlsn)\n");
+                                sntemp1 = RUndefined;
+                           }
+#endif
+                           writereal32 (XReg, sntemp1);
+                           ResetRounding = TRUE;
+		           IPtr++;
+                           break;
+                case 0x10c: /* ldlp fpldnlsn */
+			   XReg = index (WPtr, Arg0);
+		           BADCODE(IsT414);
+                           T4DEBUG(checkWordAligned ("FPLDNLSN", XReg));
+                           fp_pushsn (real32 (XReg));
+		           IPtr++;
                            break;
 #endif
                 case 0x17c: /* XXX lddevid    */

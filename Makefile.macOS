@@ -1,6 +1,8 @@
 # Choose a C compiler. (Must be ANSI C capable).
 # CC = cc -g
-# CC = cc -flto
+# CC = clang-mp-15 -flto
+# CC = clang-mp-15 -flto -fprofile-generate
+# CC = clang-mp-15 -flto -fprofile-use=t4.profdata
 CC = gcc-mp-12 -ffloat-store -frounding-math -flto
 # CC = gcc-mp-12 -ffloat-store -frounding-math -fprofile-generate -flto
 # CC = gcc-mp-12 -ffloat-store -frounding-math -fprofile-use -flto -Wno-error-coverage-mismatch

@@ -3,6 +3,8 @@
 #
 # 64bit emulator on Linux-x64, 32bit emulator on  Linux-armhf
 CC = gcc -ffloat-store -frounding-math -flto
+# CC = gcc -ffloat-store -frounding-math -flto -fprofile-generate
+# CC = gcc -ffloat-store -frounding-math -flto -fprofile-use
 #
 # 32bit emulator on Linux-x86
 # CC = gcc -m32 -mfpmath=sse -msse2 -ffloat-store -frounding-math

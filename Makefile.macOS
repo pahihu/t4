@@ -1,7 +1,9 @@
 # Choose a C compiler. (Must be ANSI C capable).
 # CC = cc -g
 # CC = cc -flto
-CC = gcc-mp-12 -flto -ffloat-store -frounding-math
+CC = gcc-mp-12 -ffloat-store -frounding-math -flto
+# CC = gcc-mp-12 -ffloat-store -frounding-math -fprofile-generate -flto
+# CC = gcc-mp-12 -ffloat-store -frounding-math -fprofile-use -flto -Wno-error-coverage-mismatch
 #
 # 64bit emulator on Linux-x64, 32bit emulator on  Linux-armhf
 # CC = gcc -ffloat-store -frounding-math

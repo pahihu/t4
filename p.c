@@ -356,6 +356,9 @@ static struct {
         { 0x70 /* ldl  */, 0x173 /* cflerr   */, 0x10a },
         { 0x10 /* ldlp */, 0x188 /* fpstnlsn */, 0x10b },
         { 0x10 /* ldlp */, 0x18e /* fpldnlsn */, 0x10c },
+        { 0x70 /* ldl  */,  0x80 /* adc      */, 0x10d },
+        { 0x70 /* ldl  */,  0xe0 /* stnl     */, 0x10e },
+        { 0x40 /* ldc  */,  0x70 /* ldl      */, 0x10f },
         { NO_ICODE, NO_ICODE, NO_ICODE }
 };
 static u_char combinations[0x400 * 0x400];
@@ -1964,7 +1967,7 @@ FetchNext:      Instruction = byte_int (IPtr);
 			   BReg = CReg;
 			   IPtr++;
 			   break;
-		case 0xe0: /* XXX stnl  */
+		case 0xe0: /* stnl  */
                            T4DEBUG(checkWordAligned ("STNL", AReg));
 			   writeword (index (AReg, OReg), BReg);
 			   AReg = CReg;
@@ -2033,9 +2036,9 @@ FetchNext:      Instruction = byte_int (IPtr);
 			   IPtr = temp;
 			   break;
 		case 0x07: /* in          */
-OprIn:                     if (BReg == Link0Out) /* M.Bruestle 22.1.2012 */
+OprIn:                     if (IsLinkOut(BReg)) /* M.Bruestle 22.1.2012 */
                            {
-                                MSGDBG ("-W-EMUDBG: Warning - doing IN on Link0Out.\n");
+                                MSGDBG2 ("-W-EMUDBG: Warning - doing IN on Link%dOut.\n", TheLink(BReg));
                                 goto OprOut;
                            }
                            PROFILE(profile[PRO_CHANIN] += AReg);
@@ -2114,9 +2117,9 @@ DescheduleIn:
 			   IPtr++;
 			   break;
 		case 0x0b: /* out         */
-OprOut:                    if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
+OprOut:                    if (IsLinkIn(BReg)) /* M.Bruestle 22.1.2012 */
                            {
-                                MSGDBG ("-W-EMUDBG: Warning - doing OUT on Link0In.\n");
+                                MSGDBG2 ("-W-EMUDBG: Warning - doing OUT on Link%dIn.\n", TheLink(BReg));
                                 goto OprIn;
                            }
                            PROFILE(profile[PRO_CHANOUT] += AReg);
@@ -2215,9 +2218,9 @@ DescheduleOut:
                            PROFILE(profile[PRO_CHANOUT]++);
 			   MSGDBG2 ("-I-EMUDBG: outbyte: Channel=#%08X.\n", BReg);
 			   IPtr++;
-                           if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
+                           if (IsLinkIn(BReg)) /* M.Bruestle 22.1.2012 */
                            {
-			        MSGDBG ("-W-EMUDBG: Warning - doing OUTBYTE on Link0In.\n");
+			        MSGDBG3 ("-W-EMUDBG: Warning - doing OUTWORD on Link%dIn. Old channel word=#%08X.\n", TheLink(BReg), word (BReg));
 				/* Link communication. */
 				writeword (BReg, Wdesc);
 				writeword (WPtr, AReg);
@@ -2294,9 +2297,9 @@ DescheduleOutByte:
                            PROFILE(profile[PRO_CHANOUT] += 4);
 			   MSGDBG2 ("-I-EMUDBG: outword(1): Channel=#%08X.\n", BReg);
 			   IPtr++;
-                           if (BReg == Link0In) /* M.Bruestle 22.1.2012 */
+                           if (IsLinkIn(BReg)) /* M.Bruestle 22.1.2012 */
                            {
-			        MSGDBG2 ("-W-EMUDBG: Warning - doing OUTWORD on Link0In. Old channel word=#%08X.\n", word (BReg));
+			        MSGDBG3 ("-W-EMUDBG: Warning - doing OUTWORD on Link%dIn. Old channel word=#%08X.\n", TheLink(BReg), word (BReg));
 				/* Link communication. */
 				writeword (BReg, Wdesc);
 				writeword (WPtr, AReg);
@@ -4135,6 +4138,35 @@ DescheduleOutWord:
                            T4DEBUG(checkWordAligned ("FPLDNLSN", XReg));
                            fp_pushsn (real32 (XReg));
 		           IPtr++;
+                           break;
+                case 0x10d: /* ldl adc */
+			   CReg = BReg;
+			   BReg = AReg;
+			   AReg = word (index (WPtr, Arg0));
+			   t4_overflow = FALSE;
+			   t4_carry = 0;
+			   AReg = t4_eadd32 (AReg, Arg1);
+			   if (t4_overflow == TRUE)
+				SetError;
+			   IPtr++;
+                           break;
+                case 0x10e: /* ldl stnl */
+			   CReg = BReg;
+			   BReg = AReg;
+			   AReg = word (index (WPtr, Arg0));
+                           T4DEBUG(checkWordAligned ("STNL", AReg));
+			   writeword (index (AReg, Arg1), BReg);
+			   AReg = CReg;
+			   IPtr++;
+                           break;
+                case 0x10f: /* ldc ldl */
+			   CReg = BReg;
+			   BReg = AReg;
+			   AReg = Arg0;
+			   CReg = BReg;
+			   BReg = AReg;
+			   AReg = word (index (WPtr, Arg1));
+			   IPtr++;
                            break;
 #endif
                 case 0x17c: /* XXX lddevid    */

@@ -1,11 +1,11 @@
 # Choose a C compiler. (Must be ANSI C capable).
 # CC = cc -g
-# CC = clang-mp-15 -flto
+# CC = clang-mp-15 -flto -ffunction-sections -fdata-sections -Wl,-dead_strip
 # CC = clang-mp-15 -flto -fprofile-generate
-# CC = clang-mp-15 -flto -fprofile-use=t4.profdata
-CC = gcc-mp-12 -ffloat-store -frounding-math -flto
+# CC = clang-mp-15 -flto -fprofile-use=t4.profdata -ffunction-sections -fdata-sections -Wl,-dead_strip
+CC = gcc-mp-12 -ffloat-store -frounding-math -flto -ffunction-sections -fdata-sections -Wl,-dead_strip
 # CC = gcc-mp-12 -ffloat-store -frounding-math -fprofile-generate -flto
-# CC = gcc-mp-12 -ffloat-store -frounding-math -fprofile-use -flto -Wno-error-coverage-mismatch
+# CC = gcc-mp-12 -ffloat-store -frounding-math -fprofile-use -flto
 #
 # 64bit emulator on Linux-x64, 32bit emulator on  Linux-armhf
 # CC = gcc -ffloat-store -frounding-math
@@ -24,7 +24,7 @@ CFLAGS = -I. -O3 -Wall -DCURTERM=1 -I$(HOME)/include \
         -DSPYNET=1 \
         -DSHLINKS=1 \
         -DT4COMBINATIONS=1 \
-        -DT4RELEASE=1 #-DT4PROFILE=1
+        -DT4RELEASE=1
 # CFLAGS = -I. -O2 -Wall -DCURTERM=1 -I$(HOME)/include -DSPYNET=1
 # CFLAGS = -I. -O0 -Wall -DCURTERM=1 -I$(HOME)/include -DSPYNET=1 -DSHLINKS=1 -DT4COMBINATIONS=1 -DT4PROFILE=1
 # For a reasonably optimised version for SunOS 4.1.4.

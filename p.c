@@ -1708,27 +1708,7 @@ void mainloop (void)
 		/* Execute an instruction. */
         ResetRounding = FALSE;
 
-        if (IPtr == Icache[islot = IHASH(IPtr)].IPtr)
-        {
-                PROFILE(profile[PRO_ICHIT]++);
-                IPtr  = Icache[islot].NextIPtr;
-                OReg  = Icache[islot].OReg;
-                Icode = Icache[islot].Icode;
-
-#ifdef EMUDEBUG
-                Instruction = Icache[islot].Instruction;
-                if (cachedebug)
-                {
-                        if (OprCombined(Icode,OReg))
-                                printf ("-I-EMU414: Icache hit @ #%08X Icode = #%02X OReg = #%08X Arg0=#%X Arg1=#%X\n",
-                                        IPtr, Icode, OReg, Arg0, Arg1);
-                        else
-                                printf ("-I-EMU414: Icache hit @ #%08X Icode = #%02X OReg = #%08X\n",
-                                IPtr, Icode, OReg);
-                }
-#endif
-        }
-        else
+        if (IPtr != Icache[islot = IHASH(IPtr)].IPtr)
         {
                 PROFILE(profile[PRO_ICMISS]++);
                 Icache[islot].IPtr = IPtr;
@@ -1795,6 +1775,26 @@ FetchNext:      Instruction = byte_int (IPtr);
                 }
 #endif
         }
+#ifdef T4PROFILE
+        else
+                PROFILE(profile[PRO_ICHIT]++);
+#endif
+        IPtr  = Icache[islot].NextIPtr;
+        OReg  = Icache[islot].OReg;
+        Icode = Icache[islot].Icode;
+
+#ifdef EMUDEBUG
+        Instruction = Icache[islot].Instruction;
+        if (cachedebug)
+        {
+                if (OprCombined(Icode,OReg))
+                        printf ("-I-EMU414: Icache hit @ #%08X Icode = #%02X OReg = #%08X Arg0=#%X Arg1=#%X\n",
+                                IPtr, Icode, OReg, Arg0, Arg1);
+                else
+                        printf ("-I-EMU414: Icache hit @ #%08X Icode = #%02X OReg = #%08X\n",
+                                IPtr, Icode, OReg);
+        }
+#endif
 
         /* Disable interrupts on PFIX or NFIX. */
         /* Using Icache IntEnabled is always TRUE. */

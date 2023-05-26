@@ -1,8 +1,10 @@
 #ifdef T4RELEASE
 #undef EMUDEBUG
+#undef T4PROFILE
 #define NDEBUG          1
 #else
 #define EMUDEBUG        1
+#define T4PROFILE       1
 #undef NDEBUG
 #endif
 

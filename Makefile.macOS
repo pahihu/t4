@@ -3,9 +3,9 @@
 # CC = clang-mp-15 -flto -ffunction-sections -fdata-sections -Wl,-dead_strip
 # CC = clang-mp-15 -flto -fprofile-generate
 # CC = clang-mp-15 -flto -fprofile-use=t4.profdata -ffunction-sections -fdata-sections -Wl,-dead_strip
-CC = gcc-mp-12 -ffloat-store -frounding-math -flto -ffunction-sections -fdata-sections -Wl,-dead_strip
+# CC = gcc-mp-12 -ffloat-store -frounding-math -flto -ffunction-sections -fdata-sections -Wl,-dead_strip
 # CC = gcc-mp-12 -ffloat-store -frounding-math -fprofile-generate -flto
-# CC = gcc-mp-12 -ffloat-store -frounding-math -fprofile-use -flto
+CC = gcc-mp-12 -ffloat-store -frounding-math -fprofile-use -flto -ffunction-sections -fdata-sections -Wl,-dead_strip
 #
 # 64bit emulator on Linux-x64, 32bit emulator on  Linux-armhf
 # CC = gcc -ffloat-store -frounding-math

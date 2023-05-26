@@ -42,6 +42,10 @@
 #ifdef _MSC_VER
 #include <io.h>
 #include <fcntl.h>
+#include <process.h>
+typedef intptr_t pid_t;
+#else
+#include <unistd.h>
 #endif
 #include "t4debug.h"
 #include "processor.h"
@@ -80,6 +84,8 @@ int copy        = FALSE;
 int exitonerror = false;
 int peeksize    = 8;
 int nodeid      = -1;
+int nxputers    = 0;
+pid_t xputers[1024 + 1];
 
 int membits     = 0;
 
@@ -138,6 +144,45 @@ enum {INIT, GETK, POLL} t_state;
 #endif
 #endif
 
+#ifdef _MSC_VER
+pid_t SpawnVP (const char *file, char *argv[])
+{
+        return _spawnvp (_P_NOWAIT, file, argv);
+}
+#else
+pid_t SpawnVP (const char *file, char *argv[])
+{
+        pid_t child = fork();
+
+        if (child < 0)
+                return child;
+
+        if (0 == child)
+        {
+                execvp (file, argv);
+                handler (-1);
+        }
+        return child;
+}
+#endif
+
+void stop_xputers (void)
+{
+        extern u_char *SharedEvents;
+
+        if (nxputers && SharedEvents)
+        {
+                int i;
+
+                for (i = 1; -1 != xputers[i]; i++)
+                {
+                        SharedEvents[i] = 1;
+                        xputers[i] = -1;
+                }
+        }
+}
+
+
 /* 201113AP Gavin Crate */
 int isswopt(int c)
 {
@@ -185,7 +230,7 @@ int main (int argc, char **argv)
 {
 	static char CopyFileName[256];
         static char InpFileName[256], OutFileName[256];
-        char IBoardSize[32];
+        char IBoardSize[32], SpyNet[256];
 	int reset       = FALSE;
 	int arg;
 	int temp;
@@ -229,9 +274,9 @@ int main (int argc, char **argv)
 #ifndef NDEBUG
                 printf("    -sg                  Halt on uninitialized memory read.\n");
 #endif
-                printf("    -sl                  Links in shared memory.\n");
+                printf("    -sl                  Use SHM (shared memory) links.\n");
                 printf("    -sm #bits            Memory size in address bits (default 21, 2Mbyte).\n");
-                printf("    -sn id               Node ID.\n");
+                printf("    -sn id               Node ID. (If id < 0, start SHM network with -id nodes).\n");
 #ifdef T4PROFILE
                 printf("    -su                  Instruction profiling.\n");
 #endif
@@ -385,7 +430,7 @@ int main (int argc, char **argv)
 						}
 						if ((membits < 16) || (membits > 30))
 						{
-							printf ("\nMemory bits should be in [16,30] range!\n");
+							printf ("\nMemory bits should be in range [16,30] (64K,1024M)!\n");
 							handler (-1);
 						}
                                           }
@@ -408,9 +453,21 @@ int main (int argc, char **argv)
 							printf ("\nBad number after -sn\n");
 							handler (-1);
 						}
-						if ((nodeid < 0) || (nodeid > 8191))
+                                                if (nodeid < 0)
+                                                {
+                                                        /* Network startup */
+                                                        nxputers = -nodeid;
+                                                        if ((nxputers < 1) || (nxputers > 1024))
+                                                        {
+							        printf ("\nNumber of transputers should be in range [1,1024]!\n");
+							        handler (-1);
+                                                        }
+                                                        nodeid = 0;
+                                                        shlinks = TRUE;
+                                                }
+						if ((nodeid < 0) || (nodeid > 1024))
 						{
-							printf ("\nNode ID  should be in [0,8191] range!\n");
+							printf ("\nNode ID  should be in range [0,1023]!\n");
 							handler (-1);
 						}
                                           }
@@ -629,6 +686,40 @@ int main (int argc, char **argv)
                 if (verbose)
                         printf ("-I-EMU414: Done.\n");
                 fclose (NetIn);
+
+                if (nxputers)
+                {
+                        char *cmdargs[8];
+                        char snid[8];
+                        int  i;
+
+                        for (i = 1; i < 1025; i++)
+                                xputers[i] = -1;
+
+                        sprintf (SpyNet, "SPYNET=%s", NetConfigName);
+                        putenv (SpyNet);
+                        for (i = 1; i < nxputers; i++)
+                        {
+                                sprintf (snid, "%d", i);
+
+                                cmdargs[0] = "t4";
+                                cmdargs[1] = "-sl";
+                                cmdargs[2] = "-sn";
+                                cmdargs[3] = snid;
+                                cmdargs[4] = 800 == Txxx ? "-s8" : NULL;
+                                cmdargs[5] = NULL;
+                                if ((xputers[i] = SpawnVP ("t4", cmdargs)) < 0)
+                                {
+                                        printf ("-E-EMU414: Failed to start processor %d!\n", i);
+                                        handler (-1);
+                                }
+                                printf ("-I-EMU414: Started processor %d (pid=%d)\n", i, xputers[i]);
+                                if (1 == i)
+                                        sleep (1);
+                        }
+                        if (nxputers > 2)
+                                sleep (1);
+                }
         }
 
         /* Initialize processor. */
@@ -768,11 +859,15 @@ int main (int argc, char **argv)
 #endif
 
 	/* Close boot file. */
-	fclose (CopyIn);
+        if (CopyIn)
+	        fclose (CopyIn);
         if (InpFile)
                 fclose (InpFile);
         if (OutFile)
                 fclose (OutFile);
+
+
+        stop_xputers ();
 
         close_channels ();
 
@@ -846,7 +941,10 @@ void handler (int signal)
         if (OutFile)
                 fclose (OutFile);
 
+        stop_xputers ();
+
         close_channels ();
+
 
 #ifdef CURTERM
    	prepterm (0);

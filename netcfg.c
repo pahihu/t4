@@ -18,7 +18,7 @@ typedef struct _NETURL {
         char *url;
 } NETURL;
 
-#define MAX_NETURL 1024
+#define MAX_NETURL 4096
 NETURL NetURLs[MAX_NETURL];
 int nNetURL;
 
@@ -27,7 +27,7 @@ typedef struct _NETLINK {
         int othernode, otherlink;
 } NETLINK;
 
-#define MAX_NETLINK  (MAX_NETURL * 4)
+#define MAX_NETLINK  MAX_NETURL
 NETLINK NetLinks[MAX_NETLINK];
 int nNetLink;
 

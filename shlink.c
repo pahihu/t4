@@ -46,7 +46,7 @@ void *shlink_attach (const char *fnm, int size)
         }
 
         if (verbose)
-                printf ("-I-EMU414: Attached SharedChannels at #%p.\n", addr);
+                printf ("-I-EMU414: Attached SHMLinks at #%p.\n", addr);
 
         return addr;
 }
@@ -96,7 +96,7 @@ void *shlink_alloc (const char *fnm, int size)
         }
 
         if (verbose)
-                printf ("-I-EMU414: Allocated SharedChannels at #%p.\n", addr);
+                printf ("-I-EMU414: Allocated SHMLinks at #%p.\n", addr);
         return addr;
 }
 
@@ -135,7 +135,7 @@ void* shlink_attach (const char *fnm, int size)
         if (shmid == -1)
         {
                 ret = errno;
-                printf ("-E-EMU414: Cannot get SharedChannels (%s).\n", strerror (ret));
+                printf ("-E-EMU414: Cannot get SHMLinks (%s).\n", strerror (ret));
                 return NULL;
         }
 
@@ -143,11 +143,11 @@ void* shlink_attach (const char *fnm, int size)
         if (addr == (void *)-1)
         {
                 ret = errno;
-                printf ("-E-EMU414: Unable to attach SharedChannels (%s).\n", strerror (ret));
+                printf ("-E-EMU414: Unable to attach SHMLinks (%s).\n", strerror (ret));
                 return NULL;
         }
         if (verbose)
-                printf ("-I-EMU414: Attached SharedChannels at #%p.\n", addr);
+                printf ("-I-EMU414: Attached SHMLinks at #%p.\n", addr);
         return addr;
 }
 
@@ -172,21 +172,21 @@ void* shlink_alloc (const char *fnm, int size)
         shmid = shmget (shmkey, 0, 0);
         if (shmid != -1)
         {
-                printf ("-E-EMU414: SharedChannels already exists.\n");
+                printf ("-E-EMU414: SHMLinks already exists.\n");
                 return NULL;
         }
 
         shmid = shmget (shmkey, size, (SHM_R|SHM_W|(SHM_R>>3) |(SHM_W>>3)|IPC_CREAT));
         if (shmid == -1)
         {
-                printf ("-E-EMU414: Unable to create SharedChannels (%s).\n", strerror (errno));
+                printf ("-E-EMU414: Unable to create SHMLinks (%s).\n", strerror (errno));
                 return NULL;
         }
 
         addr = shmat (shmid, 0, 0);
         if (addr == (void *)-1)
         {
-                printf ("-E-MU414: Unable to attach to SharedChannels (%s).\n", strerror (errno));
+                printf ("-E-EMU414: Unable to attach to SHMLinks (%s).\n", strerror (errno));
                 shmctl (shmid, (IPC_RMID), &sbuf);
                 return NULL;
         }
@@ -194,7 +194,7 @@ void* shlink_alloc (const char *fnm, int size)
         memset (addr, 0, size);
 
         if (verbose)
-                printf ("-I-EMU414: Allocated SharedChannels at #%p.\n", addr);
+                printf ("-I-EMU414: Allocated SHMLinks at #%p.\n", addr);
         return addr;
 }
 

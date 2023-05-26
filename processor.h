@@ -146,7 +146,7 @@ void operate       (void);
 void schedule      (uint32_t);
 void UpdateWdescReg (uint32_t);
 int  run_process   (void);
-void start_process (void);
+int  start_process (void);
 void deschedule    (void);
 void D_check       (void);
 void interrupt     (void);

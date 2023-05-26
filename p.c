@@ -248,6 +248,7 @@ int32_t quitstatus;
 void handler (int);
 
 u_char *SharedLinks;
+u_char *SharedEvents;
 
 #define StrPrio(p)      ((p) ? "Lo" : "Hi")
 
@@ -1197,6 +1198,7 @@ void close_channels (void)
         if (SharedLinks)
         {
                 shlink_detach (SharedLinks);
+                SharedLinks = NULL; SharedEvents = NULL;
                 if (0 == nodeid)
                         shlink_free ();
 
@@ -1300,11 +1302,16 @@ void open_channel (uint32_t addr)
                 if (NULL == SharedLinks)
                 {
                         if ((1 == nodeid) || (0 == maxnode))
-                                SharedLinks = shlink_alloc (NetConfigName, sharedSize);
+                        {
+                                SharedLinks = shlink_alloc (NetConfigName, sharedSize + 1024);
+                                if (SharedLinks)
+                                        memset (SharedLinks, 0, sharedSize + 1024);
+                        }
                         else
-                                SharedLinks = shlink_attach (NetConfigName, sharedSize);
+                                SharedLinks = shlink_attach (NetConfigName, sharedSize + 1024);
                         if (NULL == SharedLinks)
                                 handler (-1);
+                        SharedEvents = SharedLinks + sharedSize;
                 }
                 if (chanIn)
                 {
@@ -1700,10 +1707,20 @@ void mainloop (void)
 
 		/* Move timers on if necessary, and increment timeslice counter. */
                 if (++count1 > delayCount1)
+                {
+                        if (SharedEvents && (nodeid >= 0))
+                        {
+                                if (SharedEvents[nodeid])
+                                        return;
+                        }
 		        update_time ();
+                }
 
                 if (ReadGotoSNP)
-                        start_process ();
+                {
+                        if (start_process ())
+                                return;
+                }
 
 		/* Execute an instruction. */
         ResetRounding = FALSE;
@@ -4439,7 +4456,7 @@ int run_process (void)
 }
 
 /* Start a process. */
-void start_process (void)
+int start_process (void)
 {
         int active, links_active;
 
@@ -4498,6 +4515,11 @@ void start_process (void)
                         active = TRUE;
                         break;
                 }
+                if (SharedEvents && (nodeid >= 0))
+                {
+                        if (SharedEvents[nodeid])
+                                return 1;
+                }
         } while (active);
 
         if (!active)
@@ -4511,6 +4533,8 @@ void start_process (void)
 	timeslice = 0;
 
 	PROFILE(profile[PRO_STARTP]++);
+
+        return 0;
 }
 
 /* Save the current process and start a new process. */

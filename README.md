@@ -43,6 +43,7 @@ The compiled binaries are in the `bin/` directory.
 Changes
 =======
 
+* startup/shutdown of SHM link transputer networks using the `-sn` flag
 * binaries use profile guided optimization (PGO)
 * added some instruction combinations, which are detected at runtime
 * simplified OReg clearing

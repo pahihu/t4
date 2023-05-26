@@ -321,22 +321,56 @@ ArgSlot  Acache[MAX_ICACHE];
 static uint32_t IHASH(uint32_t a)
 {
         return a & (MAX_ICACHE-1);
-        /* return (a ^ (a >> (32 - CACHE_BITS))) & (MAX_ICACHE-1); */
 }
 
-static void InvalidateAddr(uint32_t a)
+#if 1
+
+#define INVALIDATE_ADDR(a)      InvalidateAddr(a)
+
+static void InvalidateAddr (uint32_t a)
 {
         uint32_t x = IHASH(a);
         if (a == Icache[x].IPtr)
                 Icache[x].IPtr = IC_NOADDR;
 }
 
-static void InvalidateRange(uint32_t a, uint32_t n)
+static void InvalidateRange (uint32_t a, uint32_t n)
 {
-        int i;
+        uint32_t i;
+
         for (i = 0; i < n; i++)
-                InvalidateAddr(a++);
+                InvalidateAddr (a++);
 }
+
+#else
+
+#define INVALIDATE_ADDR(a)      InvalidateSlot(IHASH(a), a)
+
+static void InvalidateSlot (uint32_t x, uint32_t a)
+{
+        if (a == Icache[x].IPtr)
+                Icache[x].IPtr = IC_NOADDR;
+}
+
+static void InvalidateRange (uint32_t a, uint32_t n)
+{
+        uint32_t i, x;
+
+        x = IHASH(a);
+Again:  if (x + n > MAX_ICACHE)
+        {
+                n -= (MAX_ICACHE - x);
+                for (; x < MAX_ICACHE;)
+                        InvalidateSlot (x++, a++);
+                x = 0;
+                goto Again;
+        }
+        else
+                for (i = 0; i < n; i++)
+                        InvalidateSlot (x++, a++);
+}
+
+#endif
 
 #define NO_ICODE        0x400
 
@@ -847,7 +881,7 @@ int channel_recvmemP (Channel *chan, u_char *data, int doMemWrite, int doWait)
                 if (buf == data)
                         writebytes_int (chan->Address, data, ret);
                 else
-                        InvalidateRange(chan->Address, ret);
+                        InvalidateRange (chan->Address, ret);
                 chan->Address += ret; chan->Length -= ret;
         }
         return ret;
@@ -4898,7 +4932,6 @@ void writeword_int (uint32_t ptr, uint32_t value)
         wptr = (uint32_t *)MemWordPtr(ptr);
         *wptr = value;
 
-        InvalidateRange(ptr,4);
 #else
 	u_char val[4];
 
@@ -4923,7 +4956,7 @@ void writeword_int (uint32_t ptr, uint32_t value)
 	        mem[(ptr & MemWordMask)+3] = val[3];
         }
 #endif
-
+        InvalidateRange (ptr, 4);
 }
 
 
@@ -4974,7 +5007,7 @@ INLINE void writebyte_int (uint32_t ptr, u_char value)
         else
 	        mem[(ptr & MemByteMask)] = value;
 
-        InvalidateAddr(ptr);
+        INVALIDATE_ADDR (ptr);
 }
 
 /* Return pointer to memory or data[] */
@@ -5003,13 +5036,13 @@ INLINE void writebytes_int (uint32_t ptr, u_char *data, uint32_t len)
         {
                 dst = core + (ptr & MemByteMask);
                 memcpy (dst, data, len);
-                InvalidateRange(ptr,len);
+                InvalidateRange (ptr, len);
         }
         else if (ExtMemAddr(ptr))
         {
                 dst = mem + (ptr & MemByteMask);
                 memcpy (dst, data, len);
-                InvalidateRange(ptr,len);
+                InvalidateRange (ptr, len);
         }
         else
         {
@@ -5030,14 +5063,14 @@ INLINE void movebytes_int (uint32_t dst, uint32_t src, uint32_t len)
                 p = core + (dst & MemByteMask);
                 q = core + (src & MemByteMask);
                 memmove (p, q, len);
-                InvalidateRange(dst,len);
+                InvalidateRange (dst, len);
         }
         else if (ExtMemAddr(src) && ExtMemAddr(dst))
         {
                 p = mem + (dst & MemByteMask);
                 q = mem + (src & MemByteMask);
                 memmove (p, q, len);
-                InvalidateRange(dst,len);
+                InvalidateRange (dst, len);
         }
         else
         {
@@ -5118,12 +5151,12 @@ void writereal32 (uint32_t ptr, fpreal32_t value)
 
         p = (REAL32 *)MemWordPtr(ptr);
         *p = value.fp;
-        InvalidateRange (ptr, 4);
 #else
         ResetRounding = TRUE;
 
         writeword (ptr, value.bits);
 #endif
+        InvalidateRange (ptr, 4);
 }
 
 /* Read a REAL64 from memory. */
@@ -5166,13 +5199,13 @@ void writereal64 (uint32_t ptr, fpreal64_t value)
 
         p = (REAL64 *)MemWordPtr(ptr);
         *p = value.fp;
-        InvalidateRange (ptr, 8);
 #else
         ResetRounding = TRUE;
 
         writeword (ptr,     value.bits & 0xffffffff);
         writeword (ptr + 4, (value.bits >> 32) & 0xffffffff);
 #endif
+        InvalidateRange (ptr, 8);
 }
 
 /* Add an executing instruction to the profile list. */

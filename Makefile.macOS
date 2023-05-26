@@ -1,11 +1,32 @@
 # Choose a C compiler. (Must be ANSI C capable).
-# CC = cc -g
-# CC = clang-mp-15 -flto -ffunction-sections -fdata-sections -Wl,-dead_strip
-# CC = clang-mp-15 -flto -fprofile-generate
-# CC = clang-mp-15 -flto -fprofile-use=t4.profdata -ffunction-sections -fdata-sections -Wl,-dead_strip
-# CC = gcc-mp-12 -ffloat-store -frounding-math -flto -ffunction-sections -fdata-sections -Wl,-dead_strip
-# CC = gcc-mp-12 -ffloat-store -frounding-math -fprofile-generate -flto
-CC = gcc-mp-12 -ffloat-store -frounding-math -fprofile-use -flto -ffunction-sections -fdata-sections -Wl,-dead_strip
+
+
+CC-LDFLAGS = -ffunction-sections -fdata-sections -Wl,-dead_strip
+OPT-FLAGS  = -O3
+ifeq ($(clang), yes)
+  CC = clang-mp-15 -flto
+else
+  ifeq ($(debug), yes)
+    CC = cc -g
+    OPT-FLAGS = -O0
+  else
+    CC = gcc-mp-12 -flto -ffloat-store -frounding-math
+  endif
+endif
+ifeq ($(profgen), yes)
+  CC-FLAGS = -fprofile-generate
+else
+  ifeq ($(profuse), yes)
+    ifeq ($(clang), yes)
+      CC-FLAGS = -fprofile-use=t4.profdata
+    else
+      CC-FLAGS = -fprofile-use
+    endif
+  endif
+endif
+
+CC += $(CC-FLAGS) $(CC-LDFLAGS)
+
 #
 # 64bit emulator on Linux-x64, 32bit emulator on  Linux-armhf
 # CC = gcc -ffloat-store -frounding-math
@@ -20,7 +41,7 @@ CC = gcc-mp-12 -ffloat-store -frounding-math -fprofile-use -flto -ffunction-sect
 # For a well-optimised version compiled with gcc on a Sun use:
 # CFLAGS = -O2 -DSUN -finline -finline-functions -fexpensive-optimizations
 # For a reasonably optimised version for NetBSD.
-CFLAGS = -I. -O3 -Wall -DCURTERM=1 -I$(HOME)/include \
+CFLAGS = -I. $(OPT-FLAGS) -Wall -DCURTERM=1 -I$(HOME)/include \
         -DSPYNET=1 \
         -DSHLINKS=1 \
         -DT4COMBINATIONS=1 \
@@ -38,14 +59,15 @@ LFLAGS	= $(HOME)/lib/libnanomsg.a -lm
 #
 FDMSRC  = k_standard.c s_scalbn.c s_scalbnf.c s_ldexp.c s_ldexpf.c \
 	  e_fmod.c e_remainder.c e_sqrt.c w_remainder.c w_sqrt.c
-FDMOBJ	= k_standard.o s_scalbn.o s_scalbnf.o s_ldexp.o s_ldexpf.o \
-	  e_fmod.o e_remainder.o e_sqrt.o w_remainder.o w_sqrt.o
 
 SRC	= $(FDMSRC) curterm.c arithmetic.c fparithmetic.c netcfg.c shlink.c server.c p.c main.c
-OBJ	= $(FDMOBJ) curterm.o arithmetic.o fparithmetic.o netcfg.o shlink.o server.o p.o main.o
+OBJ	= $(SRC:.c=.o)
+GCDA    = $(SRC:.c=.gcda)
 
 t4 : $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) $(LFLAGS) -o t4
+	ls -l $@
+	cp $@ $(HOME)/bin
 
 clean	:
-	rm -f *.o
+	$(RM) $(OBJ) $(GCDA)

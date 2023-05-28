@@ -803,7 +803,7 @@ int channel_ready (Channel *chan)
 
         if (chan->schbuf)
         {
-                ret = 0 != chan->schbuf[SCH_LEN];
+                ret = 0 != SCHLength(chan);
                 goto Exit;
         }
 
@@ -835,16 +835,16 @@ int channel_recvP (Channel *chan, u_char *data, int doWait)
 
         if (chan->schbuf)
         {
-                if (0 == chan->schbuf[SCH_LEN])
+                if (0 == SCHLength(chan))
                 {
                         errno = EAGAIN;
                         ret = -1;
                 }
                 else
                 {
-                        ret = chan->schbuf[SCH_LEN];
+                        ret = SCHLength(chan);
                         memcpy (data, &chan->schbuf[SCH_DATA], ret);
-                        chan->schbuf[SCH_LEN] = 0;
+                        SCHLength(chan) = 0;
                 }
         }
         else
@@ -895,7 +895,7 @@ int channel_sendP (Channel *chan, u_char *data, int ndata, int doWait)
         ret = 0;
         if (chan->schbuf)
         {
-                if (chan->schbuf[SCH_LEN])
+                if (SCHLength(chan))
                 {
                         errno = EAGAIN;
                         ret = -1;
@@ -909,7 +909,7 @@ int channel_sendP (Channel *chan, u_char *data, int ndata, int doWait)
                         }
 #endif
                         memcpy (&chan->schbuf[SCH_DATA], data, ndata);
-                        chan->schbuf[SCH_LEN] = ndata;
+                        SCHLength(chan) = ndata;
                         ret = ndata;
                 }
         }
@@ -1130,9 +1130,9 @@ int linkcomms (char *where, int doBoot, int timeOut)
                         {
                                 int doadd = FALSE;
                                 if (pfd[i].events & NN_POLLIN)
-                                        doadd = 0 != channels[i]->schbuf[SCH_LEN];
+                                        doadd = 0 != SCHLength(channels[i]);
                                 else
-                                        doadd = 0 == channels[i]->schbuf[SCH_LEN];
+                                        doadd = 0 == SCHLength(channels[i]);
                                 if (doadd)
                                 {
                                         pfd[i].revents = pfd[i].events;

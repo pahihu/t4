@@ -1825,6 +1825,7 @@ FetchNext:      Instruction = byte_int (IPtr);
                         }
                 }
 #endif
+                goto ExecuteInstr;
         }
 #ifdef T4PROFILE
         else
@@ -1834,6 +1835,7 @@ FetchNext:      Instruction = byte_int (IPtr);
         OReg  = Icache[islot].OReg;
         Icode = Icache[islot].Icode;
 
+ExecuteInstr:
 #ifdef EMUDEBUG
         Instruction = Icache[islot].Instruction;
         if (cachedebug)

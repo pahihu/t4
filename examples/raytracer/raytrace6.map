@@ -154,62 +154,8 @@ Load Start is 80000150,  HALT ON ERROR
 
   LOW priority process 'raytrace.p_3' 
     Code from 'raytraceT8.c8h', file offset 2
-                                             #800008B4  #80003C54     13216
-    Code from 'raytraceT8.clu', file offset 2301
-                                             #80003C54  #80003C70        28
-      Entry address                          #80003C56 
-    Workspace                                #80000150  #80000894      1860
-    Vectorspace                              #80003C70  #8000EB08     44696
-
-  Parameter data                             #8000EB08  #8000EC40       312
-
-
-Memory map for 'System[6]' processor 6 T800
-Load Start is 80000150,  HALT ON ERROR
-
-  HIGH priority process 'Init.system' 
-    Code from 'sysproc.lib', file offset 4969
-                                             #800001E4  #80000404       544
-      Entry address                          #800001E6 
-    Workspace                                #80000150  #800001C0       112
-
-  HIGH priority process 'System.process.b' 
-    Code from 'sysproc.lib', file offset 28774
-                                             #80000430  #8000048C        92
-      Entry address                          #80000431 
-    Workspace                                #80000404  #8000041C        24
-
-  LOW priority process 'raytrace.p_4' 
-    Code from 'raytraceT8.c8h', file offset 2
-                                             #800008B4  #80003C54     13216
-    Code from 'raytraceT8.clu', file offset 2748
-                                             #80003C54  #80003C70        28
-      Entry address                          #80003C56 
-    Workspace                                #80000150  #80000894      1860
-    Vectorspace                              #80003C70  #8000EB08     44696
-
-  Parameter data                             #8000EB08  #8000EC40       312
-
-
-Memory map for 'System[7]' processor 7 T800
-Load Start is 80000150,  HALT ON ERROR
-
-  HIGH priority process 'Init.system' 
-    Code from 'sysproc.lib', file offset 4969
-                                             #800001E4  #80000404       544
-      Entry address                          #800001E6 
-    Workspace                                #80000150  #800001C0       112
-
-  HIGH priority process 'System.process.b' 
-    Code from 'sysproc.lib', file offset 28774
-                                             #80000430  #8000048C        92
-      Entry address                          #80000431 
-    Workspace                                #80000404  #8000041C        24
-
-  LOW priority process 'raytrace.p_5' 
-    Code from 'raytraceT8.c8h', file offset 2
                                              #800008B0  #80003C50     13216
-    Code from 'raytraceT8.clu', file offset 3195
+    Code from 'raytraceT8.clu', file offset 2301
                                              #80003C50  #80003C6C        28
       Entry address                          #80003C52 
     Workspace                                #80000150  #80000898      1864
@@ -226,8 +172,6 @@ Boot path for network
   Boot processor 3 down link 1 from processor 2 link 2
   Boot processor 4 down link 1 from processor 3 link 2
   Boot processor 5 down link 1 from processor 4 link 2
-  Boot processor 6 down link 1 from processor 5 link 2
-  Boot processor 7 down link 1 from processor 6 link 2
 
 
 Connectivity for network
@@ -238,5 +182,3 @@ Connectivity for network
   Connect processor 3 link 1 to processor 2 link 2
   Connect processor 4 link 1 to processor 3 link 2
   Connect processor 5 link 1 to processor 4 link 2
-  Connect processor 6 link 1 to processor 5 link 2
-  Connect processor 7 link 1 to processor 6 link 2

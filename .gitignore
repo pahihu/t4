@@ -6,3 +6,11 @@ t4
 TAGS
 *.log
 dump
+*.gcda
+*.t4h
+*.t8h
+*.tah
+*.c4h
+*.c8h
+*.cah
+*.cfb

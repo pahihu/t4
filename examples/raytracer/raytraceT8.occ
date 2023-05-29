@@ -3383,7 +3383,7 @@ PROC rayTrace   ( CHAN OF ANY fromPrev, toPrev, fromNext, toNext,
           colour := (x0 + (y0 * patchSize))
     :
 
-    VAL ticksPerSecond IS 625000 / 64 :  -- lo priority
+    VAL ticksPerSecond IS 1000000 / 64 :  -- lo priority
     INT command :
     INT nobj, nlight, secs, ticks, then :
     TIMER TIME :

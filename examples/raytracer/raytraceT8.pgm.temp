@@ -9,7 +9,7 @@ VAL LOW IS 1:
 --}}}
 
 --{{{  problem size
-VAL processors IS 34 :
+VAL processors IS NUMPROCS :
 VAL number.of.transputers IS processors + 2 :
 --}}}
 

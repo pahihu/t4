@@ -910,8 +910,62 @@ Load Start is 80000150,  HALT ON ERROR
 
   LOW priority process 'raytrace.p_31' 
     Code from 'raytraceT8.c8h', file offset 2
-                                             #800008B0  #80003C50     13216
+                                             #800008B4  #80003C54     13216
     Code from 'raytraceT8.clu', file offset 14869
+                                             #80003C54  #80003C70        28
+      Entry address                          #80003C55 
+    Workspace                                #80000150  #80000894      1860
+    Vectorspace                              #80003C70  #8000EB08     44696
+
+  Parameter data                             #8000EB08  #8000EC40       312
+
+
+Memory map for 'System[34]' processor 34 T800
+Load Start is 80000150,  HALT ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #800001E4  #80000404       544
+      Entry address                          #800001E6 
+    Workspace                                #80000150  #800001C0       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #80000430  #8000048C        92
+      Entry address                          #80000431 
+    Workspace                                #80000404  #8000041C        24
+
+  LOW priority process 'raytrace.p_32' 
+    Code from 'raytraceT8.c8h', file offset 2
+                                             #800008B4  #80003C54     13216
+    Code from 'raytraceT8.clu', file offset 15319
+                                             #80003C54  #80003C70        28
+      Entry address                          #80003C55 
+    Workspace                                #80000150  #80000894      1860
+    Vectorspace                              #80003C70  #8000EB08     44696
+
+  Parameter data                             #8000EB08  #8000EC40       312
+
+
+Memory map for 'System[35]' processor 35 T800
+Load Start is 80000150,  HALT ON ERROR
+
+  HIGH priority process 'Init.system' 
+    Code from 'sysproc.lib', file offset 4969
+                                             #800001E4  #80000404       544
+      Entry address                          #800001E6 
+    Workspace                                #80000150  #800001C0       112
+
+  HIGH priority process 'System.process.b' 
+    Code from 'sysproc.lib', file offset 28774
+                                             #80000430  #8000048C        92
+      Entry address                          #80000431 
+    Workspace                                #80000404  #8000041C        24
+
+  LOW priority process 'raytrace.p_33' 
+    Code from 'raytraceT8.c8h', file offset 2
+                                             #800008B0  #80003C50     13216
+    Code from 'raytraceT8.clu', file offset 15769
                                              #80003C50  #80003C6C        28
       Entry address                          #80003C51 
     Workspace                                #80000150  #80000898      1864
@@ -956,6 +1010,8 @@ Boot path for network
   Boot processor 31 down link 1 from processor 30 link 2
   Boot processor 32 down link 1 from processor 31 link 2
   Boot processor 33 down link 1 from processor 32 link 2
+  Boot processor 34 down link 1 from processor 33 link 2
+  Boot processor 35 down link 1 from processor 34 link 2
 
 
 Connectivity for network
@@ -994,3 +1050,5 @@ Connectivity for network
   Connect processor 31 link 1 to processor 30 link 2
   Connect processor 32 link 1 to processor 31 link 2
   Connect processor 33 link 1 to processor 32 link 2
+  Connect processor 34 link 1 to processor 33 link 2
+  Connect processor 35 link 1 to processor 34 link 2

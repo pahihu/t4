@@ -379,22 +379,26 @@ static struct {
         u_short code0, code1;
         uint32_t ccode;
 } combined[] = {
-        { 0xd0 /* stl  */,  0x70 /* ldl      */, 0x100 },
-        { 0x70 /* ldl  */,  0x30 /* ldnl     */, 0x101 },
-        { 0xc0 /* eqc  */,  0xa0 /* cj       */, 0x102 },
-        { 0x70 /* ldl  */,  0x50 /* ldnlp    */, 0x103 },
-        { 0x70 /* ldl  */,  0x70 /* ldl      */, 0x104 },
-        { 0x10 /* ldlp */, 0x18a /* fpldnldb */, 0x105 },
-        { 0xb0 /* ajw  */, 0x120 /* ret      */, 0x106 },
-        { 0x10 /* ldlp */,  0x40 /* ldc      */, 0x107 },
-        { 0x10 /* ldlp */,  0x70 /* ldl      */, 0x108 },
-        { 0xd0 /* stl  */,  0xd0 /* stl      */, 0x109 },
-        { 0x70 /* ldl  */, 0x173 /* cflerr   */, 0x10a },
-        { 0x10 /* ldlp */, 0x188 /* fpstnlsn */, 0x10b },
-        { 0x10 /* ldlp */, 0x18e /* fpldnlsn */, 0x10c },
-        { 0x70 /* ldl  */,  0x80 /* adc      */, 0x10d },
-        { 0x70 /* ldl  */,  0xe0 /* stnl     */, 0x10e },
-        { 0x40 /* ldc  */,  0x70 /* ldl      */, 0x10f },
+        {  0xd0 /* stl  */,  0x70 /* ldl      */, 0x100 },
+        {  0x70 /* ldl  */,  0x30 /* ldnl     */, 0x101 },
+        {  0xc0 /* eqc  */,  0xa0 /* cj       */, 0x102 },
+        {  0x70 /* ldl  */,  0x50 /* ldnlp    */, 0x103 },
+        {  0x70 /* ldl  */,  0x70 /* ldl      */, 0x104 },
+        {  0x10 /* ldlp */, 0x18a /* fpldnldb */, 0x105 },
+        {  0xb0 /* ajw  */, 0x120 /* ret      */, 0x106 },
+        {  0x10 /* ldlp */,  0x40 /* ldc      */, 0x107 },
+        {  0x10 /* ldlp */,  0x70 /* ldl      */, 0x108 },
+        {  0xd0 /* stl  */,  0xd0 /* stl      */, 0x109 },
+        {  0x70 /* ldl  */, 0x173 /* cflerr   */, 0x10a },
+        {  0x10 /* ldlp */, 0x188 /* fpstnlsn */, 0x10b },
+        {  0x10 /* ldlp */, 0x18e /* fpldnlsn */, 0x10c },
+        {  0x70 /* ldl  */,  0x80 /* adc      */, 0x10d },
+        {  0x70 /* ldl  */,  0xe0 /* stnl     */, 0x10e },
+        {  0x40 /* ldc  */,  0x70 /* ldl      */, 0x10f },
+        {  0xd0 /* stl  */,  0x00 /* j        */, 0x110 },
+        { 0x109 /* gt   */,  0xa0 /* cj       */, 0x111 },
+        { 0x10a /* wsub */,  0xe0 /* stnl     */, 0x112 },
+        {  0x70 /* ldl  */, 0x10a /* wsub     */, 0x113 },
         { NO_ICODE, NO_ICODE, NO_ICODE }
 };
 static u_char combinations[0x400 * 0x400];
@@ -4222,6 +4226,51 @@ DescheduleOutWord:
 			   AReg = word (index (WPtr, Arg1));
 			   IPtr++;
                            break;
+                case 0x110: /* stl j */
+			   writeword (index (WPtr, Arg0), AReg);
+			   AReg = BReg;
+			   BReg = CReg;
+			   IPtr++;
+			   IPtr = IPtr + Arg1;
+			   D_check();
+                           break;
+                case 0x111: /* gt cj */
+			   if (INT32(BReg) > INT32(AReg))
+			   {
+				AReg = true_t;
+			   }
+			   else
+			   {
+				AReg = false_t;
+			   }
+			   BReg = CReg;
+			   IPtr++;
+			   if (AReg != 0)
+			   {
+				AReg = BReg;
+				BReg = CReg;
+			   }
+			   else
+			   {
+				IPtr = IPtr + Arg1;
+			   }
+                           break;
+                case 0x112: /* wsub stnl */
+			   AReg = index (AReg, BReg);
+			   BReg = CReg;
+                           T4DEBUG(checkWordAligned ("STNL", AReg));
+			   writeword (index (AReg, Arg1), BReg);
+			   AReg = CReg;
+			   IPtr++;
+                           break;
+                case 0x113: /* ldl wsub  */
+			   CReg = BReg;
+			   BReg = AReg;
+			   AReg = word (index (WPtr, Arg0));
+			   AReg = index (AReg, BReg);
+			   BReg = CReg;
+			   IPtr++;
+                           break;
 #endif
                 case 0x17c: /* XXX lddevid    */
                            if (IsT800) /* TTH */
@@ -5230,11 +5279,11 @@ void add_profile (uint32_t instruction)
 char* profmnemonic(uint32_t i, char *buf)
 {
         if (i < 0x100)
-                sprintf (buf, "  %02X  %-12s", i, mnemonic (i, MostNeg, MostNeg, 1));
+                sprintf (buf, "  %02X %-13s", i, mnemonic (i, MostNeg, MostNeg, 1));
 	else if (i < 0x300)
-                sprintf (buf, "%04X  %-12s", i - 0x100, mnemonic (0xF0, i - 0x100, MostNeg, 1));
+                sprintf (buf, "%04X %-13s", i - 0x100, mnemonic (0xF0, i - 0x100, MostNeg, 1));
         else
-                sprintf (buf, "S%03X  %-12s", i - 0x300, mnemonic (0xF0, 0xAB, i - 0x300, 1));
+                sprintf (buf, "S%03X %-13s", i - 0x300, mnemonic (0xF0, 0xAB, i - 0x300, 1));
         return buf;
 }
 

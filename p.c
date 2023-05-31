@@ -48,7 +48,8 @@
 #include <unistd.h>
 #endif
 #include <math.h>
-#ifdef SPYNET
+#ifdef T4NANOMSG
+#define NN_STATIC_LIB   ON
 #include <nanomsg/nn.h>
 #include <nanomsg/pipeline.h>
 #else
@@ -56,8 +57,8 @@
 #define AF_SP 		0
 #define NN_PUSH         0
 #define NN_PULL         0
-#define NN_POLLIN       0
-#define NN_POLLOUT      0
+#define NN_POLLIN       1
+#define NN_POLLOUT      2
 #define NN_SOL_SOCKET   0 
 #define NN_SNDTIMEO     0
 #define NN_DONTWAIT     0
@@ -78,7 +79,7 @@ struct nn_pollfd {
 int nn_poll(struct nn_pollfd *fds, int nfds, int opt) { return EINVAL; }
 #endif
 #include "netcfg.h"
-#ifdef SHLINKS
+#ifdef T4SHLINKS
 #include "shlink.h"
 #else
 void* shlink_attach (const char *fnm, int size){return NULL;}

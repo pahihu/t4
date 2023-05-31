@@ -1,10 +1,8 @@
 # Choose a C compiler. (Must be ANSI C capable).
-# CC = cc
+CC = cc -flto -ffunction-sections -fdata-sections -Wl,-dead_strip
 #
 # 64bit emulator on Linux-x64, 32bit emulator on  Linux-armhf
-CC = gcc -ffloat-store -frounding-math -flto
-# CC = gcc -ffloat-store -frounding-math -flto -fprofile-generate
-# CC = gcc -ffloat-store -frounding-math -flto -fprofile-use
+# CC = gcc -flto -ffloat-store -frounding-math
 #
 # 32bit emulator on Linux-x86
 # CC = gcc -m32 -mfpmath=sse -msse2 -ffloat-store -frounding-math
@@ -16,12 +14,18 @@ CC = gcc -ffloat-store -frounding-math -flto
 # For a well-optimised version compiled with gcc on a Sun use:
 # CFLAGS = -O2 -DSUN -finline -finline-functions -fexpensive-optimizations
 # For a reasonably optimised version for NetBSD.
-CFLAGS = -I. -O3 -Wall -DCURTERM=1 -DT4NANOMSG=1 -DT4SHLINKS=1 -DT4COMBINATIONS=1 -DT4RELEASE=1
+# Define
+#       -DT4NANOMSG=1           use the nanomsg library for links
+#       -DT4SHLINKS=1           use shared-memory links
+#       -DT4COMBINATIONS=1      to replace common instruction sequences
+#       -DT4RELEASE=1           produce fast emulator (no profiling,tracing)
+#
+CFLAGS = -I. -O2 -fomit-frame-pointer -Wall -DCURTERM=1 -DT4SHLINKS=1 -DT4COMBINATIONS=1
 # For a reasonably optimised version for SunOS 4.1.4.
 # CFLAGS = -O2 -Wall -DSUN
 
 # Put any additional libraries here.
-LFLAGS	= /usr/local/lib/libnanomsg.a -lanl -lpthread -lm
+LFLAGS	= -lm
 
 #
 # https://github.com/JuliaMath/openlibm

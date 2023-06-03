@@ -880,7 +880,7 @@ int main (int argc, char **argv)
                 fprintf (ProfileFile, "Elapsed time           %ums\n", profile[PRO_ELAPSEDMS]);
                 fprintf (ProfileFile, "MIPS                   %.1f\n", (profile[PRO_INSTR] / (double)profile[PRO_ELAPSEDMS]) / 1000);
                 fprintf (ProfileFile, "Cache Miss/Hit         %u/%u\n", profile[PRO_ICMISS], profile[PRO_ICHIT]);
-                fprintf (ProfileFile, "Cache Hit Rate         %.1f\n", 100.0 * profile[PRO_ICHIT] / (double)profile[PRO_INSTR]);
+                fprintf (ProfileFile, "Cache Hit Rate         %.1f\n", 100.0 * profile[PRO_ICHIT] / (profile[PRO_ICMISS] + (double)profile[PRO_ICHIT]));
                 fprintf (ProfileFile, "Descheduling points    %u\n", profile[PRO_DCHECK]);
                 fprintf (ProfileFile, "Server calls           %u\n", profile[PRO_ISERVER]);
                 fprintf (ProfileFile, "StartProcess calls     %u\n", profile[PRO_STARTP]);

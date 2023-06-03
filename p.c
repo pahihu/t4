@@ -4100,6 +4100,7 @@ DescheduleOutWord:
                            if (Arg0 != Arg1)
 			        AReg = word (index (WPtr, Arg1));
 			   IPtr++;
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x101: /* ldl ldnl */
 			   CReg = BReg;
@@ -4107,6 +4108,7 @@ DescheduleOutWord:
 			   AReg = word (index (WPtr, Arg0));
 			   AReg = word (index (AReg, Arg1));
 			   IPtr++;
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x102: /* eqc cj */
 			   IPtr++;
@@ -4120,6 +4122,7 @@ DescheduleOutWord:
                                 AReg = false_t;
 				IPtr = IPtr + Arg1;
 			   }
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x103: /* ldl ldnlp */
 			   CReg = BReg;
@@ -4127,17 +4130,20 @@ DescheduleOutWord:
 			   AReg = word (index (WPtr, Arg0));
 			   AReg = index (AReg, Arg1);
 			   IPtr++;
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x104: /* ldl ldl */
 			   CReg = AReg;
 			   BReg = word (index (WPtr, Arg0));
 			   AReg = word (index (WPtr, Arg1));
 			   IPtr++;
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x105: /* ldlp fpldnldb */
 			   XReg = index (WPtr, Arg0);
                            fp_pushdb (real64 (XReg));
 		           IPtr++;
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x106: /* ajw ret */
                            WPtr = index (WPtr, Arg0);
@@ -4145,18 +4151,21 @@ DescheduleOutWord:
 			   IPtr = word (WPtr);
 			   UpdateWdescReg (index (WPtr, 4) | ProcPriority);
                            T4DEBUG(checkWPtr ("RET", WPtr));
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x107: /* ldlp ldc */
 			   CReg = AReg;
 			   BReg = index (WPtr, Arg0);
 			   AReg = Arg1;
 			   IPtr++;
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x108: /* ldlp ldl */
 			   CReg = AReg;
 			   BReg = index (WPtr, Arg0);
 			   AReg = word (index (WPtr, Arg1));
 			   IPtr++;
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x109: /* stl stl */
 			   writeword (index (WPtr, Arg0), AReg);
@@ -4164,6 +4173,7 @@ DescheduleOutWord:
 			   AReg = CReg;
 			   BReg = CReg;
 			   IPtr++;
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x10a: /* ldl cflerr */
 			   CReg = BReg;
@@ -4173,6 +4183,7 @@ DescheduleOutWord:
 			   if ((t4_isinf (AReg)) || (t4_isnan (AReg)))
 				SetError;
 			   IPtr++;
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x10b: /* ldlp fpstnlsn */
 			   XReg = index (WPtr, Arg0);
@@ -4192,6 +4203,7 @@ DescheduleOutWord:
                            writereal32 (XReg, sntemp1);
                            ResetRounding = TRUE;
 		           IPtr++;
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x10c: /* ldlp fpldnlsn */
 			   XReg = index (WPtr, Arg0);
@@ -4199,6 +4211,7 @@ DescheduleOutWord:
                            T4DEBUG(checkWordAligned ("FPLDNLSN", XReg));
                            fp_pushsn (real32 (XReg));
 		           IPtr++;
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x10d: /* ldl adc */
 			   CReg = BReg;
@@ -4210,6 +4223,7 @@ DescheduleOutWord:
 			   if (t4_overflow == TRUE)
 				SetError;
 			   IPtr++;
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x10e: /* ldl stnl */
 			   CReg = BReg;
@@ -4219,6 +4233,7 @@ DescheduleOutWord:
 			   writeword (index (AReg, Arg1), BReg);
 			   AReg = CReg;
 			   IPtr++;
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x10f: /* ldc ldl */
 			   CReg = BReg;
@@ -4228,6 +4243,7 @@ DescheduleOutWord:
 			   BReg = AReg;
 			   AReg = word (index (WPtr, Arg1));
 			   IPtr++;
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x110: /* stl j */
 			   writeword (index (WPtr, Arg0), AReg);
@@ -4236,6 +4252,7 @@ DescheduleOutWord:
 			   IPtr++;
 			   IPtr = IPtr + Arg1;
 			   D_check();
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x111: /* gt cj */
 			   if (INT32(BReg) > INT32(AReg))
@@ -4257,6 +4274,7 @@ DescheduleOutWord:
 			   {
 				IPtr = IPtr + Arg1;
 			   }
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x112: /* wsub stnl */
 			   AReg = index (AReg, BReg);
@@ -4265,6 +4283,7 @@ DescheduleOutWord:
 			   writeword (index (AReg, Arg1), BReg);
 			   AReg = CReg;
 			   IPtr++;
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x113: /* ldl wsub  */
 			   CReg = BReg;
@@ -4273,12 +4292,14 @@ DescheduleOutWord:
 			   AReg = index (AReg, BReg);
 			   BReg = CReg;
 			   IPtr++;
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
                 case 0x114: /* dup stl   */
 		           BADCODE(IsT414);
                            CReg = BReg;
 			   writeword (index (WPtr, Arg1), AReg);
 			   IPtr++;
+		           PROFILE(profile[PRO_INSTR]++);
                            break;
 #endif
                 case 0x17c: /* XXX lddevid    */

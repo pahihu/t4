@@ -21,7 +21,6 @@ Non-goals
 
 * cycle accurate emulation
 * support undefined behavior (DReg/EReg)
-* to be efficient
 
 Notes
 =====
@@ -43,6 +42,7 @@ The compiled binaries are in the `bin/` directory.
 Changes
 =======
 
+* removed 32bit binaries, all platforms are networking enabled
 * startup/shutdown of SHM link transputer networks using the `-sn` flag
 * binaries use profile guided optimization (PGO)
 * added some instruction combinations, which are detected at runtime

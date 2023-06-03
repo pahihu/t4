@@ -110,7 +110,7 @@
       <ConformanceMode>true</ConformanceMode>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
-      <PreprocessorDefinitions>CURTERM=1;SPYNET=1;SHLINKS=1;NN_STATIC_LIB=ON;T4RELEASE=1;T4COMBINATIONS=1</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CURTERM=1;T4NANOMSG=1;T4SHLINKS=1;T4RELEASE=1;T4COMBINATIONS=1</PreprocessorDefinitions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <AdditionalIncludeDirectories>E:\Users\Pahi\me\t4-master</AdditionalIncludeDirectories>
     </ClCompile>

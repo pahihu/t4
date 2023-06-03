@@ -316,7 +316,7 @@ typedef struct _ArgSlot {
 #endif
 #define MAX_ICACHE      (1<<T4CACHEBITS)
 #define OprCombined(x,y)(((x) == 0xf0)&&((y)>0xff)&&((y)<0x17c))
-InstrSlot Icache[MAX_ICACHE];
+InstrSlot Icache[MAX_ICACHE+1];
 ArgSlot  Acache[MAX_ICACHE];
 
 static uint32_t IHASH(uint32_t a)
@@ -399,6 +399,7 @@ static struct {
         { 0x109 /* gt   */,  0xa0 /* cj       */, 0x111 },
         { 0x10a /* wsub */,  0xe0 /* stnl     */, 0x112 },
         {  0x70 /* ldl  */, 0x10a /* wsub     */, 0x113 },
+        { 0x15a /* dup  */,  0xd0 /* stl      */, 0x114 },
         { NO_ICODE, NO_ICODE, NO_ICODE }
 };
 static u_char combinations[0x400 * 0x400];
@@ -1588,7 +1589,7 @@ void init_processor (void)
 {
         int i, j;
 
-        for (i = 0; i < MAX_ICACHE; i++)
+        for (i = 0; i < MAX_ICACHE+1; i++)
                 Icache[i].IPtr = IC_NOADDR;
 
         SharedLinks = NULL;
@@ -1705,7 +1706,7 @@ void mainloop (void)
         fpreal32_t sntemp1, sntemp2;
         fpreal64_t dbtemp1, dbtemp2;
         REAL       fptemp;
-        unsigned int islot;
+        unsigned int islot, pslot;
         int i;
 
 #ifdef EMUDEBUG
@@ -1729,6 +1730,7 @@ void mainloop (void)
 	Timers = TimersStop;
 
 
+        islot = MAX_ICACHE;
         PROFILE(update_tod (&StartTOD));
 	while (1)
 	{
@@ -1764,6 +1766,7 @@ void mainloop (void)
 		/* Execute an instruction. */
         ResetRounding = FALSE;
 
+        pslot = islot;
         if (IPtr != Icache[islot = IHASH(IPtr)].IPtr)
         {
                 PROFILE(profile[PRO_ICMISS]++);
@@ -1808,25 +1811,25 @@ FetchNext:      Instruction = byte_int (IPtr);
 #endif
 
 #ifdef T4COMBINATIONS
-                if (islot)
+                // if (islot)
                 {
-                        u_short code0 = ProfileCode (Icache[islot-1].Icode, Icache[islot-1].OReg);
+                        u_short code0 = ProfileCode (Icache[pslot].Icode, Icache[pslot].OReg);
                         u_short code1 = ProfileCode (Icode, OReg);
                         if ((i = combinations[(code0 << 10) + code1])
-                                && (Icache[islot-1].IPtr == (Icache[islot].IPtr - 1)))
+                                && (Icache[pslot].NextIPtr == (Icache[islot].IPtr - 1)))
                         {
                                 i--;
                                 EMUDBG3 ("-I-EMU414: code0=#%03X code1=#%03X\n", code0, code1);
                                 EMUDBG2 ("-I-EMU414: combined code=#%03X\n", combined[i].ccode);
 
-                                Acache[islot-1]._Arg0 = Icache[islot-1].OReg;
-                                Acache[islot-1]._Arg1 = Icache[islot].OReg;
+                                Acache[pslot]._Arg0 = Icache[pslot].OReg;
+                                Acache[pslot]._Arg1 = Icache[islot].OReg;
 
-                                Icache[islot-1].NextIPtr = Icache[islot].NextIPtr;
-                                Icache[islot-1].OReg  = combined[i].ccode;
-                                Icache[islot-1].Icode = 0xF0;
+                                Icache[pslot].NextIPtr = Icache[islot].NextIPtr;
+                                Icache[pslot].OReg  = combined[i].ccode;
+                                Icache[pslot].Icode = 0xF0;
 
-                                EMUDBG4 ("-I-EMU414: OReg=#%X Arg0=#%X Arg1=#%X\n", Icache[islot-1].OReg, Acache[islot-1]._Arg0, Acache[islot-1]._Arg1);
+                                EMUDBG4 ("-I-EMU414: OReg=#%X Arg0=#%X Arg1=#%X\n", Icache[pslot].OReg, Acache[pslot]._Arg0, Acache[pslot]._Arg1);
                         }
                 }
 #endif
@@ -4269,6 +4272,12 @@ DescheduleOutWord:
 			   AReg = word (index (WPtr, Arg0));
 			   AReg = index (AReg, BReg);
 			   BReg = CReg;
+			   IPtr++;
+                           break;
+                case 0x114: /* dup stl   */
+		           BADCODE(IsT414);
+                           CReg = BReg;
+			   writeword (index (WPtr, Arg1), AReg);
 			   IPtr++;
                            break;
 #endif

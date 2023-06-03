@@ -86,7 +86,8 @@ char* Combinations[] = {
 /*104*/ "LDL+LDL",       "LDLP+FPLDNLDB", "AJW+RET",    "LDLP+LDC",
 /*108*/ "LDLP+LDL",      "STL+STL",       "LDL+CFLERR", "LDLP+FPSTNLSN",
 /*10C*/ "LDLP+FPLDNLSN", "LDL+ADC",       "LDL+STNL",   "LDC+LDL",
-/*110*/ "STL+J",         "GT+CJ",         "WSUB+STNL",  "LDL+WSUB"
+/*110*/ "STL+J",         "GT+CJ",         "WSUB+STNL",  "LDL+WSUB",
+/*114*/ "DUP+STL",       "--C15--",       "--C16--",    "--C17--"
 };
 #define MIN_COMBINATIONS 0x100
-#define MAX_COMBINATIONS 0x113
+#define MAX_COMBINATIONS 0x117

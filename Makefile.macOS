@@ -1,6 +1,4 @@
 # Choose a C compiler. (Must be ANSI C capable).
-
-
 CC-LDFLAGS = -ffunction-sections -fdata-sections -Wl,-dead_strip
 OPT-FLAGS  = -O3
 ifeq ($(clang), yes)

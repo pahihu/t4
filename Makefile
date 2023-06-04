@@ -15,6 +15,7 @@ CC = cc -flto -ffunction-sections -fdata-sections -Wl,-dead_strip
 # CFLAGS = -O2 -DSUN -finline -finline-functions -fexpensive-optimizations
 # For a reasonably optimised version for NetBSD.
 # Define
+#       -DT4CACHEBITS=N         Icache size is 2^N (default 14, 16K)
 #       -DT4NANOMSG=1           use the nanomsg library for links
 #       -DT4SHLINKS=1           use shared-memory links
 #       -DT4COMBINATIONS=1      to replace common instruction sequences

@@ -400,6 +400,7 @@ static struct {
         { 0x10a /* wsub */,  0xe0 /* stnl     */, 0x112 },
         {  0x70 /* ldl  */, 0x10a /* wsub     */, 0x113 },
         { 0x15a /* dup  */,  0xd0 /* stl      */, 0x114 },
+        { 0x142 /* mint */, 0x146 /* and      */, 0x115 },
         { NO_ICODE, NO_ICODE, NO_ICODE }
 };
 static u_char combinations[0x400 * 0x400];
@@ -3283,17 +3284,17 @@ DescheduleOutWord:
                                 printf ("\t\t\t\t\t\t\t  AReg %08X (%.7e)\n", AReg, r32temp.fp);
                            }
 #endif
-			   temp = AReg;
-			   CReg = BReg << 2;
-			   AReg = (temp & 0x007fffff) << 8;
-			   BReg = (temp & 0x7f800000) >> 23;
-			   if (t4_iszero (temp))
-				temp2 = 0x00000000;
-			   else if (t4_isinf (temp))
-				temp2 = 0x00000002;
-			   else if (t4_isnan (temp))
-				temp2 = 0x00000003;
-			   else if ((0 == BReg) && (0 != AReg))
+                           temp = AReg;
+	                   CReg = BReg << 2;
+	                   AReg = (temp & 0x007fffff) << 8;
+	                   BReg = (temp & 0x7f800000) >> 23;
+	                   if (t4_iszero (temp))
+	                        temp2 = 0x00000000;
+	                   else if (t4_isinf (temp))
+	                        temp2 = 0x00000002;
+	                   else if (t4_isnan (temp))
+	                        temp2 = 0x00000003;
+	                   else if ((0 == BReg) && (0 != AReg))
                            {
                                 /* Denormalised. */
                                 temp2 = 0x00000001;
@@ -3302,10 +3303,10 @@ DescheduleOutWord:
                            else
                            {
                                 /* Normalised. */
-				temp2 = 0x00000001;
+                                temp2 = 0x00000001;
                                 AReg  = AReg | 0x80000000;
                            }
-			   CReg = CReg | temp2;
+	                   CReg = CReg | temp2;
 			   IPtr++;
 			   break;
 		case 0x6c: /* postnormsn  */
@@ -4300,6 +4301,11 @@ DescheduleOutWord:
 			   writeword (index (WPtr, Arg1), AReg);
 			   IPtr++;
 		           PROFILE(profile[PRO_INSTR]++);
+                           break;
+                case 0x115: /* mint and */
+			   CReg = BReg;
+			   AReg &= 0x80000000;
+			   IPtr++;
                            break;
 #endif
                 case 0x17c: /* XXX lddevid    */

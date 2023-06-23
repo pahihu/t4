@@ -110,10 +110,11 @@ u_char *core;
 uint32_t CoreSize    = 2 * 1024;
 uint32_t ExtMemStart = 0x80000800;
 
-u_char *mem;
+u_char   *mem;
 uint32_t MemSize     = 1 << 21;
 uint32_t MemWordMask = ((uint32_t)0x001ffffc);
 uint32_t MemByteMask = ((uint32_t)0x001fffff);
+uint32_t CLineTagsSize;
 
 #define InvalidInstr_p  ((uint32_t)0x2ffa2ffa)
 #define Undefined_p     ((uint32_t)0xdeadbeef)
@@ -297,7 +298,8 @@ typedef struct _InstrSlot {
         uint32_t NextIPtr;
         uint32_t OReg;
         u_char   Icode;
-        u_char   rsvd[3];
+        u_char   rsvd[1];
+        u_short  Pcode;
 #ifdef EMUDEBUG
         u_char Instruction;
 #endif
@@ -312,35 +314,67 @@ typedef struct _ArgSlot {
 
 #define IC_NOADDR       0xDEADBEEFU
 #ifndef T4CACHEBITS
-#define T4CACHEBITS     14
+#define T4CACHEBITS     (14)
 #endif
 #define MAX_ICACHE      (1<<T4CACHEBITS)
 #define OprCombined(x,y)(((x) == 0xf0)&&((y)>0xff)&&((y)<0x17c))
 InstrSlot Icache[MAX_ICACHE+1];
 ArgSlot  Acache[MAX_ICACHE];
 
+u_char *CLineTags;
+#define CLINE_SIZE      ((uint32_t)(1 << T4CLINEBITS))
+
 static uint32_t IHASH(uint32_t a)
 {
         return a & (MAX_ICACHE-1);
+}
+
+static u_char IsCached(uint32_t a)
+{
+        a &= MemByteMask; a >>= T4CLINEBITS;
+        return CLineTags[a >> 3] & (1 << (a & 7));
+}
+
+static void SetCached(uint32_t a)
+{
+        a &= MemByteMask; a >>= T4CLINEBITS;
+        CLineTags[a >> 3] |= (1 << (a & 7));
+}
+
+static void ClearCached(uint32_t a)
+{
+        a &= MemByteMask; a >>= T4CLINEBITS;
+        CLineTags[a >> 3] &= ~(1 << (a & 7));
 }
 
 #if 1
 
 #define INVALIDATE_ADDR(a)      InvalidateAddr(a)
 
-static void InvalidateAddr (uint32_t a)
+static uint32_t InvalidateAddr (uint32_t a)
 {
-        uint32_t x = IHASH(a);
-        if (a == Icache[x].IPtr)
-                Icache[x].IPtr = IC_NOADDR;
+        int i;
+
+        if (IsCached(a)) {
+                ClearCached(a);
+                a &= ~(CLINE_SIZE - 1);
+                for (i = 0; i < CLINE_SIZE; a++, i++) {
+                        uint32_t x = IHASH(a);
+                        if (a == Icache[x].IPtr)
+                                Icache[x].IPtr = IC_NOADDR;
+                }
+                return a;
+        }
+        return (a & ~(CLINE_SIZE-1)) + CLINE_SIZE;
 }
 
 static void InvalidateRange (uint32_t a, uint32_t n)
 {
-        uint32_t i;
+        uint32_t ha;
 
-        for (i = 0; i < n; i++)
-                InvalidateAddr (a++);
+        ha = a + n;
+        while (a < ha)
+                a = InvalidateAddr (a);
 }
 
 #else
@@ -1591,7 +1625,10 @@ void init_processor (void)
         int i, j;
 
         for (i = 0; i < MAX_ICACHE+1; i++)
-                Icache[i].IPtr = IC_NOADDR;
+        {
+                Icache[i].IPtr  = IC_NOADDR;
+                Icache[i].Pcode = 0x3ff;
+        }
 
         SharedLinks = NULL;
 
@@ -1772,6 +1809,7 @@ void mainloop (void)
         {
                 PROFILE(profile[PRO_ICMISS]++);
                 Icache[islot].IPtr = IPtr;
+                SetCached(IPtr);
                 OReg = 0;
 #ifdef EMUDEBUG
                 if (cachedebug)
@@ -1802,8 +1840,8 @@ FetchNext:      Instruction = byte_int (IPtr);
                         goto FetchNext;
                 }
                 Icache[islot].NextIPtr = IPtr;
-                Icache[islot].OReg  = OReg;
-                Icache[islot].Icode = Icode;
+                Icache[islot].OReg     = OReg;
+                Icache[islot].Icode    = Icode;
 
 #ifdef EMUDEBUG
                 Icache[islot].Instruction = Instruction;
@@ -1812,10 +1850,10 @@ FetchNext:      Instruction = byte_int (IPtr);
 #endif
 
 #ifdef T4COMBINATIONS
-                // if (islot)
                 {
-                        u_short code0 = ProfileCode (Icache[pslot].Icode, Icache[pslot].OReg);
+                        u_short code0 = Icache[pslot].Pcode;
                         u_short code1 = ProfileCode (Icode, OReg);
+                        Icache[islot].Pcode = code1;
                         if ((i = combinations[(code0 << 10) + code1])
                                 && (Icache[pslot].NextIPtr == (Icache[islot].IPtr - 1)))
                         {
@@ -1829,6 +1867,7 @@ FetchNext:      Instruction = byte_int (IPtr);
                                 Icache[pslot].NextIPtr = Icache[islot].NextIPtr;
                                 Icache[pslot].OReg  = combined[i].ccode;
                                 Icache[pslot].Icode = 0xF0;
+                                Icache[pslot].Pcode = ProfileCode (Icache[pslot].Icode, Icache[pslot].OReg);
 
                                 EMUDBG4 ("-I-EMU414: OReg=#%X Arg0=#%X Arg1=#%X\n", Icache[pslot].OReg, Acache[pslot]._Arg0, Acache[pslot]._Arg1);
                         }

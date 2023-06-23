@@ -1,10 +1,22 @@
 # Choose a C compiler. (Must be ANSI C capable).
-# CC = cc
-#
-# 64bit emulator on Linux-x64, 32bit emulator on  Linux-armhf
-CC = gcc -ffloat-store -frounding-math -flto
-# CC = gcc -ffloat-store -frounding-math -flto -fprofile-generate
-# CC = gcc -ffloat-store -frounding-math -flto -fprofile-use
+CC         = gcc -ffloat-store -frounding-math
+STRIP      = strip
+RM         = rm -f
+
+OPT-FLAGS  = -flto -O3
+LD-FLAGS   = -ffunction-sections -fdata-sections -Wl,--gc-sections
+
+PGO-GEN    = -fprofile-generate
+PGO-USE    = -fprofile-use
+
+ifeq ($(debug), yes)
+  DBG-FLAGS = -g
+  OPT-FLAGS = -O0
+  STRIP     = :
+endif
+
+CC += $(DBG-FLAGS) $(OPT-FLAGS) $(LD-FLAGS)
+
 #
 # 32bit emulator on Linux-x86
 # CC = gcc -m32 -mfpmath=sse -msse2 -ffloat-store -frounding-math
@@ -16,7 +28,11 @@ CC = gcc -ffloat-store -frounding-math -flto
 # For a well-optimised version compiled with gcc on a Sun use:
 # CFLAGS = -O2 -DSUN -finline -finline-functions -fexpensive-optimizations
 # For a reasonably optimised version for NetBSD.
-CFLAGS = -I. -O3 -Wall -DCURTERM=1 -DT4NANOMSG=1 -DT4SHLINKS=1 -DT4COMBINATIONS=1 -DT4RELEASE=1
+CFLAGS = -I. -Wall -DCURTERM=1 \
+	-DT4NANOMSG=1 \
+	-DT4SHLINKS=1 \
+	-DT4COMBINATIONS=1 \
+	-DT4RELEASE=1
 # For a reasonably optimised version for SunOS 4.1.4.
 # CFLAGS = -O2 -Wall -DSUN
 
@@ -28,14 +44,23 @@ LFLAGS	= /usr/local/lib/libnanomsg.a -lanl -lpthread -lm
 #
 FDMSRC  = k_standard.c s_scalbn.c s_scalbnf.c s_ldexp.c s_ldexpf.c \
 	  e_fmod.c e_remainder.c e_sqrt.c w_remainder.c w_sqrt.c
-FDMOBJ	= k_standard.o s_scalbn.o s_scalbnf.o s_ldexp.o s_ldexpf.o \
-	  e_fmod.o e_remainder.o e_sqrt.o w_remainder.o w_sqrt.o
 
 SRC	= $(FDMSRC) curterm.c arithmetic.c fparithmetic.c netcfg.c shlink.c server.c p.c main.c
-OBJ	= $(FDMOBJ) curterm.o arithmetic.o fparithmetic.o netcfg.o shlink.o server.o p.o main.o
+OBJ	= $(SRC:.c=.o)
 
-t4 : $(OBJ)
-	$(CC) $(CFLAGS) $(OBJ) $(LFLAGS) -o t4
+t4 : $(SRC)
+	$(CC) $(CFLAGS) $(SRC) $(LFLAGS) -o t4
+	$(STRIP) -s -x t4
+	ls -l t4
+
+t4.profgen : $(SRC)
+	$(CC) $(PGO-GEN) $(CFLAGS) $(SRC) $(LFLAGS) -o t4
+	ls -l t4
+
+t4.profuse : $(SRC)
+	$(CC) $(PGO-USE) $(CFLAGS) $(SRC) $(LFLAGS) -o t4
+	$(STRIP) -s -x t4
+	ls -l t4
 
 clean	:
-	rm -f *.o
+	$(RM) t4 $(OBJ) *.gcda

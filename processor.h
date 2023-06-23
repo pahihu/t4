@@ -60,6 +60,8 @@ extern uint32_t MemByteMask;
 extern uint32_t MemStart;
 extern uint32_t ExtMemStart;
 
+extern uint32_t CLineTagsSize;
+
 extern uint32_t CoreSize;
 
 #define IsT800  (Txxx == 800)
@@ -109,6 +111,10 @@ extern uint32_t CoreSize;
 #endif
 
 #define SCH_SIZE        (MAX_DATA+SCH_DATA)
+
+#ifndef T4CLINEBITS
+#define T4CLINEBITS     (4)
+#endif
 
 typedef struct _Channel_ {
         uint32_t LinkAddress; /* the address of the Channel */

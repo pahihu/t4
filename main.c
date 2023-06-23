@@ -114,6 +114,7 @@ FILE *InpFile, *OutFile;
 
 extern u_char *core;
 extern u_char *mem;
+extern u_char *CLineTags;
 extern uint32_t WPtr;
 extern uint32_t ProcPriority;
 
@@ -627,6 +628,14 @@ int main (int argc, char **argv)
 		printf ("\nFailed to allocate %dK of external memory!\n", MemSize / 1024);
 		exit (-1);
 	}
+        CLineTagsSize = ((MemSize >> T4CLINEBITS) >> 3);
+	CLineTags = malloc (CLineTagsSize);
+	if (CLineTags == NULL)
+	{
+		printf ("\nFailed to allocate %dK of cached memory!\n", CLineTagsSize / 1024);
+		exit (-1);
+	}
+
 
 #ifdef EMUDEBUG
         if (tracing && (dbgtrigger == NULL))

@@ -1,29 +1,25 @@
 # Choose a C compiler. (Must be ANSI C capable).
-CC-LDFLAGS = -ffunction-sections -fdata-sections -Wl,-dead_strip
-OPT-FLAGS  = -O3
+CC         = gcc-mp-12 -ffloat-store -frounding-math
+STRIP      = strip
+RM         = rm -f
+
+OPT-FLAGS  = -flto -O3
+LD-FLAGS   = -ffunction-sections -fdata-sections -Wl,-dead_strip
+
+PGO-GEN    = -fprofile-generate
+PGO-USE    = -fprofile-use
+
 ifeq ($(clang), yes)
-  CC = clang-mp-15 -flto
-else
-  ifeq ($(debug), yes)
-    CC = cc -g
-    OPT-FLAGS = -O0
-  else
-    CC = gcc-mp-12 -flto -ffloat-store -frounding-math
-  endif
+  CC      = cc
+  PGO-USE = -fprofile-use=t4.profdata
 endif
-ifeq ($(profgen), yes)
-  CC-FLAGS = -fprofile-generate
-else
-  ifeq ($(profuse), yes)
-    ifeq ($(clang), yes)
-      CC-FLAGS = -fprofile-use=t4.profdata
-    else
-      CC-FLAGS = -fprofile-use
-    endif
-  endif
+ifeq ($(debug), yes)
+  DBG-FLAGS = -g
+  OPT-FLAGS = -O0
+  STRIP     = :
 endif
 
-CC += $(CC-FLAGS) $(CC-LDFLAGS)
+CC += $(DBG-FLAGS) $(OPT-FLAGS) $(LD-FLAGS)
 
 #
 # 64bit emulator on Linux-x64, 32bit emulator on  Linux-armhf
@@ -39,13 +35,11 @@ CC += $(CC-FLAGS) $(CC-LDFLAGS)
 # For a well-optimised version compiled with gcc on a Sun use:
 # CFLAGS = -O2 -DSUN -finline -finline-functions -fexpensive-optimizations
 # For a reasonably optimised version for NetBSD.
-CFLAGS = -I. $(OPT-FLAGS) -Wall -DCURTERM=1 -I$(HOME)/include \
+CFLAGS = -I. -Wall -DCURTERM=1 -I$(HOME)/include \
         -DT4NANOMSG=1 \
         -DT4SHLINKS=1 \
         -DT4COMBINATIONS=1 \
         -DT4RELEASE=1
-# CFLAGS = -I. -O2 -Wall -DCURTERM=1 -I$(HOME)/include -DT4NANOMSG=1
-# CFLAGS = -I. -O0 -Wall -DCURTERM=1 -I$(HOME)/include -DT4NANOMSG=1 -DT4SHLINKS=1 -DT4COMBINATIONS=1
 # For a reasonably optimised version for SunOS 4.1.4.
 # CFLAGS = -O2 -Wall -DSUN
 
@@ -60,12 +54,20 @@ FDMSRC  = k_standard.c s_scalbn.c s_scalbnf.c s_ldexp.c s_ldexpf.c \
 
 SRC	= $(FDMSRC) curterm.c arithmetic.c fparithmetic.c netcfg.c shlink.c server.c p.c main.c
 OBJ	= $(SRC:.c=.o)
-GCDA    = $(SRC:.c=.gcda)
 
-t4 : $(OBJ)
-	$(CC) $(CFLAGS) $(OBJ) $(LFLAGS) -o t4
-	ls -l $@
-	cp $@ $(HOME)/bin
+t4 : $(SRC)
+	$(CC) $(CFLAGS) $(SRC) $(LFLAGS) -o t4
+	$(STRIP) -S -x t4
+	ls -l t4
+
+t4.profgen : $(SRC)
+	$(CC) $(PGO-GEN) $(CFLAGS) $(SRC) $(LFLAGS) -o t4
+	ls -l t4
+
+t4.profuse : $(SRC)
+	$(CC) $(PGO-USE) $(CFLAGS) $(SRC) $(LFLAGS) -o t4
+	$(STRIP) -S -x t4
+	ls -l t4
 
 clean	:
-	$(RM) $(OBJ) $(GCDA)
+	$(RM) t4 $(OBJ) *.gcda

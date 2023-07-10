@@ -135,7 +135,7 @@ typedef struct _LinkIface_ {
 extern LinkIface Link[4];
 
 extern int profiling;
-extern uint32_t profile[10];
+extern uint64_t profile[10];
 
 #define PRO_INSTR       0
 #define PRO_DCHECK      1

@@ -1,10 +1,10 @@
 #ifdef T4RELEASE
 #undef EMUDEBUG
-#undef T4PROFILE
 #define NDEBUG          1
 #else
 #define EMUDEBUG        1
 #define T4PROFILE       1
+#define T4PROFILEINSTR  1
 #undef NDEBUG
 #endif
 
@@ -18,6 +18,12 @@
 #define PROFILE(x)      if(profiling)x
 #else
 #define PROFILE(x)
+#endif
+
+#ifdef T4PROFILEINSTR
+#define PROFILEINSTR(x) if(profiling)x
+#else
+#define PROFILEINSTR(x)
 #endif
 
 #ifdef EMUDEBUG

@@ -117,7 +117,7 @@ extern int  usetvs;
 extern FILE *InpFile, *OutFile;
 
 extern int profiling;
-extern uint32_t profile[10];
+extern uint64_t profile[10];
 
 extern struct termios t_getk;
 extern struct termios t_poll;

@@ -122,7 +122,7 @@ extern uint32_t ProcPriority;
 int profiling = false;
 
 /* Profile array. */
-uint32_t profile[10];
+uint64_t profile[10];
 
 /* Profile file. */
 FILE *ProfileFile;
@@ -885,14 +885,14 @@ int main (int argc, char **argv)
 	{
 		/* Print out profile counts. */
                 fprintf (ProfileFile, "-----Statistics-------------------\n");
-                fprintf (ProfileFile, "Instructions           %u\n", profile[PRO_INSTR]);
-                fprintf (ProfileFile, "Elapsed time           %ums\n", profile[PRO_ELAPSEDMS]);
+                fprintf (ProfileFile, "Instructions           %llu\n", profile[PRO_INSTR]);
+                fprintf (ProfileFile, "Elapsed time           %llums\n", profile[PRO_ELAPSEDMS]);
                 fprintf (ProfileFile, "MIPS                   %.1f\n", (profile[PRO_INSTR] / (double)profile[PRO_ELAPSEDMS]) / 1000);
-                fprintf (ProfileFile, "Cache Miss/Hit         %u/%u\n", profile[PRO_ICMISS], profile[PRO_ICHIT]);
+                fprintf (ProfileFile, "Cache Miss/Hit         %llu/%llu\n", profile[PRO_ICMISS], profile[PRO_ICHIT]);
                 fprintf (ProfileFile, "Cache Hit Rate         %.1f\n", 100.0 * profile[PRO_ICHIT] / (profile[PRO_ICMISS] + (double)profile[PRO_ICHIT]));
-                fprintf (ProfileFile, "Descheduling points    %u\n", profile[PRO_DCHECK]);
-                fprintf (ProfileFile, "Server calls           %u\n", profile[PRO_ISERVER]);
-                fprintf (ProfileFile, "StartProcess calls     %u\n", profile[PRO_STARTP]);
+                fprintf (ProfileFile, "Descheduling points    %llu\n", profile[PRO_DCHECK]);
+                fprintf (ProfileFile, "Server calls           %llu\n", profile[PRO_ISERVER]);
+                fprintf (ProfileFile, "StartProcess calls     %llu\n", profile[PRO_STARTP]);
                 fprintf (ProfileFile, "-----Channels---------------------\n");
                 fprintf (ProfileFile, "ChannelOut             %s\n", Humanoid (profile[PRO_CHANOUT]));
                 fprintf (ProfileFile, "ChannelIn              %s\n", Humanoid (profile[PRO_CHANIN]));
@@ -904,7 +904,9 @@ int main (int argc, char **argv)
                                 fprintf (ProfileFile, "Link%dOut               %s\n", temp, Humanoid (Link[temp].Out.IOBytes));
                 }
 
+#ifdef T4PROFILEINSTR
 		print_profile ();
+#endif
 
 		fclose (ProfileFile);
 	}

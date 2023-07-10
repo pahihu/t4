@@ -1964,7 +1964,7 @@ ExecuteInstr:
         }
 #endif
 
-#ifdef T4PROFILE
+#ifdef T4PROFILEINSTR
 	if (profiling && (0xF0 != Icode))
 		add_profile (Icode);
 #endif
@@ -2076,7 +2076,7 @@ ExecuteInstr:
 			   break;
 		case 0xf0: /* opr   */
 
-	PROFILE(add_profile (0x100 + OReg));
+	PROFILEINSTR(add_profile (0x100 + OReg));
 	switch (OReg)
 	{
 		case 0x00: /* rev         */
@@ -3951,7 +3951,7 @@ DescheduleOutWord:
                            BReg = CReg;
 		           IPtr++;
 
-                           PROFILE(add_profile (0x300 + temp));
+                           PROFILEINSTR(add_profile (0x300 + temp));
                            switch (temp) {
 			   case 0x01: /* fpusqrtfirst    */
                                       if (FAReg.length == FP_REAL64)
